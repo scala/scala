@@ -703,7 +703,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     }
   }
 
-  /** Sorts this $coll according to an Ordering.
+  /** Sorts this $coll according to an `Ordering`.
     *
     *  The sort is stable. That is, elements that are equal (as determined by
     *  `ord.compare`) appear in the same order in the sorted sequence as in the original.
@@ -740,10 +740,10 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  $willForceEvaluation
    *
    *  The sort is stable. That is, elements that are equal
-   *  (`lt` returns false for both directions of comparison)
+   *  (`lt` returns `false` for both directions of comparison)
    *  appear in the same order in the sorted sequence as in the original.
    *
-   *  @param  lt  a predicate that is true if
+   *  @param  lt  a predicate that is `true` if
    *              its first argument strictly precedes its second argument in
    *              the desired ordering.
    *  @return     a $coll consisting of the elements of this $coll
@@ -1125,7 +1125,7 @@ object SeqOps {
     }
   }
 
-  /** Make sure a target sequence has fast, correctly-ordered indexing for KMP.
+  /** Makes sure a target sequence has fast, correctly-ordered indexing for KMP.
    *
    *  @param  W    The target sequence
    *  @param  n0   The first element in the target sequence that we should use
@@ -1163,7 +1163,7 @@ object SeqOps {
       }
   }
 
- /** Make a jump table for KMP search.
+ /** Makes a jump table for KMP search.
    *
    *  @param  Wopt The target sequence
    *  @param  wlen Just in case we're only IndexedSeq and not IndexedSeqOptimized

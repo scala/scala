@@ -73,7 +73,7 @@ import scala.runtime.Statics
   */
 trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
 
-  /** Check if there is a next element available.
+  /** Checks if there is a next element available.
     *
     * @return `true` if there is a next element, `false` otherwise
     * @note   Reuse: $preservesIterator
@@ -83,7 +83,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
   @`inline` override final def hasDefiniteSize = isEmpty
 
-  /** Return the next element and advance the iterator.
+  /** Returns the next element and advances the iterator.
     *
     * @throws NoSuchElementException if there is no next element.
     * @return the next element.
@@ -1119,7 +1119,7 @@ object Iterator extends IterableFactory[Iterator] {
     }
   }
 
-  /** Creates an Iterator that uses a function `f` to produce elements of type `A`
+  /** Creates an `Iterator` that uses a function `f` to produce elements of type `A`
     * and update an internal state of type `S`.
     *
     * @param init State initial value
@@ -1127,7 +1127,7 @@ object Iterator extends IterableFactory[Iterator] {
     *             the end of the collection)
     * @tparam A   Type of the elements
     * @tparam S   Type of the internal state
-    * @return an Iterator that produces elements using `f` until `f` returns `None`
+    * @return an `Iterator` that produces elements using `f` until `f` returns `None`
     */
   override def unfold[A, S](init: S)(f: S => Option[(A, S)]): Iterator[A] = new UnfoldIterator(init)(f)
 

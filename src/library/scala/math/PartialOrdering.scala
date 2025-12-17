@@ -50,25 +50,25 @@ trait PartialOrdering[T] extends Equiv[T] {
    */
   def tryCompare(x: T, y: T): Option[Int]
 
-  /** Returns `'''true'''` iff `x` comes before `y` in the ordering.
+  /** Returns `true` iff `x` comes before `y` in the ordering.
    */
   def lteq(x: T, y: T): Boolean
 
-  /** Returns `'''true'''` iff `y` comes before `x` in the ordering.
+  /** Returns `true` iff `y` comes before `x` in the ordering.
    */
   def gteq(x: T, y: T): Boolean = lteq(y, x)
 
-  /** Returns `'''true'''` iff `x` comes before `y` in the ordering
+  /** Returns `true` iff `x` comes before `y` in the ordering
    *  and is not the same as `y`.
    */
   def lt(x: T, y: T): Boolean = lteq(x, y) && !equiv(x, y)
 
-  /** Returns `'''true'''` iff `y` comes before `x` in the ordering
+  /** Returns `true` iff `y` comes before `x` in the ordering
    *  and is not the same as `x`.
    */
   def gt(x: T, y: T): Boolean = gteq(x, y) && !equiv(x, y)
 
-  /** Returns `'''true'''` iff `x` is equivalent to `y` in the ordering.
+  /** Returns `true` iff `x` is equivalent to `y` in the ordering.
    */
   def equiv(x: T, y: T): Boolean = lteq(x,y) && lteq(y,x)
 

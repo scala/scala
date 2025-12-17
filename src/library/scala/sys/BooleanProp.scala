@@ -18,17 +18,17 @@ import scala.language.implicitConversions
 /** A few additional conveniences for Boolean properties.
  */
 trait BooleanProp extends Prop[Boolean] {
-  /** The semantics of value are determined at Prop creation.  See methods
-   *  `valueIsTrue` and `keyExists` in object BooleanProp for examples.
+  /** The semantics of `value` are determined at `Prop` creation.  See methods
+   *  `valueIsTrue` and `keyExists` in object `BooleanProp` for examples.
    *
-   *  @return   true if the current String is considered true, false otherwise
+   *  @return   `true` if the current `String` is considered `true`, `false` otherwise
    */
   def value: Boolean
 
-  /** Alter this property so that `value` will be true. */
+  /** Alter this property so that `value` will be `true`. */
   def enable(): Unit
 
-  /** Alter this property so that `value` will be false. */
+  /** Alter this property so that `value` will be `false`. */
   def disable(): Unit
 
   /** Toggle the property between enabled and disabled states. */
@@ -64,23 +64,23 @@ object BooleanProp {
   }
 
   /** The java definition of property truth is that the key be in the map and
-   *  the value be equal to the String "true", case insensitively.  This method
-   *  creates a BooleanProp instance which adheres to that definition.
+   *  the value be equal to the `String` "true", case insensitively.  This method
+   *  creates a `BooleanProp` instance which adheres to that definition.
    *
-   *  @return   A BooleanProp which acts like java's Boolean.getBoolean
+   *  @return   A `BooleanProp` which acts like java's `Boolean.getBoolean`
    */
   def valueIsTrue[T](key: String): BooleanProp = new BooleanPropImpl(key, _.toLowerCase == "true")
 
-  /** As an alternative, this method creates a BooleanProp which is true
+  /** As an alternative, this method creates a `BooleanProp` which is `true`
    *  if the key exists in the map and is not assigned a value other than "true",
-   *  compared case-insensitively, or the empty string.  This way -Dmy.property
-   *  results in a true-valued property, but -Dmy.property=false does not.
+   *  compared case-insensitively, or the empty string.  This way `-Dmy.property`
+   *  results in a `true`-valued property, but `-Dmy.property=false` does not.
    *
-   *  @return   A BooleanProp with a liberal truth policy
+   *  @return   A `BooleanProp` with a liberal truth policy
    */
   def keyExists[T](key: String): BooleanProp = new BooleanPropImpl(key, s => s == "" || s.equalsIgnoreCase("true"))
 
-  /** A constant true or false property which ignores all method calls.
+  /** A constant `true` or `false` property which ignores all method calls.
    */
   def constant(key: String, isOn: Boolean): BooleanProp = new ConstantImpl(key, isOn)
 

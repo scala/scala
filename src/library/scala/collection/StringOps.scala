@@ -64,7 +64,7 @@ object StringOps {
   /** A lazy filtered string. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter(p: Char => Boolean, s: String) {
 
-    /** Apply `f` to each element for its side effects.
+    /** Applies `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
       */
     def foreach[U](f: Char => U): Unit = {
@@ -184,7 +184,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   @inline def knownSize: Int = s.length
 
-  /** Get the char at the specified index. */
+  /** Gets the char at the specified index. */
   @inline def apply(i: Int): Char = s.charAt(i)
 
   def sizeCompare(otherSize: Int): Int = Integer.compare(s.length, otherSize)
@@ -265,11 +265,11 @@ final class StringOps(private val s: String) extends AnyVal {
     sb.toString
   }
 
-  /** Builds a new String by applying a partial function to all chars of this String
+  /** Builds a new `String` by applying a partial function to all chars of this `String`
     * on which the function is defined.
     *
-    *  @param pf     the partial function which filters and maps the String.
-    *  @return       a new String resulting from applying the given partial function
+    *  @param pf     the partial function which filters and maps the `String`.
+    *  @return       a new `String` resulting from applying the given partial function
     *                `pf` to each char on which it is defined and collecting the results.
     */
   def collect(pf: PartialFunction[Char, Char]): String = {
@@ -284,10 +284,10 @@ final class StringOps(private val s: String) extends AnyVal {
     b.result()
   }
 
-  /** Builds a new collection by applying a partial function to all chars of this String
+  /** Builds a new collection by applying a partial function to all chars of this `String`
     * on which the function is defined.
     *
-    *  @param pf     the partial function which filters and maps the String.
+    *  @param pf     the partial function which filters and maps the `String`.
     *  @tparam B     the element type of the returned collection.
     *  @return       a new collection resulting from applying the given partial function
     *                `pf` to each char on which it is defined and collecting the results.
@@ -642,7 +642,7 @@ final class StringOps(private val s: String) extends AnyVal {
   }
 
   // Note: String.repeat is added in JDK 11.
-  /** Return the current string concatenated `n` times.
+  /** Returns the current string concatenated `n` times.
    */
   def *(n: Int): String =
     if (n <= 0) {
@@ -675,7 +675,7 @@ final class StringOps(private val s: String) extends AnyVal {
       }
     }
 
-  /** Return an iterator of all lines embedded in this string,
+  /** Returns an iterator of all lines embedded in this string,
    *  including trailing line separator characters.
    *
    *  The empty string yields an empty iterator.
@@ -710,7 +710,7 @@ final class StringOps(private val s: String) extends AnyVal {
     }
   }
 
-  /** Return all lines in this string in an iterator, excluding trailing line
+  /** Returns all lines in this string in an iterator, excluding trailing line
     *  end characters; i.e., apply `.stripLineEnd` to all lines
     *  returned by `linesWithSeparators`.
     */
@@ -781,7 +781,7 @@ final class StringOps(private val s: String) extends AnyVal {
       (ch >= '0' && ch <= '9')) ch.toString
   else "\\" + ch
 
-  /** Split this string around the separator character
+  /** Splits this string around the separator character
     *
     * If this string is the empty string, returns an array of strings
     * that contains a single empty string.
@@ -866,7 +866,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toBoolean: Boolean               = toBooleanImpl(s)
 
   /**
-   * Try to parse as a `Boolean`
+   * Try to parse as a `Boolean`.
    * @return `Some(true)` if the string is "true" case insensitive,
    * `Some(false)` if the string is "false" case insensitive,
    * and `None` if the string is anything else
@@ -881,7 +881,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toByte: Byte                     = java.lang.Byte.parseByte(s)
 
   /**
-   * Try to parse as a `Byte`
+   * Try to parse as a `Byte`.
    * @return `Some(value)` if the string contains a valid byte value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
@@ -894,7 +894,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toShort: Short                   = java.lang.Short.parseShort(s)
 
   /**
-   * Try to parse as a `Short`
+   * Try to parse as a `Short`.
    * @return `Some(value)` if the string contains a valid short value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
@@ -907,7 +907,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toInt: Int                       = java.lang.Integer.parseInt(s)
 
   /**
-   * Try to parse as an `Int`
+   * Try to parse as an `Int`.
    * @return `Some(value)` if the string contains a valid Int value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
@@ -920,7 +920,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toLong: Long                     = java.lang.Long.parseLong(s)
 
   /**
-   * Try to parse as a `Long`
+   * Try to parse as a `Long`.
    * @return `Some(value)` if the string contains a valid long value, otherwise `None`
    * @throws java.lang.NullPointerException if the string is `null`
    */
@@ -929,28 +929,28 @@ final class StringOps(private val s: String) extends AnyVal {
   /**
     * Parse as a `Float` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Float`.
-    * @throws java.lang.NullPointerException  If the string is null.
+    * @throws java.lang.NullPointerException  If the string is `null`.
     */
   def toFloat: Float                   = java.lang.Float.parseFloat(s)
 
   /**
-   * Try to parse as a `Float`
+   * Try to parse as a `Float`.
    * @return `Some(value)` if the string is a parsable `Float`, `None` otherwise
-   * @throws java.lang.NullPointerException If the string is null
+   * @throws java.lang.NullPointerException If the string is `null`
    */
   def toFloatOption: Option[Float]     = StringParsers.parseFloat(s)
 
   /**
     * Parse as a `Double` (surrounding whitespace is removed with a `trim`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Double`.
-    * @throws java.lang.NullPointerException  If the string is null.
+    * @throws java.lang.NullPointerException  If the string is `null`.
     */
   def toDouble: Double                 = java.lang.Double.parseDouble(s)
 
   /**
-   * Try to parse as a `Double`
+   * Try to parse as a `Double`.
    * @return `Some(value)` if the string is a parsable `Double`, `None` otherwise
-   * @throws java.lang.NullPointerException If the string is null
+   * @throws java.lang.NullPointerException If the string is `null`
    */
   def toDoubleOption: Option[Double]   = StringParsers.parseDouble(s)
 
@@ -1028,7 +1028,7 @@ final class StringOps(private val s: String) extends AnyVal {
     res
   }
 
-  /** Apply `f` to each element for its side effects.
+  /** Applies `f` to each element for its side effects.
     * Note: [U] parameter needed to help scalac's type inference.
     */
   def foreach[U](f: Char => U): Unit = {
@@ -1516,7 +1516,7 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def distinctBy[B](f: Char => B): String = new WrappedString(s).distinctBy(f).unwrap
 
-  /** Sorts the characters of this string according to an Ordering.
+  /** Sorts the characters of this string according to an `Ordering`.
     *
     *  The sort is stable. That is, elements that are equal (as determined by
     *  `ord.compare`) appear in the same order in the sorted sequence as in the original.

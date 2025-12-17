@@ -55,7 +55,7 @@ sealed abstract class ArraySeq[T]
     * or subtype of the element type. */
   def elemTag: ClassTag[_]
 
-  /** Update element at given index */
+  /** Updates element at given index */
   def update(@deprecatedName("idx", "2.13.0") index: Int, elem: T): Unit
 
   /** The underlying array. Its element type does not have to be equal to the element type of this ArraySeq. A primitive
@@ -109,7 +109,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   def newBuilder[A : ClassTag]: Builder[A, ArraySeq[A]] = ArrayBuilder.make[A].mapResult(make)
 
   /**
-   * Wrap an existing `Array` into a `ArraySeq` of the proper primitive specialization type
+   * Wraps an existing `Array` into a `ArraySeq` of the proper primitive specialization type
    * without copying.
    *
    * Note that an array containing boxed primitives can be converted to a `ArraySeq` without

@@ -16,7 +16,7 @@ package mutable
 
 
 /**
-  * Reusable builder for immutable collections
+  * Reusable builder for immutable collections.
   */
 abstract class ImmutableBuilder[-A, C <: IterableOnce[_]](empty: C)
   extends ReusableBuilder[A, C] {

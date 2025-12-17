@@ -95,17 +95,17 @@ object TailCalls {
    *  computation. */
   protected case class Done[A](value: A) extends TailRec[A]
 
-  /** Internal class representing a continuation with function A => TailRec[B].
-   *  It is needed for the flatMap to be implemented. */
+  /** Internal class representing a continuation with function `A => TailRec[B]`.
+   *  It is needed for the `flatMap` to be implemented. */
   protected case class Cont[A, B](a: TailRec[A], f: A => TailRec[B]) extends TailRec[B]
 
-  /** Perform a tailcall.
+  /** Performs a tailcall.
    *  @param rest  the expression to be evaluated in the tailcall
    *  @return a `TailRec` object representing the expression `rest`
    */
   def tailcall[A](rest: => TailRec[A]): TailRec[A] = Call(() => rest)
 
-  /** Return the final result from a tailcalling computation.
+  /** Returns the final result from a tailcalling computation.
    *  @param  `result` the result value
    *  @return a `TailRec` object representing a computation which immediately
    *          returns `result`

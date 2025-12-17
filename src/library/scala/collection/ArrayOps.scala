@@ -63,7 +63,7 @@ object ArrayOps {
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter[A](p: A => Boolean, xs: Array[A]) {
 
-    /** Apply `f` to each element for its side effects.
+    /** Applies `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
       */
     def foreach[U](f: A => U): Unit = {
@@ -575,7 +575,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     */
   def filterNot(p: A => Boolean): Array[A] = filter(x => !p(x))
 
-  /** Sorts this array according to an Ordering.
+  /** Sorts this array according to an `Ordering`.
     *
     *  The sort is stable. That is, elements that are equal (as determined by
     *  `lt`) appear in the same order in the sorted sequence as in the original.
@@ -1314,7 +1314,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     }
   }
 
-  /** Apply `f` to each element for its side effects.
+  /** Applies `f` to each element for its side effects.
     * Note: [U] parameter needed to help scalac's type inference.
     */
   def foreach[U](f: A => U): Unit = {
@@ -1476,7 +1476,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     copied
   }
 
-  /** Create a copy of this array with the specified element type. */
+  /** Creates a copy of this array with the specified element type. */
   def toArray[B >: A: ClassTag]: Array[B] = {
     val destination = new Array[B](xs.length)
     @annotation.unused val copied = copyToArray(destination, 0)

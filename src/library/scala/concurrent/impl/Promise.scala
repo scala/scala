@@ -23,7 +23,7 @@ import java.util.Objects.requireNonNull
 import java.io.{IOException, NotSerializableException, ObjectInputStream, ObjectOutputStream}
 
 /**
-  * Latch used to implement waiting on a DefaultPromise's result.
+  * Latch used to implement waiting on a `DefaultPromise`'s result.
   *
   * Inspired by: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/locks/AbstractQueuedSynchronizer.java
   * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -47,20 +47,20 @@ private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer 
 
 private[concurrent] object Promise {
   /**
-   * Link represents a completion dependency between 2 DefaultPromises.
-   * As the DefaultPromise referred to by a Link can itself be linked to another promise
+   * `Link` represents a completion dependency between 2 `DefaultPromise`s.
+   * As the `DefaultPromise` referred to by a `Link` can itself be linked to another promise
    * `relink` traverses such chains and compresses them so that the link always points
    * to the root of the dependency chain.
    *
-   * In order to conserve memory, the owner of a Link (a DefaultPromise) is not stored
-   * on the Link, but is instead passed in as a parameter to the operation(s).
+   * In order to conserve memory, the owner of a `Link` (a `DefaultPromise`) is not stored
+   * on the `Link`, but is instead passed in as a parameter to the operation(s).
    *
-   * If when compressing a chain of Links it is discovered that the root has been completed,
-   * the `owner`'s value is completed with that value, and the Link chain is discarded.
+   * If when compressing a chain of `Link`s it is discovered that the root has been completed,
+   * the `owner`'s value is completed with that value, and the `Link` chain is discarded.
    **/
   private[concurrent] final class Link[T](to: DefaultPromise[T]) extends AtomicReference[DefaultPromise[T]](to) {
     /**
-     * Compresses this chain and returns the currently known root of this chain of Links.
+     * Compresses this chain and returns the currently known root of this chain of `Link`s.
      **/
     final def promise(owner: DefaultPromise[T]): DefaultPromise[T] = {
       val c = get()
@@ -68,7 +68,7 @@ private[concurrent] object Promise {
     }
 
     /**
-     * The combination of traversing and possibly unlinking of a given `target` DefaultPromise.
+     * The combination of traversing and possibly unlinking of a given `target` `DefaultPromise`.
      **/
     @inline @tailrec private[this] final def compressed(current: DefaultPromise[T], target: DefaultPromise[T], owner: DefaultPromise[T]): DefaultPromise[T] = {
       val value = target.get()
@@ -84,8 +84,8 @@ private[concurrent] object Promise {
   }
 
   /**
-   * The process of "resolving" a Try is to validate that it only contains
-   * those values which makes sense in the context of Futures.
+   * The process of "resolving" a `Try` is to validate that it only contains
+   * those values which makes sense in the context of `Future`s.
    **/
   // requireNonNull is paramount to guard against null completions
   private[this] final def resolve[T](value: Try[T]): Try[T] =

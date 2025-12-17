@@ -58,7 +58,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
     case _                => false
   }
   /** Note: testing for erasure here is important, as it is many times
-   *  faster than <:< and rules out most comparisons.
+   *  faster than `<:<` and rules out most comparisons.
    */
   override def equals(that: Any): Boolean = that match {
     case m: Manifest[_] => (m canEqual this) && (this.runtimeClass == m.runtimeClass) && (this <:< m) && (m <:< this)
@@ -99,26 +99,26 @@ object Manifest {
   val Null: Manifest[scala.Null] = ManifestFactory.Null
   val Nothing: Manifest[scala.Nothing] = ManifestFactory.Nothing
 
-  /** Manifest for the singleton type `value.type`. */
+  /** `Manifest` for the singleton type `value.type`. */
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] =
     ManifestFactory.singleType[T](value)
 
-  /** Manifest for the class type `clazz[args]`, where `clazz` is
+  /** `Manifest` for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class.
     * @note This no-prefix, no-arguments case is separate because we
-    *       it's called from ScalaRunTime.boxArray itself. If we
+    *       it's called from `ScalaRunTime.boxArray` itself. If we
     *       pass varargs as arrays into this, we get an infinitely recursive call
-    *       to boxArray. (Besides, having a separate case is more efficient)
+    *       to `boxArray`. (Besides, having a separate case is more efficient)
     */
   def classType[T](clazz: Predef.Class[_]): Manifest[T] =
     ManifestFactory.classType[T](clazz)
 
-  /** Manifest for the class type `clazz`, where `clazz` is
+  /** `Manifest` for the class type `clazz`, where `clazz` is
     * a top-level or static class and args are its type arguments. */
   def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] =
     ManifestFactory.classType[T](clazz, arg1, args: _*)
 
-  /** Manifest for the class type `clazz[args]`, where `clazz` is
+  /** `Manifest` for the class type `clazz[args]`, where `clazz` is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
@@ -127,17 +127,17 @@ object Manifest {
   def arrayType[T](arg: Manifest[_]): Manifest[Array[T]] =
     ManifestFactory.arrayType[T](arg)
 
-  /** Manifest for the abstract type `prefix # name`. `upperBound` is not
+  /** `Manifest` for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     ManifestFactory.abstractType[T](prefix, name, upperBound, args: _*)
 
-  /** Manifest for the unknown type `_ >: L <: U` in an existential. */
+  /** `Manifest` for the unknown type `_ >: L <: U` in an existential. */
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     ManifestFactory.wildcardType[T](lowerBound, upperBound)
 
-  /** Manifest for the intersection type `parents_0 with ... with parents_n`. */
+  /** `Manifest` for the intersection type `parents_0 with ... with parents_n`. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     ManifestFactory.intersectionType[T](parents: _*)
 
@@ -372,26 +372,26 @@ object ManifestFactory {
     override lazy val toString = value.toString + ".type"
   }
 
-  /** Manifest for the singleton type `value.type`. */
+  /** `Manifest` for the singleton type `value.type`. */
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] =
     new SingletonTypeManifest[T](value)
 
-  /** Manifest for the class type `clazz[args]`, where `clazz` is
+  /** `Manifest` for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class.
     * @note This no-prefix, no-arguments case is separate because we
-    *       it's called from ScalaRunTime.boxArray itself. If we
+    *       it's called from `ScalaRunTime.boxArray` itself. If we
     *       pass varargs as arrays into this, we get an infinitely recursive call
-    *       to boxArray. (Besides, having a separate case is more efficient)
+    *       to `boxArray`. (Besides, having a separate case is more efficient)
     */
   def classType[T](clazz: Predef.Class[_]): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
-  /** Manifest for the class type `clazz`, where `clazz` is
+  /** `Manifest` for the class type `clazz`, where `clazz` is
     * a top-level or static class and args are its type arguments. */
   def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
-  /** Manifest for the class type `clazz[args]`, where `clazz` is
+  /** `Manifest` for the class type `clazz[args]`, where `clazz` is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
@@ -405,7 +405,7 @@ object ManifestFactory {
     override val hashCode = System.identityHashCode(this)
   }
 
-  /** Manifest for the class type `clazz[args]`, where `clazz` is
+  /** `Manifest` for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class. */
   @SerialVersionUID(1L)
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
@@ -427,7 +427,7 @@ object ManifestFactory {
     override def toString = prefix.toString+"#"+name+argString
   }
 
-  /** Manifest for the abstract type `prefix # name`. `upperBound` is not
+  /** `Manifest` for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
@@ -442,7 +442,7 @@ object ManifestFactory {
         (if (upperBound eq Nothing) "" else " <: "+upperBound)
   }
 
-  /** Manifest for the unknown type `_ >: L <: U` in an existential.
+  /** `Manifest` for the unknown type `_ >: L <: U` in an existential.
     */
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new WildcardManifest[T](lowerBound, upperBound)
@@ -455,7 +455,7 @@ object ManifestFactory {
     override def toString = parents.mkString(" with ")
   }
 
-  /** Manifest for the intersection type `parents_0 with ... with parents_n`. */
+  /** `Manifest` for the intersection type `parents_0 with ... with parents_n`. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new IntersectionTypeManifest[T](parents.toArray)
 }

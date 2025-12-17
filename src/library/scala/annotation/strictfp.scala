@@ -13,7 +13,7 @@
 package scala.annotation
 
 /** If this annotation is present on a method or its enclosing class,
- *  the strictfp flag will be emitted.
+ *  the `strictfp` flag will be emitted.
  */
 @deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class strictfp extends scala.annotation.StaticAnnotation

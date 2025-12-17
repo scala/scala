@@ -29,7 +29,7 @@ protected[collection] object Hashing {
     improve(elemHashCode(key))
 
   /**
-    * Utility method to keep a subset of all bits in a given bitmap
+    * Utility method to keep a subset of all bits in a given bitmap.
     *
     * Example
     *    bitmap (binary): 00000001000000010000000100000001

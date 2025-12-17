@@ -63,7 +63,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def knownSize: Int = super[IndexedSeqOps].knownSize
 
-  /** Ensure that the internal array has at least `n` cells. */
+  /** Ensures that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit = {
     array = ArrayBuffer.ensureSize(array, size0, n)
   }
@@ -75,7 +75,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   def sizeHint(size: Int): Unit =
     if(size > length && size >= 1) ensureSize(size)
 
-  /** Reduce length to `n`, nulling out all dropped elements */
+  /** Reduces length to `n`, nulling out all dropped elements */
   private def reduceToSize(n: Int): Unit = {
     mutationCount += 1
     Arrays.fill(array, n, size0, null)
@@ -127,7 +127,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   /**
     * Clears this buffer and shrinks to @param size (rounding up to the next
-    * natural size)
+    * natural size).
     * @param size
     */
   def clearAndShrink(size: Int = ArrayBuffer.DefaultInitialSize): this.type = {
@@ -242,7 +242,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     copied
   }
 
-  /** Sorts this $coll in place according to an Ordering.
+  /** Sorts this $coll in place according to an `Ordering`.
     *
     * @see [[scala.collection.mutable.IndexedSeqOps.sortInPlace]]
     * @param  ord the ordering to be used to compare elements.

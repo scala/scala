@@ -19,7 +19,7 @@ import scala.annotation.nowarn
  *  The function [[isDefinedAt]] allows to test dynamically if a value is in
  *  the domain of the function.
  *
- *  Even if `isDefinedAt` returns true for an `a: A`, calling `apply(a)` may
+ *  Even if `isDefinedAt` returns `true` for an `a: A`, calling `apply(a)` may
  *  still throw an exception, so the following code is legal:
  *
  *  {{{
@@ -27,7 +27,7 @@ import scala.annotation.nowarn
  *  }}}
  *
  *  It is the responsibility of the caller to call `isDefinedAt` before
- *  calling `apply`, because if `isDefinedAt` is false, it is not guaranteed
+ *  calling `apply`, because if `isDefinedAt` is `false`, it is not guaranteed
  *  `apply` will throw an exception to indicate an error condition. If an
  *  exception is not thrown, evaluation may result in an arbitrary value.
  *
@@ -268,7 +268,7 @@ object PartialFunction {
     }
   }
 
-  /** Composite function produced by `PartialFunction#orElse` method
+  /** Composite function produced by `PartialFunction#orElse` method.
    */
   private class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B])
     extends scala.runtime.AbstractPartialFunction[A, B] with Serializable {
@@ -288,7 +288,7 @@ object PartialFunction {
       new OrElse[A, C] (f1 andThen k, f2 andThen k)
   }
 
-  /** Composite function produced by `PartialFunction#andThen` method
+  /** Composite function produced by `PartialFunction#andThen` method.
    */
   private class AndThen[-A, B, +C] (pf: PartialFunction[A, B], k: B => C) extends PartialFunction[A, C] with Serializable {
     def isDefinedAt(x: A) = pf.isDefinedAt(x)
@@ -301,7 +301,7 @@ object PartialFunction {
     }
   }
 
-  /** Composite function produced by `PartialFunction#andThen` method
+  /** Composite function produced by `PartialFunction#andThen` method.
     */
   private class Combined[-A, B, +C] (pf: PartialFunction[A, B], k: PartialFunction[B, C]) extends PartialFunction[A, C] with Serializable {
     def isDefinedAt(x: A): Boolean = {
@@ -390,18 +390,18 @@ object PartialFunction {
   def empty[A, B] : PartialFunction[A, B] = empty_pf
 
   /** A Boolean test that is the result of the given function where defined,
-   *  and false otherwise.
+   *  and `false` otherwise.
    *
    *  It behaves like a `case _ => false` were added to the partial function.
    *
    *  @param  x   the value to test
    *  @param  pf  the partial function
-   *  @return true, iff `x` is in the domain of `pf` and `pf(x) == true`.
+   *  @return `true`, iff `x` is in the domain of `pf` and `pf(x) == true`.
    */
   def cond[A](x: A)(pf: PartialFunction[A, Boolean]): Boolean = pf.applyOrElse(x, constFalse)
 
-  /** Apply the function to the given value if defined, and return the result
-   *  in a `Some`; otherwise, return `None`.
+  /** Applies the function to the given value if defined, and returns the result
+   *  in a `Some`; otherwise, returns `None`.
    *
    *  @param  x     the value to test
    *  @param  pf    the PartialFunction[T, U]

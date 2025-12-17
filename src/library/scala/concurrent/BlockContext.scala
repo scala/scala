@@ -96,7 +96,7 @@ object BlockContext {
   }
 
   /**
-   * Installs the BlockContext `blockContext` around the invocation to `f` and passes in the previously installed BlockContext to `f`.
+   * Installs the `BlockContext` `blockContext` around the invocation to `f` and passes in the previously installed `BlockContext` to `f`.
    * @return the value produced by applying `f`
    **/
   final def usingBlockContext[I, T](blockContext: BlockContext)(f: BlockContext => T): T = {

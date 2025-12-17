@@ -115,7 +115,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
       case _ => super.toArray
     }
 
-  /** Returns the contents of this StringBuilder as an `Array[Char]`.
+  /** Returns the contents of this `StringBuilder` as an `Array[Char]`.
    *
    *  @return  An array with the characters from this builder.
    */
@@ -134,30 +134,30 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   }
 
   /** Appends the string representation of the given argument,
-    *  which is converted to a String with `String.valueOf`.
+    *  which is converted to a `String` with `String.valueOf`.
     *
     *  @param  x   an `Any` object.
-    *  @return     this StringBuilder.
+    *  @return     this `StringBuilder`.
     */
   def append(x: Any): this.type = {
     underlying append String.valueOf(x)
     this
   }
 
-  /** Appends the given String to this sequence.
+  /** Appends the given `String` to this sequence.
     *
-    *  @param  s   a String.
-    *  @return     this StringBuilder.
+    *  @param  s   a `String`.
+    *  @return     this `StringBuilder`.
     */
   def append(s: String): this.type = {
     underlying append s
     this
   }
 
-  /** Appends the given CharSequence to this sequence.
+  /** Appends the given `CharSequence` to this sequence.
     *
-    *  @param  cs   a CharSequence.
-    *  @return     this StringBuilder.
+    *  @param  cs   a `CharSequence`.
+    *  @return     this `StringBuilder`.
     */
   def append(cs: java.lang.CharSequence): this.type = {
     underlying.append(cs match {
@@ -179,10 +179,10 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Appends all the Chars in the given IterableOnce[Char] to this sequence.
+  /** Appends all the `Char`s in the given `IterableOnce[Char]` to this sequence.
     *
     *  @param  xs  the characters to be appended.
-    *  @return     this StringBuilder.
+    *  @return     this `StringBuilder`.
     */
   def appendAll(xs: IterableOnce[Char]): this.type = {
     xs match {
@@ -201,7 +201,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Appends all the Chars in the given Array[Char] to this sequence.
+  /** Appends all the `Char`s in the given `Array[Char]` to this sequence.
     *
     *  @param  xs  the characters to be appended.
     *  @return     a reference to this object.
@@ -211,24 +211,24 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Appends a portion of the given Array[Char] to this sequence.
+  /** Appends a portion of the given `Array[Char]` to this sequence.
     *
-    *  @param  xs      the Array containing Chars to be appended.
-    *  @param  offset  the index of the first Char to append.
-    *  @param  len     the numbers of Chars to append.
-    *  @return         this StringBuilder.
+    *  @param  xs      the `Array` containing `Char`s to be appended.
+    *  @param  offset  the index of the first `Char` to append.
+    *  @param  len     the numbers of `Char`s to append.
+    *  @return         this `StringBuilder`.
     */
   def appendAll(xs: Array[Char], offset: Int, len: Int): this.type = {
     underlying.append(xs, offset, len)
     this
   }
 
-  /** Append the String representation of the given primitive type
-    *  to this sequence.  The argument is converted to a String with
-    *  String.valueOf.
+  /** Appends the `String` representation of the given primitive type
+    *  to this sequence.  The argument is converted to a `String` with
+    *  `String.valueOf`.
     *
     *  @param   x  a primitive value
-    *  @return     This StringBuilder.
+    *  @return     this `StringBuilder`.
     */
   def append(x: Boolean): this.type = { underlying append x ; this }
   def append(x: Byte): this.type = append(x.toInt)
@@ -239,7 +239,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   def append(x: Double): this.type = { underlying append x ; this }
   def append(x: Char): this.type = { underlying append x ; this }
 
-  /** Remove a subsequence of Chars from this sequence, starting at the
+  /** Removes a subsequence of Chars from this sequence, starting at the
     *  given start index (inclusive) and extending to the end index (exclusive)
     *  or to the end of the String, whichever comes first.
     *
@@ -253,13 +253,13 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Replaces a subsequence of Chars with the given String.  The semantics
-    *  are as in delete, with the String argument then inserted at index 'start'.
+  /** Replaces a subsequence of `Char`s with the given `String`.  The semantics
+    *  are as in delete, with the `String` argument then inserted at index `start`.
     *
     *  @param  start  The beginning index, inclusive.
     *  @param  end    The ending index, exclusive.
-    *  @param  str    The String to be inserted at the start index.
-    *  @return        This StringBuilder.
+    *  @param  str    The `String` to be inserted at the start index.
+    *  @return        this `StringBuilder`.
     *  @throws StringIndexOutOfBoundsException if start < 0, start > length, or start > end
     */
   def replace(start: Int, end: Int, str: String): this.type = {
@@ -267,14 +267,14 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Inserts a subarray of the given Array[Char] at the given index
+  /** Inserts a subarray of the given `Array[Char]` at the given index
     *  of this sequence.
     *
     * @param  index   index at which to insert the subarray.
-    * @param  str     the Array from which Chars will be taken.
-    * @param  offset  the index of the first Char to insert.
-    * @param  len     the number of Chars from 'str' to insert.
-    * @return         This StringBuilder.
+    * @param  str     the `Array` from which `Char`s will be taken.
+    * @param  offset  the index of the first `Char` to insert.
+    * @param  len     the number of `Char`s from `str` to insert.
+    * @return         this `StringBuilder`.
     *
     * @throws StringIndexOutOfBoundsException  if index < 0, index > length,
     *         offset < 0, len < 0, or (offset + len) > str.length.
@@ -284,21 +284,21 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Inserts the String representation (via String.valueOf) of the given
+  /** Inserts the `String` representation (via `String.valueOf`) of the given
     *  argument into this sequence at the given index.
     *
     *  @param  index   the index at which to insert.
     *  @param  x       a value.
-    *  @return         this StringBuilder.
+    *  @return         this `StringBuilder`.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insert(index: Int, x: Any): this.type = insert(index, String.valueOf(x))
 
-  /** Inserts the String into this character sequence.
+  /** Inserts the `String` into this character sequence.
     *
     *  @param  index the index at which to insert.
-    *  @param  x     a String.
-    *  @return       this StringBuilder.
+    *  @param  x     a `String`.
+    *  @return       this `StringBuilder`.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insert(index: Int, x: String): this.type = {
@@ -306,21 +306,21 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Inserts the given Seq[Char] into this sequence at the given index.
+  /** Inserts the given `Seq[Char]` into this sequence at the given index.
     *
     *  @param  index the index at which to insert.
-    *  @param  xs    the Seq[Char].
-    *  @return       this StringBuilder.
+    *  @param  xs    the `Seq[Char]`.
+    *  @return       this `StringBuilder`.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insertAll(index: Int, xs: IterableOnce[Char]): this.type =
     insertAll(index, (ArrayBuilder.make[Char] ++= xs).result())
 
-  /** Inserts the given Array[Char] into this sequence at the given index.
+  /** Inserts the given `Array[Char]` into this sequence at the given index.
     *
     *  @param  index the index at which to insert.
-    *  @param  xs    the Array[Char].
-    *  @return       this StringBuilder.
+    *  @param  xs    the `Array[Char]`.
+    *  @return       this `StringBuilder`.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insertAll(index: Int, xs: Array[Char]): this.type = {
@@ -328,12 +328,12 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Calls String.valueOf on the given primitive value, and inserts the
-    *  String at the given index.
+  /** Calls `String.valueOf` on the given primitive value, and inserts the
+    *  `String` at the given index.
     *
     *  @param  index the offset position.
     *  @param  x     a primitive value.
-    *  @return       this StringBuilder.
+    *  @return       this `StringBuilder`.
     */
   def insert(index: Int, x: Boolean): this.type = insert(index, String.valueOf(x))
   def insert(index: Int, x: Byte): this.type    = insert(index, x.toInt)
@@ -380,7 +380,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    */
   def capacity: Int = underlying.capacity
 
-  /** Ensure that the capacity is at least the given argument.
+  /** Ensures that the capacity is at least the given argument.
    *  If the argument is greater than the current capacity, new
    *  storage will be allocated with size equal to the given
    *  argument or to `(2 * capacity + 2)`, whichever is larger.
@@ -409,7 +409,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
-  /** Update the sequence at the given index to hold the specified Char.
+  /** Updates the sequence at the given index to hold the specified Char.
    *
    *  @param  index   the index to modify.
    *  @param  ch      the new Char.
@@ -439,7 +439,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    *
    *  @param  start  The beginning index, inclusive.
    *  @param  end    The ending index, exclusive.
-   *  @return The new String.
+   *  @return The new `String`.
    *  @throws StringIndexOutOfBoundsException If either index is out of bounds,
    *          or if start > end.
    */

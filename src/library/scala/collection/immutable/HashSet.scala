@@ -533,7 +533,7 @@ private final class BitmapIndexedSetNode[A](
     * @param shallowlyMutableNodeMap bitmap of child nodes of this node, which can be shallowly mutated
     *                                during the call to this method
     *
-    * @return Int which is the bitwise OR of shallowlyMutableNodeMap and any freshly created nodes, which will be
+    * @return `Int` which is the bitwise OR of `shallowlyMutableNodeMap` and any freshly created nodes, which will be
     *         available for mutations in subsequent calls.
     */
   def updateWithShallowMutations(element: A, originalHash: Int, elementHash: Int, shift: Int, shallowlyMutableNodeMap: Int): Int = {
@@ -1752,7 +1752,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
     }
 
   /**
-    * Remove an element from the hash collision node.
+    * Removes an element from the hash collision node.
     *
     * When after deletion only one element remains, we return a bit-mapped indexed node with a
     * singleton element and a hash-prefix for trie level 0. This node will be then a) either become
@@ -1943,7 +1943,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => (newBuilder[A] ++= source).result()
     }
 
-  /** Create a new Builder which can be reused after calling `result()` without an
+  /** Creates a new Builder which can be reused after calling `result()` without an
     * intermediate call to `clear()` in order to build multiple related results.
     */
   def newBuilder[A]: ReusableBuilder[A, HashSet[A]] = new HashSetBuilder

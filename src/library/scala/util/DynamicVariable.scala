@@ -19,7 +19,7 @@ import java.lang.InheritableThreadLocal
  *  value is found through dynamic scope, but where access to the
  *  variable itself is resolved through static scope.
  *
- *  The current value can be retrieved with the value method. New values
+ *  The current value can be retrieved with the `value` method. New values
  *  should be pushed using the `withValue` method. Values pushed via
  *  `withValue` only stay valid while the `withValue`'s second argument, a
  *  parameterless closure, executes. When the second argument finishes,
@@ -43,10 +43,10 @@ class DynamicVariable[T](init: T) {
     override def initialValue: T with AnyRef = init.asInstanceOf[T with AnyRef]
   }
 
-  /** Retrieve the current value */
+  /** Retrieves the current value */
   def value: T = tl.get.asInstanceOf[T]
 
-  /** Set the value of the variable while executing the specified
+  /** Sets the value of the variable while executing the specified
     * thunk.
     *
     * @param newval The value to which to set the variable
@@ -60,8 +60,8 @@ class DynamicVariable[T](init: T) {
     finally tl set oldval
   }
 
-  /** Change the currently bound value, discarding the old value.
-    * Usually withValue() gives better semantics.
+  /** Changes the currently bound value, discarding the old value.
+    * Usually `withValue()` gives better semantics.
     */
   def value_=(newval: T) = tl set newval
 

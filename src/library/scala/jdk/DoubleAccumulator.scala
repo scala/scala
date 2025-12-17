@@ -22,7 +22,7 @@ import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.implicitConversions
 
-/** A specialized Accumulator that holds `Double`s without boxing, see [[Accumulator]]. */
+/** A specialized `Accumulator` that holds `Double`s without boxing, see [[Accumulator]]. */
 final class DoubleAccumulator
   extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
     with mutable.SeqOps[Double, AnyAccumulator, DoubleAccumulator]

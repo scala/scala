@@ -38,7 +38,7 @@ trait Factory[-A, +C] extends Any {
     */
   def fromSpecific(it: IterableOnce[A]): C
 
-  /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
+  /** Gets a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
     * Building collections with `fromSpecific` is preferred because it can be lazy for lazy collections. */
   def newBuilder: Builder[A, C]
 }
@@ -260,7 +260,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
 object IterableFactory {
 
   /**
-    * Fixes the element type of `factory` to `A`
+    * Fixes the element type of `factory` to `A`.
     * @param factory The factory to fix the element type
     * @tparam A Type of elements
     * @tparam CC Collection type constructor of the factory (e.g. `Seq`, `List`)
@@ -384,7 +384,7 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
 trait MapFactory[+CC[_, _]] extends Serializable {
 
   /**
-   * An empty Map
+   * An empty Map.
    */
   def empty[K, V]: CC[K, V]
 
@@ -412,7 +412,7 @@ trait MapFactory[+CC[_, _]] extends Serializable {
 object MapFactory {
 
   /**
-    * Fixes the key and value types of `factory` to `K` and `V`, respectively
+    * Fixes the key and value types of `factory` to `K` and `V`, respectively.
     * @param factory The factory to fix the key and value types
     * @tparam K Type of keys
     * @tparam V Type of values
@@ -505,7 +505,7 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
 object EvidenceIterableFactory {
 
   /**
-    * Fixes the element type of `factory` to `A`
+    * Fixes the element type of `factory` to `A`.
     * @param factory The factory to fix the element type
     * @tparam A Type of elements
     * @tparam CC Collection type constructor of the factory (e.g. `TreeSet`)

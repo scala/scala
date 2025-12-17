@@ -20,36 +20,36 @@ import scala.jdk.CollectionConverters._
  *  world outside of it.
  */
 package object sys {
-  /** Throw a new RuntimeException with the supplied message.
+  /** Throws a new `RuntimeException` with the supplied message.
    *
-   *  @return   Nothing.
+   *  @return   `Nothing`.
    */
   def error(message: String): Nothing = throw new RuntimeException(message)
 
-  /** Exit the JVM with the default status code.
+  /** Exits the JVM with the default status code.
    *
-   *  @return   Nothing.
+   *  @return   `Nothing`.
    */
   def exit(): Nothing = exit(0)
 
-  /** Exit the JVM with the given status code.
+  /** Exits the JVM with the given status code.
    *
-   *  @return   Nothing.
+   *  @return   `Nothing`.
    */
   def exit(status: Int): Nothing = {
     java.lang.System.exit(status)
     throw new Throwable()
   }
 
-  /** A convenience method to get the current Runtime instance.
+  /** A convenience method to get the current `Runtime` instance.
    *
    *  @return   the result of `java.lang.Runtime.getRuntime()`
    */
   def runtime: Runtime = Runtime.getRuntime
 
-  /** A bidirectional, mutable Map representing the current system Properties.
+  /** A bidirectional, mutable `Map` representing the current system properties.
    *
-   *  @return   a SystemProperties.
+   *  @return   a `SystemProperties`.
    *  @see      [[scala.sys.SystemProperties]]
    */
   def props: SystemProperties = new SystemProperties
@@ -57,12 +57,12 @@ package object sys {
   // TODO: consider whether layering a Map on top of Java's properties is really needed -- we could simply provide:
   //  def prop(p: String) = Option(System.getProperty(p))
 
-  /** An immutable Map representing the current system environment.
+  /** An immutable `Map` representing the current system environment.
    *
    *  If lookup fails, use `System.getenv(_)` for case-insensitive lookup
    *  on a certain platform. If that also fails, throw `NoSuchElementException`.
    *
-   *  @return   a Map containing the system environment variables.
+   *  @return   a `Map` containing the system environment variables.
    */
   def env: Map[String, String] = Map.from(System.getenv().asScala).withDefault { v =>
     val s = System.getenv(v)
@@ -70,22 +70,22 @@ package object sys {
     s
   }
 
-  /** Register a shutdown hook to be run when the VM exits.
+  /** Registers a shutdown hook to be run when the VM exits.
    *  The hook is automatically registered: the returned value can be ignored,
-   *  but is available in case the Thread requires further modification.
-   *  It can also be unregistered by calling ShutdownHookThread#remove().
+   *  but is available in case the `Thread` requires further modification.
+   *  It can also be unregistered by calling `ShutdownHookThread#remove()`.
    *
    *  Note that shutdown hooks are NOT guaranteed to be run.
    *
    *  @param    body  the body of code to run at shutdown
-   *  @return   the   Thread which will run the shutdown hook.
+   *  @return   the   `Thread` which will run the shutdown hook.
    *  @see      [[scala.sys.ShutdownHookThread]]
    */
   def addShutdownHook(body: => Unit): ShutdownHookThread = ShutdownHookThread(body)
 
-  /** Returns all active thread in the current thread's thread group and subgroups.
+  /** Returns all active threads in the current thread's thread group and subgroups.
    *
-   *  @return   an IndexedSeq containing the threads.
+   *  @return   an `IndexedSeq` containing the threads.
    */
   def allThreads(): IndexedSeq[Thread] = {
     val num    = Thread.activeCount()

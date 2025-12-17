@@ -12,7 +12,7 @@
 
 package scala.annotation
 
-/** Mark an element unused for a given context.
+/** Marks an element unused for a given context.
  *
  *  Unused warnings are suppressed for elements known to be unused.
  *

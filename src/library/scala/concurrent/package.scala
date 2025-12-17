@@ -20,13 +20,13 @@ import scala.util.Try
  *
  * == Guide ==
  *
- * A more detailed guide to Futures and Promises, including discussion and examples
+ * A more detailed guide to `Future`s and `Promise`s, including discussion and examples
  * can be found at
  * [[https://docs.scala-lang.org/overviews/core/futures.html]].
  *
  * == Common Imports ==
  *
- * When working with Futures, you will often find that importing the whole concurrent
+ * When working with `Future`s, you will often find that importing the whole concurrent
  * package is convenient:
  *
  * {{{
@@ -66,10 +66,10 @@ import scala.util.Try
  *
  * == Using Futures For Non-blocking Computation ==
  *
- * Basic use of futures is easy with the factory method on Future, which executes a
+ * Basic use of futures is easy with the factory method on `Future`, which executes a
  * provided function asynchronously, handing you back a future result of that function
- * without blocking the current thread. In order to create the Future you will need
- * either an implicit or explicit ExecutionContext to be provided:
+ * without blocking the current thread. In order to create the `Future` you will need
+ * either an implicit or explicit `ExecutionContext` to be provided:
  *
  * {{{
  * import scala.concurrent._
@@ -91,7 +91,7 @@ import scala.util.Try
  * }}}
  *
  * and although this is sometimes necessary to do, in particular for testing purposes, blocking
- * in general is discouraged when working with Futures and concurrency in order to avoid
+ * in general is discouraged when working with `Future`s and concurrency in order to avoid
  * potential deadlocks and improve performance. Instead, use callbacks or combinators to
  * remain in the future domain:
  *
@@ -111,7 +111,7 @@ package object concurrent {
   type CancellationException = java.util.concurrent.CancellationException
   type TimeoutException =      java.util.concurrent.TimeoutException
 
-  /** Used to designate a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
+  /** Designates a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
    *  the runtime's behavior.
    *  Properly marking blocking code may improve performance or avoid deadlocks.
    *
@@ -142,14 +142,14 @@ package concurrent {
   /**
    * `Await` is what is used to ensure proper handling of blocking for `Awaitable` instances.
    *
-   * While occasionally useful, e.g. for testing, it is recommended that you avoid Await whenever possible—
+   * While occasionally useful, e.g. for testing, it is recommended that you avoid `Await` whenever possible—
    * instead favoring combinators and/or callbacks.
-   * Await's `result` and `ready` methods will block the calling thread's execution until they return,
+   * `Await`'s `result` and `ready` methods will block the calling thread's execution until they return,
    * which will cause performance degradation, and possibly, deadlock issues.
    */
   object Await {
     /**
-     * Await the "completed" state of an `Awaitable`.
+     * Awaits the "completed" state of an `Awaitable`.
      *
      * Although this method is blocking, the internal use of [[scala.concurrent.blocking blocking]] ensures that
      * the underlying [[ExecutionContext]] is given an opportunity to properly manage the blocking.
@@ -179,7 +179,7 @@ package concurrent {
     }
 
     /**
-     * Await and return the result (of type `T`) of an `Awaitable`.
+     * Awaits and returns the result (of type `T`) of an `Awaitable`.
      *
      * Although this method is blocking, the internal use of [[scala.concurrent.blocking blocking]] ensures that
      * the underlying [[ExecutionContext]] is given an opportunity to properly manage the blocking.

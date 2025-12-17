@@ -51,14 +51,14 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   override protected[this] def stringPrefix = "Stack"
 
   /**
-    * Add elements to the top of this stack
+    * Adds elements to the top of this stack.
     *
     * @param elem
     * @return
     */
   def push(elem: A): this.type = prepend(elem)
 
-  /** Push two or more elements onto the stack. The last element
+  /** Pushes two or more elements onto the stack. The last element
     *  of the sequence will be on top of the new stack.
     *
     *  @param   elems      the element sequence.
@@ -70,7 +70,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     prepend(elem1).prepend(elem2).pushAll(elems)
   }
 
-  /** Push all elements in the given iterable object onto the stack. The
+  /** Pushes all elements in the given iterable object onto the stack. The
     *  last element in the iterable object will be on top of the new stack.
     *
     *  @param elems the iterable object.
@@ -83,7 +83,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     })
 
   /**
-    * Removes the top element from this stack and return it
+    * Removes the top element from this stack and returns it.
     *
     * @return
     * @throws NoSuchElementException when stack is empty
@@ -91,14 +91,14 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   def pop(): A = removeHead()
 
   /**
-    * Pop all elements from this stack and return it
+    * Pops all elements from this stack and returns it.
     *
     * @return The removed elements
     */
   def popAll(): scala.collection.Seq[A] = removeAll()
 
   /**
-    * Returns and removes all elements from the top of this stack which satisfy the given predicate
+    * Returns and removes all elements from the top of this stack which satisfy the given predicate.
     *
     *  @param f   the predicate used for choosing elements
     *  @return The removed elements

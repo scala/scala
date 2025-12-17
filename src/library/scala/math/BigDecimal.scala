@@ -381,7 +381,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
       }
   }
 
-  /** Returns the hash code for this BigDecimal.
+  /** Returns the hash code for this `BigDecimal`.
    *  Note that this does not merely use the underlying java object's
    *  `hashCode` because we compare `BigDecimal`s with `compareTo`
    *  which deems 2 == 2.00, whereas in java these are unequal
@@ -396,8 +396,8 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     computedHashCode
   }
 
-  /** Compares this BigDecimal with the specified value for equality.  Where `Float` and `Double`
-   *  disagree, `BigDecimal` will agree with the `Double` value
+  /** Compares this `BigDecimal` with the specified value for equality.  Where `Float` and `Double`
+   *  disagree, `BigDecimal` will agree with the `Double` value.
    */
   override def equals (that: Any): Boolean = that match {
     case that: BigDecimal     => this equals that
@@ -469,11 +469,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   def underlying: java.math.BigDecimal = bigDecimal
 
 
-  /** Compares this BigDecimal with the specified BigDecimal for equality.
+  /** Compares this `BigDecimal` with the specified `BigDecimal` for equality.
    */
   def equals (that: BigDecimal): Boolean = compare(that) == 0
 
-  /** Compares this BigDecimal with the specified BigDecimal
+  /** Compares this `BigDecimal` with the specified `BigDecimal`.
    */
   def compare (that: BigDecimal): Int = this.bigDecimal compareTo that.bigDecimal
 
@@ -528,26 +528,26 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def % (that: BigDecimal): BigDecimal = this.remainder(that)
 
-  /** Returns a BigDecimal whose value is this ** n.
+  /** Returns a `BigDecimal` whose value is this ** n.
    */
   def pow (n: Int): BigDecimal = new BigDecimal(this.bigDecimal.pow(n, mc), mc)
 
-  /** Returns a BigDecimal whose value is the negation of this BigDecimal
+  /** Returns a `BigDecimal` whose value is the negation of this `BigDecimal`.
    */
   def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(mc), mc)
 
-  /** Returns the absolute value of this BigDecimal
+  /** Returns the absolute value of this `BigDecimal`.
    */
   def abs: BigDecimal = if (signum < 0) unary_- else this
 
-  /** Returns the sign of this BigDecimal;
+  /** Returns the sign of this `BigDecimal`;
    *   -1 if it is less than 0,
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
   def signum: Int = this.bigDecimal.signum()
 
-  /** Returns the sign of this BigDecimal;
+  /** Returns the sign of this `BigDecimal`;
    *   -1 if it is less than 0,
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
@@ -558,8 +558,8 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def precision: Int = this.bigDecimal.precision
 
-  /** Returns a BigDecimal rounded according to the supplied MathContext settings, but
-   *  preserving its own MathContext for future operations.
+  /** Returns a `BigDecimal` rounded according to the supplied `MathContext` settings, but
+   *  preserving its own `MathContext` for future operations.
    */
   def round(mc: MathContext): BigDecimal = {
     val r = this.bigDecimal round mc
@@ -576,16 +576,16 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def scale: Int = this.bigDecimal.scale
 
-  /** Returns the size of an ulp, a unit in the last place, of this BigDecimal.
+  /** Returns the size of an ulp, a unit in the last place, of this `BigDecimal`.
    */
   def ulp: BigDecimal = new BigDecimal(this.bigDecimal.ulp, mc)
 
-  /** Returns a new BigDecimal based on the supplied MathContext, rounded as needed.
+  /** Returns a new `BigDecimal` based on the supplied `MathContext`, rounded as needed.
    */
   def apply(mc: MathContext): BigDecimal = new BigDecimal(this.bigDecimal round mc, mc)
 
   /** Returns a `BigDecimal` whose scale is the specified value, and whose value is
-   *  numerically equal to this BigDecimal's.
+   *  numerically equal to this `BigDecimal`'s.
    */
   def setScale(scale: Int): BigDecimal =
     if (this.scale == scale) this
@@ -595,52 +595,52 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     if (this.scale == scale) this
     else new BigDecimal(this.bigDecimal.setScale(scale, JRM.valueOf(mode.id)), mc)
 
-  /** Converts this BigDecimal to a Byte.
-   *  If the BigDecimal is too big to fit in a Byte, only the low-order 8 bits are returned.
+  /** Converts this `BigDecimal` to a `Byte`.
+   *  If the `BigDecimal` is too big to fit in a `Byte`, only the low-order 8 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
-   *  BigDecimal value as well as return a result with the opposite sign.
+   *  `BigDecimal` value as well as return a result with the opposite sign.
    */
   override def byteValue   = intValue.toByte
 
-  /** Converts this BigDecimal to a Short.
-   *  If the BigDecimal is too big to fit in a Short, only the low-order 16 bits are returned.
+  /** Converts this `BigDecimal` to a `Short`.
+   *  If the `BigDecimal` is too big to fit in a `Short`, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
-   *  BigDecimal value as well as return a result with the opposite sign.
+   *  `BigDecimal` value as well as return a result with the opposite sign.
    */
   override def shortValue  = intValue.toShort
 
-  /** Converts this BigDecimal to a Char.
-   *  If the BigDecimal is too big to fit in a Char, only the low-order 16 bits are returned.
+  /** Converts this `BigDecimal` to a `Char`.
+   *  If the `BigDecimal` is too big to fit in a `Char`, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
-   *  BigDecimal value and that it always returns a positive result.
+   *  `BigDecimal` value and that it always returns a positive result.
    */
   def charValue   = intValue.toChar
 
-  /** Converts this BigDecimal to an Int.
-   *  If the BigDecimal is too big to fit in an Int, only the low-order 32 bits
+  /** Converts this `BigDecimal` to an `Int`.
+   *  If the `BigDecimal` is too big to fit in an `Int`, only the low-order 32 bits
    *  are returned. Note that this conversion can lose information about the
-   *  overall magnitude of the BigDecimal value as well as return a result with
+   *  overall magnitude of the `BigDecimal` value as well as return a result with
    *  the opposite sign.
    */
   def intValue    = this.bigDecimal.intValue
 
-  /** Converts this BigDecimal to a Long.
-   *  If the BigDecimal is too big to fit in a Long, only the low-order 64 bits
+  /** Converts this `BigDecimal` to a `Long`.
+   *  If the `BigDecimal` is too big to fit in a `Long`, only the low-order 64 bits
    *  are returned. Note that this conversion can lose information about the
-   *  overall magnitude of the BigDecimal value as well as return a result with
+   *  overall magnitude of the `BigDecimal` value as well as return a result with
    *  the opposite sign.
    */
   def longValue   = this.bigDecimal.longValue
 
-  /** Converts this BigDecimal to a Float.
-   *  if this BigDecimal has too great a magnitude to represent as a float,
+  /** Converts this `BigDecimal` to a `Float`.
+   *  If this `BigDecimal` has too great a magnitude to represent as a `Float`,
    *  it will be converted to `Float.NEGATIVE_INFINITY` or
    *  `Float.POSITIVE_INFINITY` as appropriate.
    */
   def floatValue  = this.bigDecimal.floatValue
 
-  /** Converts this BigDecimal to a Double.
-   *  if this BigDecimal has too great a magnitude to represent as a double,
+  /** Converts this `BigDecimal` to a `Double`.
+   *  If this `BigDecimal` has too great a magnitude to represent as a `Double`,
    *  it will be converted to `Double.NEGATIVE_INFINITY` or
    *  `Double.POSITIVE_INFINITY` as appropriate.
    */
@@ -674,8 +674,8 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     */
   def toLongExact = bigDecimal.longValueExact
 
-  /** Creates a partially constructed NumericRange[BigDecimal] in range
-   *  `[start;end)`, where start is the target BigDecimal.  The step
+  /** Creates a partially constructed `NumericRange[BigDecimal]` in range
+   *  `[start;end)`, where start is the target `BigDecimal`.  The step
    *  must be supplied via the "by" method of the returned object in order
    *  to receive the fully constructed range.  For example:
    * {{{
@@ -714,7 +714,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     }
     else None
 
-  /** Returns the decimal String representation of this BigDecimal.
+  /** Returns the decimal `String` representation of this `BigDecimal`.
    */
   override def toString: String = this.bigDecimal.toString
 

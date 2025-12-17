@@ -146,7 +146,7 @@ private[scala] trait PropertiesTrait {
     case s      => "" == s || "true".equalsIgnoreCase(s)
   }
 
-  /** System.console.isTerminal, or just check for null console on JDK < 22 */
+  /** `System.console.isTerminal`, or just check for `null` console on JDK < 22 */
   private[scala] lazy val consoleIsTerminal: Boolean = {
     import language.reflectiveCalls
     val console = System.console

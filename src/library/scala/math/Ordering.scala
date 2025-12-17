@@ -88,28 +88,28 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
    */
   def compare(x: T, y: T): Int
 
-  /** Return true if `x` <= `y` in the ordering. */
+  /** Returns `true` if `x` <= `y` in the ordering. */
   override def lteq(x: T, y: T): Boolean = compare(x, y) <= 0
 
-  /** Return true if `x` >= `y` in the ordering. */
+  /** Returns `true` if `x` >= `y` in the ordering. */
   override def gteq(x: T, y: T): Boolean = compare(x, y) >= 0
 
-  /** Return true if `x` < `y` in the ordering. */
+  /** Returns `true` if `x` < `y` in the ordering. */
   override def lt(x: T, y: T): Boolean = compare(x, y) < 0
 
-  /** Return true if `x` > `y` in the ordering. */
+  /** Returns `true` if `x` > `y` in the ordering. */
   override def gt(x: T, y: T): Boolean = compare(x, y) > 0
 
-  /** Return true if `x` == `y` in the ordering. */
+  /** Returns `true` if `x` == `y` in the ordering. */
   override def equiv(x: T, y: T): Boolean = compare(x, y) == 0
 
-  /** Return `x` if `x` >= `y`, otherwise `y`. */
+  /** Returns `x` if `x` >= `y`, otherwise `y`. */
   @uncheckedOverride def max[U <: T](x: U, y: U): U = if (gteq(x, y)) x else y
 
-  /** Return `x` if `x` <= `y`, otherwise `y`. */
+  /** Returns `x` if `x` <= `y`, otherwise `y`. */
   @uncheckedOverride def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
 
-  /** Return the opposite ordering of this one.
+  /** Returns the opposite ordering of this one.
     *
     * Implementations overriding this method MUST override [[isReverseOf]]
     * as well if they change the behavior at all (for example, caching does

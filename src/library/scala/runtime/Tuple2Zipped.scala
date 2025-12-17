@@ -19,7 +19,7 @@ import scala.language.implicitConversions
 
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only
- *  needs to find an implicit conversion to Iterable for our purposes.)
+ *  needs to find an implicit conversion to `Iterable` for our purposes.)
  *  @define Coll `ZippedIterable2`
  *  @define coll collection
  *  @define collectExample

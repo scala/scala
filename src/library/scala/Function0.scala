@@ -36,7 +36,7 @@ package scala
  *  }}}
  */
 trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self =>
-  /** Apply the body of this function to the arguments.
+  /** Applies the body of this function to the arguments.
    *  @return   the result of function application.
    */
   def apply(): R

@@ -22,7 +22,7 @@ import scala.language.implicitConversions
  *  Changes to System properties will be immediately visible in the map,
  *  and modifications made to the map will be immediately applied to the
  *  System properties.  If a security manager is in place which prevents
- *  the properties from being read or written, the AccessControlException
+ *  the properties from being read or written, the `AccessControlException`
  *  will be caught and discarded.
  *  @define Coll `collection.mutable.Map`
  *  @define coll mutable map

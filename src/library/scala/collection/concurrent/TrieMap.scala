@@ -101,7 +101,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
 
   /** Inserts a key value pair, overwriting the old pair if the keys match.
     *
-    *  @return        true if successful, false otherwise
+    *  @return        `true` if successful, `false` otherwise
     */
   @tailrec def rec_insert(k: K, v: V, hc: Int, lev: Int, parent: INode[K, V], startgen: Gen, ct: TrieMap[K, V]): Boolean = {
     val m = GCAS_READ(ct) // use -Yinline!
@@ -302,7 +302,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     * @param removalPolicy policy deciding whether to remove `k` based on `v` and the
     *                       current value associated with `k` (Always, FullEquals, or ReferenceEq)
     *
-    *  @return              null if not successful, an Option[V] indicating the previous value otherwise
+    *  @return              `null` if not successful, an `Option[V]` indicating the previous value otherwise
     */
   def rec_remove(
     k: K,
@@ -825,7 +825,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     * @param v the value compare with the value found associated with the key
     * @param removalPolicy policy deciding whether to remove `k` based on `v` and the
    *                       current value associated with `k` (Always, FullEquals, or ReferenceEq)
-    * @return an Option[V] indicating the previous value
+    * @return an `Option[V]` indicating the previous value
     */
   @tailrec private def removehc(k: K, v: V, removalPolicy: Int, hc: Int): Option[V] = {
     val r = RDCSS_READ_ROOT()

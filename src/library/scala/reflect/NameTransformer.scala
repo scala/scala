@@ -61,7 +61,7 @@ object NameTransformer {
   enterOp('?', "$qmark")
   enterOp('@', "$at")
 
-  /** Replace operator symbols by corresponding `\$opname`.
+  /** Replaces operator symbols by corresponding `\$opname`.
    *
    *  @param name the string to encode
    *  @return     the string with all recognized opchars replaced with their encoding
@@ -95,7 +95,7 @@ object NameTransformer {
     if (buf eq null) name else buf.toString()
   }
 
-  /** Replace `\$opname` by corresponding operator symbol.
+  /** Replaces `\$opname` by corresponding operator symbol.
    *
    *  @param name0 the string to decode
    *  @return      the string with all recognized operator symbol encodings replaced with their name

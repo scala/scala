@@ -16,15 +16,15 @@ object Option {
 
   import scala.language.implicitConversions
 
-  /** An implicit conversion that converts an option to an iterable value */
+  /** An implicit conversion that converts an option to an iterable value. */
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] =
     if (xo.isEmpty) Iterable.empty else Iterable.single(xo.get)
 
-  /** An Option factory which creates Some(x) if the argument is not null,
-   *  and None if it is null.
+  /** An `Option` factory which creates `Some(x)` if the argument is not `null`,
+   *  and `None` if it is `null`.
    *
    *  @param  x the value
-   *  @return   Some(value) if value != null, None if value == null
+   *  @return   `Some(value)` if value != null, `None` if value == null
    */
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
@@ -34,14 +34,14 @@ object Option {
   def empty[A] : Option[A] = None
 
   /** When a given condition is true, evaluates the `a` argument and returns
-   *  Some(a). When the condition is false, `a` is not evaluated and None is
+   *  `Some(a)`. When the condition is false, `a` is not evaluated and `None` is
    *  returned.
    */
   def when[A](cond: Boolean)(a: => A): Option[A] =
     if (cond) Some(a) else None
 
   /** Unless a given condition is true, this will evaluate the `a` argument and
-   *  return Some(a). Otherwise, `a` is not evaluated and None is returned.
+   *  return `Some(a)`. Otherwise, `a` is not evaluated and `None` is returned.
    */
   @inline def unless[A](cond: Boolean)(a: => A): Option[A] =
     when(!cond)(a)
@@ -90,9 +90,9 @@ object Option {
  *  - [[collect]] — Apply partial pattern match on optional value
  *  - [[filter]] — An optional value satisfies predicate
  *  - [[filterNot]] — An optional value doesn't satisfy predicate
- *  - [[exists]] — Apply predicate on optional value, or false if empty
- *  - [[forall]] — Apply predicate on optional value, or true if empty
- *  - [[contains]] — Checks if value equals optional value, or false if empty
+ *  - [[exists]] — Apply predicate on optional value, or `false` if empty
+ *  - [[forall]] — Apply predicate on optional value, or `true` if empty
+ *  - [[contains]] — Checks if value equals optional value, or `false` if empty
  *  - [[zip]] — Combine two optional values to make a paired optional value
  *  - [[unzip]] — Split an optional pair to two optional values
  *  - [[unzip3]] — Split an optional triple to three optional values
@@ -108,7 +108,7 @@ object Option {
  *  }
  *  }}}
  *
- * Interacting with code that can occasionally return null can be
+ * Interacting with code that can occasionally return `null` can be
  * safely wrapped in $option to become $none and $some otherwise. {{{
  * val abc = new java.util.HashMap[Int, String]
  * abc.put(1, "A")
@@ -122,9 +122,9 @@ object Option {
  * }}}
  *
  *  @note Many of the methods in here are duplicative with those
- *  in the Iterable hierarchy, but they are duplicated for a reason:
- *  the implicit conversion tends to leave one with an Iterable in
- *  situations where one could have retained an Option.
+ *  in the `Iterable` hierarchy, but they are duplicated for a reason:
+ *  the implicit conversion tends to leave one with an `Iterable` in
+ *  situations where one could have retained an `Option`.
  *
  *  @define none `None`
  *  @define some [[scala.Some]]
@@ -144,7 +144,7 @@ object Option {
 sealed abstract class Option[+A] extends IterableOnce[A] with Product with Serializable {
   self =>
 
-  /** Returns true if the option is $none, false otherwise.
+  /** Returns `true` if the option is $none, `false` otherwise.
    *
    * This is equivalent to:
    * {{{
@@ -156,7 +156,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    */
   final def isEmpty: Boolean = this eq None
 
-  /** Returns true if the option is an instance of $some, false otherwise.
+  /** Returns `true` if the option is an instance of $some, `false` otherwise.
    *
    * This is equivalent to:
    * {{{
@@ -203,7 +203,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
   /** Returns the option's value if it is nonempty,
    * or `null` if it is empty.
    *
-   * Although the use of null is discouraged, code written to use
+   * Although the use of `null` is discouraged, code written to use
    * $option must often interface with code that expects and returns nulls.
    *
    * This is equivalent to:
@@ -304,7 +304,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
     if (isEmpty) None else ev(this.get)
 
   /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
-   * this $option's value returns true. Otherwise, return $none.
+   * this $option's value returns `true`. Otherwise, return $none.
    *
    * This is equivalent to:
    * {{{
@@ -319,7 +319,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
     if (isEmpty || p(this.get)) this else None
 
   /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
-   * this $option's value returns false. Otherwise, return $none.
+   * this $option's value returns `false`. Otherwise, return $none.
    *
    * This is equivalent to:
    * {{{
@@ -333,7 +333,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
   @inline final def filterNot(p: A => Boolean): Option[A] =
     if (isEmpty || !p(this.get)) this else None
 
-  /** Returns false if the option is $none, true otherwise.
+  /** Returns `false` if the option is $none, `true` otherwise.
    *
    * This is equivalent to:
    * {{{
@@ -389,9 +389,9 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
   final def contains[A1 >: A](elem: A1): Boolean =
     !isEmpty && this.get == elem
 
-  /** Returns true if this option is nonempty '''and''' the predicate
-   * $p returns true when applied to this $option's value.
-   * Otherwise, returns false.
+  /** Returns `true` if this option is nonempty '''and''' the predicate
+   * $p returns `true` when applied to this $option's value.
+   * Otherwise, returns `false`.
    *
    * This is equivalent to:
    * {{{
@@ -405,8 +405,8 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
   @inline final def exists(p: A => Boolean): Boolean =
     !isEmpty && p(this.get)
 
-  /** Returns true if this option is empty '''or''' the predicate
-   * $p returns true when applied to this $option's value.
+  /** Returns `true` if this option is empty '''or''' the predicate
+   * $p returns `true` when applied to this $option's value.
    *
    * This is equivalent to:
    * {{{
@@ -419,8 +419,8 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    */
   @inline final def forall(p: A => Boolean): Boolean = isEmpty || p(this.get)
 
-  /** Apply the given procedure $f to the option's value,
-   *  if it is nonempty. Otherwise, do nothing.
+  /** Applies the given procedure $f to the option's value,
+   *  if it is nonempty. Otherwise, does nothing.
    *
    * This is equivalent to:
    * {{{
@@ -503,7 +503,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
   final def zip[A1 >: A, B](that: Option[B]): Option[(A1, B)] =
     if (isEmpty || that.isEmpty) None else Some((this.get, that.get))
 
-  /** Converts an Option of a pair into an Option of the first element and an Option of the second element.
+  /** Converts an `Option` of a pair into an `Option` of the first element and an `Option` of the second element.
     *
     *  This is equivalent to:
     *  {{{
@@ -528,7 +528,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
     }
   }
 
-  /** Converts an Option of a triple into three Options, one containing the element from each position of the triple.
+  /** Converts an `Option` of a triple into three `Option`s, one containing the element from each position of the triple.
     *
     *  This is equivalent to:
     *  {{{

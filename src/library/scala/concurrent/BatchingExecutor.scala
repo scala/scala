@@ -18,7 +18,7 @@ import scala.util.control.NonFatal
 import scala.annotation.{switch, tailrec}
 
 /**
- * Marker trait to indicate that a Runnable is Batchable by BatchingExecutors
+ * Marker trait to indicate that a `Runnable` is `Batchable` by `BatchingExecutor`s
  */
 trait Batchable {
   self: Runnable =>
@@ -40,14 +40,14 @@ private[concurrent] object BatchingExecutorStatics {
 }
 
 /**
- * Mixin trait for an Executor
+ * Mixin trait for an `Executor`
  * which groups multiple nested `Runnable.run()` calls
- * into a single Runnable passed to the original
- * Executor. This can be a useful optimization
+ * into a single `Runnable` passed to the original
+ * `Executor`. This can be a useful optimization
  * because it bypasses the original context's task
  * queue and keeps related (nested) code on a single
  * thread which may improve CPU affinity. However,
- * if tasks passed to the Executor are blocking
+ * if tasks passed to the `Executor` are blocking
  * or expensive, this optimization can prevent work-stealing
  * and make performance worse.
  * A batching executor can create deadlocks if code does

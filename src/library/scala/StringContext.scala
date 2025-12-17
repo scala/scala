@@ -88,7 +88,7 @@ case class StringContext(parts: String*) {
    *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
-   *          use of a StringBuilder.
+   *          use of a `StringBuilder`.
    */
   def s(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateS
   object s {
@@ -149,9 +149,9 @@ case class StringContext(parts: String*) {
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
-   *          the number of arguments `arg` by exactly 1.
+   *          the number of arguments `args` by exactly 1.
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
-   *          use of a StringBuilder.
+   *          use of a `StringBuilder`.
    */
   def raw(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateRaw
 
@@ -409,7 +409,7 @@ object StringContext {
     }
 
   /** replace Unicode escapes starting at index `backslash` which must be the
-   *  index of the first index of a backslash character followed by a `u`
+   *  index of the first index of a backslash character followed by a `u`.
    *  character
    *
    * If a backslash is followed by one or more `u` characters and there is

@@ -61,7 +61,7 @@ package object collection {
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
     /** Splits a sequence into head +: tail.
-      * @return Some((head, tail)) if sequence is non-empty. None otherwise.
+      * @return `Some((head, tail))` if sequence is non-empty. `None` otherwise.
       */
     def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(A, C)] =
       if(t.isEmpty) None
@@ -71,7 +71,7 @@ package object collection {
   /** An extractor used to init/last deconstruct sequences. */
   object :+ {
     /** Splits a sequence into init :+ last.
-      * @return Some((init, last)) if sequence is non-empty. None otherwise.
+      * @return `Some((init, last))` if sequence is non-empty. `None` otherwise.
       */
     def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(C, A)] =
       if(t.isEmpty) None

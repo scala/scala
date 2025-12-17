@@ -83,7 +83,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   /** Checks if the queue is empty.
     *
-    *  @return true, iff there is no element in the queue.
+    *  @return `true`, iff there is no element in the queue.
     */
   override def isEmpty: Boolean = in.isEmpty && out.isEmpty
 

@@ -138,7 +138,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
   private[collection] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = replace(k, oldValue, newValue)
 
   /**
-   * Update a mapping for the specified key and its current optionally mapped value
+   * Updates a mapping for the specified key and its current optionally mapped value
    * (`Some` if there is current mapping, `None` if not).
    *
    * If the remapping function returns `Some(v)`, the mapping is updated with the new value `v`.

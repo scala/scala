@@ -295,7 +295,7 @@ class ArrayDeque[A] protected (
 
   /**
     * Unsafely remove the first element (throws exception when empty)
-    * See also removeHeadOption()
+    * See also removeHeadOption().
     *
     * @param resizeInternalRepr If this is set, resize the internal representation to reclaim space once in a while
     * @throws NoSuchElementException when empty
@@ -322,7 +322,7 @@ class ArrayDeque[A] protected (
 
   /**
     * Unsafely remove the last element (throws exception when empty)
-    * See also removeLastOption()
+    * See also removeLastOption().
     *
     * @param resizeInternalRepr If this is set, resize the internal representation to reclaim space once in a while
     * @throws NoSuchElementException when empty
@@ -340,7 +340,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * Remove all elements from this collection and return the elements while emptying this data structure
+    * Remove all elements from this collection and return the elements while emptying this data structure.
     * @return
     */
   def removeAll(): scala.collection.immutable.Seq[A] = {
@@ -353,7 +353,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * Remove all elements from this collection and return the elements in reverse while emptying this data structure
+    * Remove all elements from this collection and return the elements in reverse while emptying this data structure.
     * @return
     */
   def removeAllReverse(): scala.collection.immutable.Seq[A] = {
@@ -366,7 +366,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * Returns and removes all elements from the left of this queue which satisfy the given predicate
+    * Returns and removes all elements from the left of this queue which satisfy the given predicate.
     *
     *  @param f   the predicate used for choosing elements
     *  @return
@@ -380,7 +380,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * Returns and removes all elements from the right of this queue which satisfy the given predicate
+    * Returns and removes all elements from the right of this queue which satisfy the given predicate.
     *
     *  @param f   the predicate used for choosing elements
     *  @return
@@ -442,7 +442,7 @@ class ArrayDeque[A] protected (
 
   /**
     * Note: This does not actually resize the internal representation.
-    * See clearAndShrink if you want to also resize internally
+    * See clearAndShrink if you want to also resize internally.
     */
   def clear(): Unit = {
     while(nonEmpty) {
@@ -451,7 +451,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * Clears this buffer and shrinks to @param size
+    * Clears this buffer and shrinks to @param size.
     *
     * @param size
     * @return
@@ -476,7 +476,7 @@ class ArrayDeque[A] protected (
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
 
   /**
-    * Trims the capacity of this ArrayDeque's instance to be the current size
+    * Trims the capacity of this ArrayDeque's instance to be the current size.
     */
   def trimToSize(): Unit = resize(length)
 
@@ -549,13 +549,13 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
   final val DefaultInitialSize = 16
 
   /**
-    * We try to not repeatedly resize arrays smaller than this
+    * We try to not repeatedly resize arrays smaller than this.
     */
   private[ArrayDeque] final val StableSize = 128
 
   /**
     * Allocates an array whose size is next power of 2 > `len`
-    * Largest possible len is 1<<30 - 1
+    * Largest possible len is 1<<30 - 1.
     *
     * @param len
     * @return
@@ -586,7 +586,7 @@ trait ArrayDequeOps[A, +CC[_], +C <: AnyRef] extends StrictOptimizedSeqOps[A, CC
   /**
     * This is a more general version of copyToArray - this also accepts a srcStart unlike copyToArray
     * This copies maxItems elements from this collections srcStart to dest's destStart
-    * If we reach the end of either collections before we could copy maxItems, we simply stop copying
+    * If we reach the end of either collections before we could copy maxItems, we simply stop copying.
     *
     * @param dest
     * @param srcStart

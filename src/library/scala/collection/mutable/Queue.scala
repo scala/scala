@@ -45,7 +45,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   override protected[this] def stringPrefix = "Queue"
 
   /**
-    * Add elements to the end of this queue
+    * Add elements to the end of this queue.
     *
     * @param elem
     * @return this
@@ -69,7 +69,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   def enqueueAll(elems: scala.collection.IterableOnce[A]): this.type = this ++= elems
 
   /**
-    * Removes the first element from this queue and returns it
+    * Removes the first element from this queue and returns it.
     *
     * @return
     * @throws NoSuchElementException when queue is empty
@@ -96,7 +96,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     removeAll(p)
 
   /**
-    * Returns and dequeues all elements from the queue which satisfy the given predicate
+    * Returns and dequeues all elements from the queue which satisfy the given predicate.
     *
     *  @param f   the predicate used for choosing elements
     *  @return The removed elements

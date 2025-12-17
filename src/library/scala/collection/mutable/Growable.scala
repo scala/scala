@@ -78,7 +78,7 @@ trait Growable[-A] extends Clearable {
 object Growable {
 
   /**
-    * Fills a `Growable` instance with the elements of a given iterable
+    * Fills a `Growable` instance with the elements of a given iterable.
     * @param empty Instance to fill
     * @param it Elements to add
     * @tparam A Element type

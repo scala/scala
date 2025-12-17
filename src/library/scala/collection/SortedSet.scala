@@ -64,7 +64,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     * Creates an iterator that contains all values from this collection
     * greater than or equal to `start` according to the ordering of
     * this collection. x.iteratorFrom(y) is equivalent to but will usually
-    * be more efficient than x.from(y).iterator
+    * be more efficient than x.from(y).iterator.
     *
     * @param start The lower-bound (inclusive) of the iterator
     */
@@ -76,13 +76,13 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   def firstKey: A = head
   def lastKey: A = last
 
-  /** Find the smallest element larger than or equal to a given key.
+  /** Finds the smallest element larger than or equal to a given key.
     * @param key The given key.
     * @return `None` if there is no such node.
     */
   def minAfter(key: A): Option[A] = rangeFrom(key).headOption
 
-  /** Find the largest element less than a given key.
+  /** Finds the largest element less than a given key.
     * @param key The given key.
     * @return `None` if there is no such node.
     */

@@ -17,7 +17,7 @@ package runtime
 import scala.collection.{BuildFrom, IterableOps}
 import scala.language.implicitConversions
 
-/** See comment on ZippedIterable2
+/** See comment on `ZippedIterable2`
  *  @define Coll `ZippedIterable3`
  *  @define coll collection
  *  @define collectExample

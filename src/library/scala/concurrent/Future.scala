@@ -64,7 +64,7 @@ import scala.concurrent.impl.Promise.DefaultPromise
  *  - `InterruptedException` - not contained within futures
  *  - all `scala.util.control.ControlThrowable` except `NonLocalReturnControl` - not contained within futures
  *
- *  Instead, the future is completed with an ExecutionException that has one of the exceptions above as its cause.
+ *  Instead, the future is completed with an `ExecutionException` that has one of the exceptions above as its cause.
  *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
  *  it is completed with a value from that throwable instead.
  *
@@ -101,7 +101,7 @@ import scala.concurrent.impl.Promise.DefaultPromise
  * thread. That is, the implementation may run multiple callbacks
  * in a batch within a single `execute()` and it may run
  * `execute()` either immediately or asynchronously.
- * Completion of the Future must *happen-before* the invocation of the callback.
+ * Completion of the `Future` must *happen-before* the invocation of the callback.
  */
 trait Future[+T] extends Awaitable[T] {
 
@@ -182,9 +182,9 @@ trait Future[+T] extends Awaitable[T] {
    */
   def foreach[U](f: T => U)(implicit executor: ExecutionContext): Unit = onComplete { _ foreach f }
 
-  /** Creates a new future by applying the 's' function to the successful result of
-   *  this future, or the 'f' function to the failed result. If there is any non-fatal
-   *  exception thrown when 's' or 'f' is applied, that exception will be propagated
+  /** Creates a new future by applying the `s` function to the successful result of
+   *  this future, or the `f` function to the failed result. If there is any non-fatal
+   *  exception thrown when `s` or `f` is applied, that exception will be propagated
    *  to the resulting future.
    *
    * @tparam S  the type of the returned `Future`
@@ -200,8 +200,8 @@ trait Future[+T] extends Awaitable[T] {
         else throw f(t.asInstanceOf[Failure[T]].exception) // will throw fatal errors!
     }
 
-  /** Creates a new Future by applying the specified function to the result
-   * of this Future. If there is any non-fatal exception thrown when 'f'
+  /** Creates a new `Future` by applying the specified function to the result
+   * of this `Future`. If there is any non-fatal exception thrown when `f`
    * is applied then that exception will be propagated to the resulting future.
    *
    * @tparam S  the type of the returned `Future`
@@ -211,8 +211,8 @@ trait Future[+T] extends Awaitable[T] {
    */
   def transform[S](f: Try[T] => Try[S])(implicit executor: ExecutionContext): Future[S]
 
-  /** Creates a new Future by applying the specified function, which produces a Future, to the result
-   * of this Future. If there is any non-fatal exception thrown when 'f'
+  /** Creates a new `Future` by applying the specified function, which produces a `Future`, to the result
+   * of this `Future`. If there is any non-fatal exception thrown when `f`
    * is applied then that exception will be propagated to the resulting future.
    *
    * @tparam S  the type of the returned `Future`
@@ -875,11 +875,11 @@ object Future {
    *  {{{
    *    val myFutureList = Future.traverse(myList)(x => Future(myFunc(x)))
    *  }}}
-   * @tparam A        the type of the value inside the Futures in the collection
+   * @tparam A        the type of the value inside the `Future`s in the collection
    * @tparam B        the type of the value of the returned `Future`
-   * @tparam M        the type of the collection of Futures
-   * @param in        the collection to be mapped over with the provided function to produce a collection of Futures that is then sequenced into a Future collection
-   * @param fn        the function to be mapped over the collection to produce a collection of Futures
+   * @tparam M        the type of the collection of `Future`s
+   * @param in        the collection to be mapped over with the provided function to produce a collection of `Future`s that is then sequenced into a `Future` collection
+   * @param fn        the function to be mapped over the collection to produce a collection of `Future`s
    * @return          the `Future` of the collection of results
    */
   final def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =

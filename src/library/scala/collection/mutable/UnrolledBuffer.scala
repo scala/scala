@@ -164,7 +164,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     if (idx >= 0 && idx < sz) headptr(idx) = newelem
     else throw CommonErrors.indexOutOfBounds(index = idx, max = sz - 1)
 
-  /** Replace the contents of this $coll with the mapped result.
+  /** Replaces the contents of this $coll with the mapped result.
    *
    *  @param f the mapping function
    *  @return this $coll

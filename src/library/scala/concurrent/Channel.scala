@@ -27,7 +27,7 @@ class Channel[A] {
   private[this] var lastWritten = written       // aliasing of a linked list
   private[this] var nreaders = 0
 
-  /** Append a value to the FIFO queue to be read by `read`.
+  /** Appends a value to the FIFO queue to be read by `read`.
    *  This operation is nonblocking and can be executed by any thread.
    *
    * @param x object to enqueue to this channel
@@ -39,7 +39,7 @@ class Channel[A] {
     if (nreaders > 0) notify()
   }
 
-  /** Retrieve the next waiting object from the FIFO queue,
+  /** Retrieves the next waiting object from the FIFO queue,
    *  blocking if necessary until an object is available.
    *
    * @return next object dequeued from this channel

@@ -15,7 +15,7 @@ package runtime
 
 
 /**
- * Dummy class which exist only to satisfy the JVM. It corresponds
+ * Dummy class which exists only to satisfy the JVM. It corresponds
  * to `scala.Nothing`. If such type appears in method
  * signatures, it is erased to this one.
  */

@@ -14,16 +14,16 @@ package scala.concurrent
 
 import scala.util.{ Try, Success, Failure }
 
-/** Promise is an object which can be completed with a value or failed
+/** `Promise` is an object which can be completed with a value or failed
  *  with an exception.
  *
- *  A promise should always eventually be completed, whether for success or failure, 
- *  in order to avoid unintended resource retention for any associated Futures' 
+ *  A promise should always eventually be completed, whether for success or failure,
+ *  in order to avoid unintended resource retention for any associated `Future`s'
  *  callbacks or transformations.
  *
  *  @define promiseCompletion
  *  If the promise has already been fulfilled, failed or has timed out,
- *  calling this method will throw an IllegalStateException.
+ *  calling this method will throw an `IllegalStateException`.
  *
  *  @define allowedThrowables
  *  If the throwable used to fail this promise is an error, a control exception
@@ -34,7 +34,7 @@ import scala.util.{ Try, Success, Failure }
  *  Note: Using this method may result in non-deterministic concurrent programs.
  */
 trait Promise[T] {
-  /** Future containing the value of this promise.
+  /** `Future` containing the value of this promise.
    */
   def future: Future[T]
 
@@ -125,21 +125,21 @@ object Promise {
    */
   final def apply[T](): Promise[T] = new impl.Promise.DefaultPromise[T]()
 
-  /** Creates an already completed Promise with the specified exception.
+  /** Creates an already completed `Promise` with the specified exception.
    *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` instance
    */
   final def failed[T](exception: Throwable): Promise[T] = fromTry(Failure(exception))
 
-  /** Creates an already completed Promise with the specified result.
+  /** Creates an already completed `Promise` with the specified result.
    *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` instance
    */
   final def successful[T](result: T): Promise[T] = fromTry(Success(result))
 
-  /** Creates an already completed Promise with the specified result or exception.
+  /** Creates an already completed `Promise` with the specified result or exception.
    *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` instance

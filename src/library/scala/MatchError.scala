@@ -18,7 +18,7 @@ package scala
  */
 final class MatchError(@transient obj: Any) extends RuntimeException {
   /** There's no reason we need to call toString eagerly,
-   *  so defer it until getMessage is called or object is serialized
+   *  so defer it until getMessage is called or object is serialized.
    */
   private[this] lazy val objString = {
     def ofClass = "of class " + obj.getClass.getName
