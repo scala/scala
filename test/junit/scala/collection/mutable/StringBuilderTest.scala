@@ -40,4 +40,21 @@ class StringBuilderTest {
     assertEquals("Xa,b,cY", res.toString)
     assertSame(b, res)
   }
+
+  @Test def `appendCodePoint`: Unit = {
+    val b = new StringBuilder()
+    val res: b.type = b.appendCodePoint(0x1F44D) // 👍 emoji
+    assertEquals("👍", res.toString)
+    assertSame(b, res)
+
+    // Test with a basic ASCII character
+    val b2 = new StringBuilder()
+    b2.appendCodePoint(65) // 'A'
+    assertEquals("A", b2.toString)
+
+    // Test with surrogate pair (Unicode code point > 0xFFFF)
+    val b3 = new StringBuilder()
+    b3.appendCodePoint(0x1F600) // 😀 emoji
+    assertEquals("😀", b3.toString)
+  }
 }
