@@ -618,9 +618,22 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           case _ =>
         }
         annots.addOne(annot)
-        traverse(annot.original)
-        annot.args.foreach(traverse)
-        annot.assocs.foreach { case (_, arg) => traverseConstantArg(arg) }
+        // Catch TypeError when traversing annotations to handle TASTy compatibility issues.
+        // When reading Scala 3 TASTy files with Java annotations containing class parameters,
+        // the TASTy reader may fail to resolve special internal packages (scala/bug#13143).
+        // Since we're only checking for unused symbols, it's safe to skip annotations that
+        // can't be traversed - this won't affect unused detection for symbols in the current
+        // compilation unit.
+        try {
+          traverse(annot.original)
+          annot.args.foreach(traverse)
+          annot.assocs.foreach { case (_, arg) => traverseConstantArg(arg) }
+        } catch {
+          case e: TypeError if e.msg.contains("could not find") =>
+            // Skip annotations that reference missing dependencies (typically from TASTy reader)
+          case e: TypeError if e.msg.contains("whilst reading annotation") =>
+            // Skip annotations that fail during TASTy annotation reading
+        }
       }
 
     override def traverse(t: Tree): Unit = {
