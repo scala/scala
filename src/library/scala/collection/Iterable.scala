@@ -878,7 +878,20 @@ object IterableOps {
     @inline def >=(size: Int): Boolean = it.sizeCompare(size) >= 0
     /** Tests if the size of the collection is greater than some value. */
     @inline def >(size: Int): Boolean = it.sizeCompare(size) > 0
-  }
+
+    /** Tests if the size of the collection is less than the size of another Iterable. */
+    @inline def <(that: Iterable[_]): Boolean = it.sizeCompare(that) < 0
+    /** Tests if the size of the collection is less than or equal to the size of another Iterable. */
+    @inline def <=(that: Iterable[_]): Boolean = it.sizeCompare(that) <= 0
+    /** Tests if the size of the collection is equal to the size of another Iterable. */
+    @inline def ==(that: Iterable[_]): Boolean = it.sizeCompare(that) == 0
+    /** Tests if the size of the collection is not equal to the size of another Iterable. */
+    @inline def !=(that: Iterable[_]): Boolean = it.sizeCompare(that) != 0
+    /** Tests if the size of the collection is greater than or equal to the size of another Iterable. */
+    @inline def >=(that: Iterable[_]): Boolean = it.sizeCompare(that) >= 0
+    /** Tests if the size of the collection is greater than the size of another Iterable. */
+    @inline def >(that: Iterable[_]): Boolean = it.sizeCompare(that) > 0
+}
 
   /** A trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
     * of trait `Iterable`.
