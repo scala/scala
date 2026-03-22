@@ -10,6 +10,13 @@ else
   IVY2_DIR="$WORKSPACE/.ivy2"
 fi
 
+# On Jenkins workers, `sbt` is Coursier-installed in /home/jenkins,
+# so it won't be on our PATH unless we put it there, since
+# shell scripts don't read .profile
+if [ "$TRAVIS" != "true" ]; then
+  source $HOME/.profile
+fi
+
 SBT_VERSION=`grep sbt.version $WORKSPACE/project/build.properties | sed -n 's/sbt.version=\(.*\)/\1/p'`
 
 SBT_CMD=${SBT_CMD-sbt}
