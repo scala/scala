@@ -142,11 +142,6 @@ trait LiveVariables extends ExprBuilder {
         } else (entry.cardinality() != card)
       }
       def updateExit(): Boolean = {
-        var changed = false
-        if (exit == null) {
-          changed = true
-          exit = new BitSet()
-        }
         var i = 0
         val card = exit.cardinality()
         while (i < succ.length) {
