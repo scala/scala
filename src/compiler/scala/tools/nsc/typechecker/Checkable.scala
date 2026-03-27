@@ -262,8 +262,8 @@ trait Checkable {
       def isNeverSubArg(t1: Type, t2: Type, tparam: Symbol) = {
         val variance = tparam.variance
         if (variance.isInvariant) isNeverSameType(t1, t2)
-        else if (variance.isCovariant) isNeverSubType(t2, t1)
-        else if (variance.isContravariant) isNeverSubType(t1, t2)
+        else if (variance.isCovariant) isNeverSubType(t1, t2)
+        else if (variance.isContravariant) isNeverSubType(t2, t1)
         else false
       }
       exists3(tps1, tps2, tparams)(isNeverSubArg)
