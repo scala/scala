@@ -1,6 +1,7 @@
 name: Scala Merge CI
 
 on:
+  pull_request:
   push:
     branches: ['2.*.x']
   workflow_dispatch:
