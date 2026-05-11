@@ -39,6 +39,10 @@ class ArrayBufferBenchmark {
     list = ref.toList
   }
 
+  @Benchmark def foreach(bh: Blackhole): Unit = {
+    ref.foreach(bh.consume)
+  }
+
   @Benchmark def filterInPlace(bh: Blackhole): Unit = {
     val b = ref.clone()
     b.filterInPlace(_ % 2 == 0)

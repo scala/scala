@@ -123,6 +123,26 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   override protected def ofArray(array: Array[AnyRef], end: Int): Stack[A] =
     new Stack(array, start = 0, end)
 
+  override def filter(pred: A => Boolean): Stack[A] = {
+    val n = length
+    if (n == 0) return empty
+    val tmp = new Array[AnyRef](n)
+    var i, j = 0
+    while (i < n) {
+      val x = apply(i)
+      if (pred(x)) { tmp(j) = x.asInstanceOf[AnyRef]; j += 1 }
+      i += 1
+    }
+    if (j == 0) empty
+    else {
+      val arr = ArrayDeque.alloc(j)
+      System.arraycopy(tmp, 0, arr, 0, j)
+      new Stack(arr, 0, j)
+    }
+  }
+
+  override def filterNot(pred: A => Boolean): Stack[A] = filter(x => !pred(x))
+
 }
 
 /**

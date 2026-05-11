@@ -53,6 +53,71 @@ import scala.util.Sorting
 
 object ArrayOps {
 
+  /** Apply `f` to each element for its side effects, using type-specialized array access.
+   *  Allocation-free static method for array-backed collections.
+   */
+  private[collection] def foreach[A, U](xs: Array[_], f: A => U, len: Int): Unit = {
+    var i = 0
+    (xs: Any @unchecked) match {
+      case xs: Array[AnyRef]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Int]     => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Double]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Long]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Float]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Char]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Byte]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Short]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Boolean] => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+    }
+  }
+
+  /** Finds index of the first element satisfying a predicate after or at `from`. Allocation-free. */
+  private[collection] def indexWhere[A](xs: Array[_], p: A => Boolean, from: Int, len: Int): Int = {
+    var i = if (from > 0) from else 0
+    while (i < len) {
+      if (p(xs(i).asInstanceOf[A])) return i
+      i += 1
+    }
+    -1
+  }
+
+  /** Finds the first element satisfying a predicate. Allocation-free. */
+  private[collection] def find[A](xs: Array[_], p: A => Boolean, from: Int, len: Int): Option[A] = {
+    val idx = indexWhere(xs, p, from, len)
+    if (idx == -1) None else Some(xs(idx).asInstanceOf[A])
+  }
+
+  /** Tests whether a predicate holds for all elements. Allocation-free. */
+  private[collection] def forall[A](xs: Array[_], p: A => Boolean, len: Int): Boolean = {
+    var i = 0
+    while (i < len) {
+      if (!p(xs(i).asInstanceOf[A])) return false
+      i += 1
+    }
+    true
+  }
+
+  /** Counts elements satisfying a predicate. Allocation-free. */
+  private[collection] def count[A](xs: Array[_], p: A => Boolean, len: Int): Int = {
+    var i, res = 0
+    while (i < len) {
+      if (p(xs(i).asInstanceOf[A])) res += 1
+      i += 1
+    }
+    res
+  }
+
+  /** Filters elements satisfying a predicate into a builder. Allocation-free. */
+  private[collection] def filter[A, C](xs: Array[_], p: A => Boolean, len: Int, b: mutable.Builder[A, C]): C = {
+    var i = 0
+    while (i < len) {
+      val x = xs(i).asInstanceOf[A]
+      if (p(x)) b += x
+      i += 1
+    }
+    b.result()
+  }
+
   @SerialVersionUID(3L)
   private class ArrayView[A](xs: Array[A]) extends AbstractIndexedSeqView[A] {
     def length = xs.length

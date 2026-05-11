@@ -278,6 +278,28 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def sliding(size: Int, step: Int): Iterator[ArrayBuffer[A]] =
     new MutationTracker.CheckedIterator(super.sliding(size = size, step = step), mutationCount)
+
+  override def foreach[U](f: A => U): Unit =
+    ArrayOps.foreach(array, f, length)
+
+  override def filter(pred: A => Boolean): ArrayBuffer[A] =
+    ArrayOps.filter(array, pred, length, newSpecificBuilder)
+
+  override def filterNot(pred: A => Boolean): ArrayBuffer[A] = filter(x => !pred(x))
+
+  override def indexWhere(p: A => Boolean, from: Int): Int =
+    ArrayOps.indexWhere(array, p, from, length)
+
+  override def find(p: A => Boolean): Option[A] =
+    ArrayOps.find(array, p, 0, length)
+
+  override def exists(p: A => Boolean): Boolean = indexWhere(p) >= 0
+
+  override def forall(p: A => Boolean): Boolean =
+    ArrayOps.forall(array, p, length)
+
+  override def count(p: A => Boolean): Int =
+    ArrayOps.count(array, p, length)
 }
 
 /**

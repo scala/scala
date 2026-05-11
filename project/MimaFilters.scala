@@ -50,6 +50,20 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.getChars"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.SeqCharSequence.getChars"),
 
+    // Optimized overrides for array-backed collections (narrower return types)
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArrayBuffer.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArrayBuffer.filterNot"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArraySeq.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArraySeq.filterNot"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ArraySeq.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ArraySeq.filterNot"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArrayDeque.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArrayDeque.filterNot"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.Queue.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.Queue.filterNot"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.Stack.filter"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.Stack.filterNot"),
+
   )
 
   override val buildSettings = Seq(
