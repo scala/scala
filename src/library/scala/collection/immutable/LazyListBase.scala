@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
  * class has access to the corresponding field. So it needs to be called in the class where the field is
  * declared (fields are always private in Scala).
  */
-abstract class LazyListBase[+A] private[immutable] (initialTail: AnyRef) extends scala.collection.AbstractSeq[A] with Serializable {
+abstract class LazyListBase[+A] private[immutable] (initialTail: AnyRef) extends AbstractSeq[A] with Serializable {
   /** See [[LazyList._head]] for the possible states of this field. */
   @volatile private var _tail: AnyRef /* () => LazyList[A] | Thread | InRace | LazyList[A] */ = initialTail
 
