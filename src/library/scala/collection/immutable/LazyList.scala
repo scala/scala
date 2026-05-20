@@ -311,7 +311,7 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
         case t: Thread =>
           if (LazyListBase.isCurrentThread(t)) selfRef()
           val ir = InRace(t)
-          if (_tailUpdater.compareAndSet(this, t, ir))
+          if (TailUpdater.updater.compareAndSet(this, t, ir))
             ir.await()
           // loop on lost CAS
 
@@ -323,7 +323,7 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
           // use the current thread as marker that `fun` is being evaluated.
           // this way, there is no allocation in the common case where there's no race.
           // if multiple threads attempt to initialize a LazyList, an `InRace` instance is created to coordinate.
-          if (_tailUpdater.compareAndSet(this, fun, Thread.currentThread)) {
+          if (TailUpdater.updater.compareAndSet(this, fun, Thread.currentThread)) {
             var ex: Throwable = null
             // `fun` returns a LazyList that represents the state (head/tail) of `this`. We call `evaluated` to ensure
             // the result is initialized, to prevent races when reading `rawTail` / `rawHead` below.
@@ -336,7 +336,7 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
             }
             // update `_tail` before `_head`, because `_head` is used to test `isEvaluated`
             val newTail = if (ex == null) l.rawTail else fun
-            val sentinel = _tailUpdater.getAndSet(this, newTail)
+            val sentinel = TailUpdater.updater.getAndSet(this, newTail)
             if (ex == null) _head = l.rawHead
             sentinel match {
               case ir: InRace => ir.countDown()
@@ -1081,7 +1081,11 @@ object LazyList extends SeqFactory[LazyList] {
 
   private val Empty: LazyList[Nothing] = new LazyList(EmptyMarker)
 
-  private val _tailUpdater: LazyListBase.TailUpdater = Empty.makeTailUpdater
+  // Holder object so the updater is created on first use, not when `LazyList` is initialized,
+  // without the cost of a lazy val on the hot path.
+  private object TailUpdater {
+    val updater: LazyListBase.TailUpdater = Empty.makeTailUpdater
+  }
 
   /** Creates a new LazyList. */
   @inline private def newLL[A](state: => LazyList[A]): LazyList[A] = new LazyList[A](() => state)
