@@ -349,25 +349,25 @@ object Ordering extends LowPriorityOrderingImplicits {
     def compare(x: Boolean, y: Boolean): Int = java.lang.Boolean.compare(x, y)
   }
   @SerialVersionUID(-94703182178890445L)
-  implicit object Boolean extends BooleanOrdering
+  implicit object Boolean extends BooleanOrdering with CachedReverse[Boolean]
 
   trait ByteOrdering extends Ordering[Byte] {
     def compare(x: Byte, y: Byte): Int = java.lang.Byte.compare(x, y)
   }
   @SerialVersionUID(-2268545360148786406L)
-  implicit object Byte extends ByteOrdering
+  implicit object Byte extends ByteOrdering with CachedReverse[Byte]
 
   trait CharOrdering extends Ordering[Char] {
     def compare(x: Char, y: Char): Int = java.lang.Character.compare(x, y)
   }
   @SerialVersionUID(2588141633104296698L)
-  implicit object Char extends CharOrdering
+  implicit object Char extends CharOrdering with CachedReverse[Char]
 
   trait ShortOrdering extends Ordering[Short] {
     def compare(x: Short, y: Short): Int = java.lang.Short.compare(x, y)
   }
   @SerialVersionUID(4919657051864630912L)
-  implicit object Short extends ShortOrdering
+  implicit object Short extends ShortOrdering with CachedReverse[Short]
 
   trait IntOrdering extends Ordering[Int] {
     def compare(x: Int, y: Int): Int = java.lang.Integer.compare(x, y)
@@ -379,7 +379,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     def compare(x: Long, y: Long): Int = java.lang.Long.compare(x, y)
   }
   @SerialVersionUID(-5231423581640563981L)
-  implicit object Long extends LongOrdering
+  implicit object Long extends LongOrdering with CachedReverse[Long]
 
   /** `Ordering`s for `Float`s.
     *
