@@ -357,11 +357,30 @@ abstract class SymbolTable extends macros.Universe
       }
     }
     // enter decls of parent classes
-    for (p <- container.parentSymbolsIterator) {
-      if (p != definitions.ObjectClass) {
-        openPackageModule(p, dest)
+    def enterFromParentOf(container: Symbol): Unit =
+      for (p <- container.parentSymbolsIterator if p != definitions.ObjectClass) {
+        for (member <- p.info.decls.iterator if !member.isPrivate && member.isType) {
+          val existing = dest.info.decl(member.name)
+          if (existing.exists && existing.isType)
+            dest.info.decls.unlink(existing)
+        }
+        for (member <- p.info.decls.iterator if !member.isPrivate && !member.isConstructor) {
+          dest.info.decls.enter(member)
+        }
+        enterFromParentOf(p)
       }
+    enterFromParentOf(container)
+  }
+
+  /** if there's a `package` member object in `pkgClass`, enter its members into it. */
+  def openPackageModule(pkgClass: Symbol, force: Boolean = false): Unit = {
+    val pkgModule  = pkgClass.packageObject
+    def fromSource = pkgModule.rawInfo match {
+      case ltp: SymLoader => ltp.fromSource
+      case _ => false
     }
+    if (pkgModule.isModule && !fromSource)
+      openPackageModule(pkgModule, pkgClass)
   }
 
   /** Convert array parameters denoting a repeated parameter of a Java method
@@ -386,17 +405,6 @@ abstract class SymbolTable extends macros.Universe
 
   abstract class SymLoader extends LazyType {
     def fromSource = false
-  }
-
-  /** if there's a `package` member object in `pkgClass`, enter its members into it. */
-  def openPackageModule(pkgClass: Symbol, force: Boolean = false): Unit = {
-    val pkgModule  = pkgClass.packageObject
-    def fromSource = pkgModule.rawInfo match {
-      case ltp: SymLoader => ltp.fromSource
-      case _ => false
-    }
-    if (pkgModule.isModule && !fromSource)
-      openPackageModule(pkgModule, pkgClass)
   }
 
   object perRunCaches {
