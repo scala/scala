@@ -831,14 +831,12 @@ class LazyListLazinessTest {
 
     val tailInitFactory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
+        def elem(): LazyList[Int] = { init.evaluate(index); LazyList.fill(1)(index) }
         if (index >= LazinessChecker.count) LazyList.empty
-        else {
-          init.evaluate(index)
-          LazyList.fill(1)(index) #::: gen(index + 1)
-        }
+        else elem() #::: gen(index + 1)
       }
 
-      LazyList.empty lazyAppendedAll gen(0) // prevent initial state evaluation
+      gen(0)
     }
     assertRepeatedlyLazy(tailInitFactory)
   }
@@ -893,6 +891,7 @@ class LazyListLazinessTest {
     assertRepeatedlyLazy(factory)
   }
 
+  // TODO: fix this test after impl is made lazier
   @Test
   def range_properlyLazy(): Unit = {
     var counter = 0
@@ -925,7 +924,7 @@ class LazyListLazinessTest {
     def checkRange(ll: => LazyList[CustomLong]): Unit = {
       counter = 0
       ll
-      assert(counter < 10)
+      assert(counter < 10) // TODO: be much more precise
     }
 
     checkRange(LazyList.range(CustomLong(0), CustomLong(1000)))
