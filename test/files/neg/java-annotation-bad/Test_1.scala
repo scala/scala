@@ -24,7 +24,7 @@ object Test {
   val k: jla.Annotation     = a // ok
   val l: jla.Annotation     = c // ok
 
-  val m = new Ann_0 { val annotationType = classOf[Ann_0] } // ok
-  val n = new Ann_1 { val annotationType = classOf[Ann_1] } // ok
+  val m = new Ann_0 { val annotationType = classOf[Ann_0]; def value = Array() } // ok
+  val n = new Ann_1 { val annotationType = classOf[Ann_1]; def value = Array() } // ok
 
 }

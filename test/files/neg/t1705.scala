@@ -12,7 +12,7 @@ object crashing {
       }
     }
     val x1 = {
-      class C[T] { val x: T }
+      class C[T] { val x: T = ??? }
       new C[String]
     }
   }

@@ -10,5 +10,8 @@ t7131.scala:28: warning: Implicit definition should have explicit type (inferred
 t7131.scala:43: warning: Implicit definition should have explicit type (inferred ObservableValue.NestedMappable[T,Container]) [quickfixable]
   implicit def convertToSimpleMappable[T, Container[X] <: ObservableValue.HasMap[X, Container]](x: ObservableValue[Container[T]]) =
                ^
+t7131.scala:5: error: contravariant type T occurs in covariant position in type T of method value
+  def value: T
+      ^
 2 warnings
-1 error
+2 errors

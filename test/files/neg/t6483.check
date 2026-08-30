@@ -6,4 +6,10 @@ t6483.scala:20: error: implementation restriction: nested class is not allowed i
 This restriction is planned to be removed in subsequent releases.
     class Inner extends T {
           ^
-2 errors
+t6483.scala:19: error: incompatible type in overriding
+def foo: Int (defined in trait T);
+ found   : Unit
+ required: Int
+  override def foo {
+               ^
+3 errors

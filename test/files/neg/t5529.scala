@@ -4,7 +4,7 @@
 package test;
 
 object Test {
-  sealed class File {
+  sealed abstract class File {
     val i = 1
   }
   sealed class Dir extends File { }

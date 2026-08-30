@@ -7,7 +7,7 @@ object Z {
   def transf(a: A, b: B): X = null
 }
 
-class Test {
+abstract class Test {
 
   def bar(): (A, B)
 

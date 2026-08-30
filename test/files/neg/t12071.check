@@ -27,5 +27,11 @@ t12071.scala:31: warning: Lines starting with an operator are taken as an infix 
 To force the current interpretation as a separate statement, add an explicit `;`, add an empty line, or remove spaces after the operator.
     `compareTo` (2 - 1)
     ^
-4 warnings
+t12071.scala:20: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    + 2
+    ^
+t12071.scala:25: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    + 1
+    ^
+6 warnings
 2 errors

@@ -1,4 +1,10 @@
 t691.scala:27: error: ambiguous parent class qualifier
     trait TiC extends super[Arrow].Ti2 with super[AssignArrow].Ti1;
                       ^
-1 error
+t691.scala:26: error: incompatible type in overriding
+type T <: Composition.arrow0.Ti2 (defined in trait Arrow);
+ found   : Composition.arrow0.TiC
+ required:  <: Composition.arrow0.Ti2
+    type T = TiC
+         ^
+2 errors

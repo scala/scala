@@ -31,4 +31,7 @@ AnnotationTest.scala:13: error: annotation argument needs to be a constant; foun
 AnnotationTest.scala:15: error: annotation argument needs to be a constant; found: Constants.StringAdd
   @StringAnnotation(Constants.StringAdd)
                               ^
-11 errors
+AnnotationTest.scala:16: error: Java annotation IntAnnotation may not appear multiple times on method test
+  def test: Unit
+      ^
+12 errors

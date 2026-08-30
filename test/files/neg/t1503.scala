@@ -21,9 +21,9 @@ class Test {
 
   // edge case, Boolean and Unit only equal themselves
 
-  val f: Boolean  = (true: Any) match { case b @ true => b }
-  val f2: Boolean = (true: Any) match { case b @ (_: true) => b }
-  val f3: true    = (true: Any) match { case b @ (_: true) => b }
+  val f: Boolean  = (true: Any) match { case n @ true => n }
+  val f2: Boolean = (true: Any) match { case n @ (_: true) => n }
+  val f3: true    = (true: Any) match { case n @ (_: true) => n }
 
   def g(): Unit  = ((): Any) match { case u @ () => u }
   def g2(): Unit = ((): Any) match { case u @ (_: Unit) => u }        // no value discard

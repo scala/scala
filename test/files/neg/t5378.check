@@ -28,4 +28,13 @@ t5378.scala:28: error: Parameter type in structural refinement may not refer to 
 t5378.scala:29: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
     def apply2[T1 <: T](s: String)(x: Int)(value: T1) = ???
                                            ^
-10 errors
+t5378.scala:38: error: incompatible type in overriding
+type B2 <: this.B1 (defined in trait Bippy);
+ found   : String
+ required:  <: this.B1
+    new Bippy { type B2 = String ; def apply[T1 <: B2](value: T1) = ??? }
+                     ^
+t5378.scala:27: error: covariant type T occurs in contravariant position in type AnyRef{def apply1(s: String)(x: Int)(value: T): Nothing; def apply2[T1 <: T](s: String)(x: Int)(value: T1): Nothing} of method contains4
+  def contains4 = new {
+      ^
+12 errors

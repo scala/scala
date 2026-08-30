@@ -587,7 +587,7 @@ abstract class RefChecks extends Transform {
           if (pair.sameKind && lowType.substSym(member.typeParams, other.typeParams) =:= highType) ()
           else overrideTypeError() // (1.6)
         }
-        def checkOverrideAbstractType(): Unit = {
+        def checkOverrideAbstractType(): Unit = try{
           if (!(highInfo.bounds containsType lowType)) { // (1.7.1)
             overrideTypeError(); // todo: do an explaintypes with bounds here
             explainTypes(_.bounds containsType _, highInfo, lowType)
@@ -616,6 +616,8 @@ abstract class RefChecks extends Transform {
           }
           else if (member.isAbstractType && lowType.isVolatile && !highInfo.upperBound.isVolatile)
             overrideErrorWithMemberInfo("volatile type member cannot override type member with non-volatile upper bound:")
+        } catch {
+          case e:java.lang.StackOverflowError if global.typerReportedErrors => // caused by neg/t510
         }
         def checkOverrideTerm(): Unit = {
           member.cookJavaRawInfo() // #11584, #11840
@@ -1553,6 +1555,7 @@ abstract class RefChecks extends Transform {
                    )
           if (ok) null
           else if (!args.exists(tree.eq)) bailure
+          else if (global.typerReportedErrors) null // because fn.tpe.params can be empty list
           else {
             val i = args.indexWhere(tree.eq)
             val isLast = i == args.length - 1
@@ -1617,15 +1620,15 @@ abstract class RefChecks extends Transform {
           if (!inPattern) checkTypeRef(UnboundExistential.toWildcardIn(tpe))
           checkUndesired(tpe.sym)
           tpe.mapOver(this)
-        case tpe =>
-          tpe.mapOver(this)
+        case null => null // when running after type errors
+        case tpe => tpe.mapOver(this)
       }
 
       private def checkTypeRef(tpe: Type): Unit = tpe match {
         case TypeRef(pre, sym, args) =>
           if (sym.isJavaDefined)
             sym.typeParams.foreach(_.cookJavaRawInfo())
-          if (!tpe.isHigherKinded && !skipBounds)
+          if (!global.typerReportedErrors && !tpe.isHigherKinded && !skipBounds) // checkBounds can fail on valid cases if running after type errors
             checkBounds(tree, pre, sym.owner, sym.typeParams, args)
         case _ =>
       }
@@ -1737,7 +1740,7 @@ abstract class RefChecks extends Transform {
                 applyRefchecksToAnnotations(dc.check()) // #2416
               case _ =>
             }
-          if (!inPattern)
+          if (!global.typerReportedErrors && !inPattern) // tree.tpe is null in typerReportedErrors
             tree.setType(tree.tpe.map {
               case AnnotatedType(anns, ul) =>
                 checkNoThrows(anns)
@@ -1759,7 +1762,8 @@ abstract class RefChecks extends Transform {
           !module.exists { case t @ Select(_, _) => t.symbol != null && t.symbol.isStructuralRefinementMember case _ => false }
 
       }
-      sym.name == nme.apply &&
+      !global.typerReportedErrors && // sym can be null
+        sym.name == nme.apply &&
         sym.isCase && // only synthetic case apply methods
         isClassTypeAccessible &&
         !sym.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(sym)
@@ -1782,7 +1786,8 @@ abstract class RefChecks extends Transform {
           List(List(Function(
             List(ValDef(_, pname, tpt, _)),
             Match(_, CaseDef(pat1, _, _) :: _)))))
-          if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
+          if (!global.typerReportedErrors && // because tree.tpe can be null
+            (pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
             isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
           qual
         case _ =>
@@ -1877,7 +1882,7 @@ abstract class RefChecks extends Transform {
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
-        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
+        assert(global.typerReportedErrors || !(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
       qual match {
         case Super(_, mix)  => checkSuper(mix)
@@ -1941,7 +1946,7 @@ abstract class RefChecks extends Transform {
       }
 
     private def checkUnexpandedMacro(t: Tree) =
-      if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro)
+      if (!global.typerReportedErrors && !t.isDef && t.hasSymbolField && t.symbol.isTermMacro)
         reporter.error(t.pos, "macro has not been expanded")
 
     // if expression in statement position (of template or block)
@@ -2091,7 +2096,8 @@ abstract class RefChecks extends Transform {
             tree.setType(RefCheckTypeMap.check(tree.tpe, tree, inPattern)).transform(this)
 
           case treeInfo.Application(fun, targs, argss) =>
-            if (targs.nonEmpty)
+            if(!global.typerReportedErrors && // skip in typerReportedErrors because fn.tpe.typeParams is null
+              targs.nonEmpty)
               checkBounds(tree, NoPrefix, NoSymbol, fun.tpe.typeParams, targs map (_.tpe))
             val res = transformApplication(tree, fun, targs, argss)
             res.transform(this)
@@ -2100,7 +2106,8 @@ abstract class RefChecks extends Transform {
             transformIf(x).transform(this)
 
           case New(tpt) =>
-            enterReference(tree.pos, tpt.tpe.typeSymbol)
+            if(!global.typerReportedErrors) // skip because tpt.tpe is null
+              enterReference(tree.pos, tpt.tpe.typeSymbol)
             tree.transform(this)
 
           case treeInfo.WildcardStarArg(_) =>
@@ -2109,7 +2116,8 @@ abstract class RefChecks extends Transform {
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
-            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
+            // skip in typerReportedErrors because sym == NoSymbol in >100 partests
+            if (!global.typerReportedErrors && name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
               assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
               enterReference(tree.pos, sym)
             }

@@ -3,4 +3,10 @@ t5067.scala:3: error: type mismatch;
  required: (Int, Int) => Int
   override def tupled: (Int, Int) => Int = super.tupled
                                                  ^
-1 error
+t5067.scala:3: error: incompatible type in overriding
+def tupled: ((Int, Int)) => Int (defined in trait Function2);
+ found   : (Int, Int) => Int
+ required: ((Int, Int)) => Int
+  override def tupled: (Int, Int) => Int = super.tupled
+               ^
+2 errors

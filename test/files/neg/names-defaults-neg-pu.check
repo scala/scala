@@ -150,5 +150,27 @@ names-defaults-neg-pu.scala:98: warning: naming parameter deprNam4Arg is depreca
 names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprecated.
   deprNam5(deprNam5Arg = null)
                        ^
-3 warnings
-36 errors
+names-defaults-neg-pu.scala:15: warning: a pure expression does nothing in statement position
+  test2(x = 1)
+            ^
+names-defaults-neg-pu.scala:107: warning: method + in class Int is deprecated (since 2.13.0): Adding a number and a String is deprecated. Use the string interpolation `s"$num$str"`
+  def test1(a: Int, b: String) = a +": "+ b
+                                   ^
+names-defaults-neg-pu.scala:119: error: in class C, multiple overloaded alternatives of method bar define default arguments.
+The members with defaults are defined in class C and class B.
+class C extends B {
+      ^
+names-defaults-neg-pu.scala:123: error: incompatible type in overriding
+def bar$default$1: String (defined in class B);
+ found   : Int
+ required: String
+  def bar(i: Int = 129083) = i
+          ^
+names-defaults-neg-pu.scala:137: warning: a pure expression does nothing in statement position
+  delay(var2 = 40)
+               ^
+names-defaults-neg-pu.scala:139: warning: method + in class Int is deprecated (since 2.13.0): Adding a number and a String is deprecated. Use the string interpolation `s"$num$str"`
+  def testAnnFun(a: Int, b: String) = println(a +": "+ b)
+                                                ^
+7 warnings
+38 errors
