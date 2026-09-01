@@ -152,7 +152,15 @@ trait Erasure {
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (isDottyEnumSingleton(sym)) apply(mergeParents(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
-        else apply(transparentDealias(sym, pre, sym.owner)) // alias type or abstract type (including opaque type)
+        else {
+          // This `else` branch is triggered when we're erasing a type alias or abstract type
+          // (including Scala 3 opaque types). Dealias and erase the underlying type. For polymorphic aliases like
+          // `type F[X] = X`, we must apply the type arguments to get the concrete type before erasure.
+          val dealiased = transparentDealias(sym, pre, sym.owner)
+          val applied = if (args.nonEmpty) appliedType(dealiased, args) else dealiased
+
+          apply(applied)
+        }
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>
