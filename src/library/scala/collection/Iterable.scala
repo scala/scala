@@ -286,18 +286,27 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       }
     }
 
-  /** Returns a value class containing operations for comparing the size of this $coll to a test value.
+  /** Returns a value class containing operations for comparing the size of this $coll to a test value or the size of
+   * another collection.
     *
-    * These operations are implemented in terms of [[sizeCompare(Int) `sizeCompare(Int)`]], and
-    * allow the following more readable usages:
+    * These operations are implemented in terms of [[sizeCompare(Int) `sizeCompare(Int)`]] and
+   * [[sizeCompare(Iterable[_]) `sizeCompare(Iterable[_])`]]. They allow the following more readable usages:
     *
     * {{{
-    * this.sizeIs < size     // this.sizeCompare(size) < 0
-    * this.sizeIs <= size    // this.sizeCompare(size) <= 0
-    * this.sizeIs == size    // this.sizeCompare(size) == 0
-    * this.sizeIs != size    // this.sizeCompare(size) != 0
-    * this.sizeIs >= size    // this.sizeCompare(size) >= 0
-    * this.sizeIs > size     // this.sizeCompare(size) > 0
+    * this.sizeIs < size          // this.sizeCompare(size) < 0
+    * this.sizeIs <= size         // this.sizeCompare(size) <= 0
+    * this.sizeIs == size         // this.sizeCompare(size) == 0
+    * this.sizeIs != size         // this.sizeCompare(size) != 0
+    * this.sizeIs >= size         // this.sizeCompare(size) >= 0
+    * this.sizeIs > size          // this.sizeCompare(size) > 0
+    *
+    * this.sizeIs < that.sizeIs   // this.sizeCompare(that) < 0
+    * this.sizeIs <= that.sizeIs  // this.sizeCompare(that) <= 0
+    * this.sizeIs == that.sizeIs  // this.sizeCompare(that) == 0
+    * this.sizeIs != that.sizeIs  // this.sizeCompare(that) != 0
+    * this.sizeIs >= that.sizeIs  // this.sizeCompare(that) >= 0
+    * this.sizeIs > that.sizeIs   // this.sizeCompare(that) > 0
+    * this.sizeIs > that.sizeIs   // this.sizeCompare(that) > 0
     * }}}
     */
   @inline final def sizeIs: IterableOps.SizeCompareOps = new IterableOps.SizeCompareOps(this)
@@ -860,10 +869,11 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
 object IterableOps {
 
-  /** Operations for comparing the size of a collection to a test value.
+  /** Operations for comparing the size of a collection to a test value or another collection.
     *
     * These operations are implemented in terms of
-    * [[scala.collection.IterableOps!.sizeCompare(Int):Int* `sizeCompare(Int)`]]
+    * [[scala.collection.IterableOps!.sizeCompare(Int):Int* `sizeCompare(Int)`]] and
+    * [[scala.collection.IterableOps!.sizeCompare(Iterable[_]):Int* `sizeCompare(Iterable[_])`]].
     */
   final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
     /** Tests if the size of the collection is less than some value. */
@@ -878,6 +888,18 @@ object IterableOps {
     @inline def >=(size: Int): Boolean = it.sizeCompare(size) >= 0
     /** Tests if the size of the collection is greater than some value. */
     @inline def >(size: Int): Boolean = it.sizeCompare(size) > 0
+    /** Tests if the size of the collection is less than some other collection. */
+    @inline def <(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) < 0
+    /** Tests if the size of the collection is less than or equal to some other collection. */
+    @inline def <=(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) <= 0
+    /** Tests if the size of the collection is equal to some other collection. */
+    @inline def ==(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) == 0
+    /** Tests if the size of the collection is not equal to some other collection. */
+    @inline def !=(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) != 0
+    /** Tests if the size of the collection is greater than or equal to some other collection. */
+    @inline def >=(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) >= 0
+    /** Tests if the size of the collection is greater than some other collection. */
+    @inline def >(other: SizeCompareOps): Boolean = it.sizeCompare(other.it.toIterable: @nowarn("cat=deprecation")) > 0
   }
 
   /** A trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
