@@ -57,6 +57,10 @@ object MimaFilters extends AutoPlugin {
     // scala/scala#11242
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.LazyList"), // superclass change from AbstractSeq to LazyListBase
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyListBase*"), // private[immutable]
+
+    // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubTermSymbol"),
   )
 
   override val buildSettings = Seq(
