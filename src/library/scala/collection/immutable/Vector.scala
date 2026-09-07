@@ -340,7 +340,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   private[collection] def startIndex: Int = 0
   private[collection] def endIndex: Int = length
   private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit =
-    s.it = fullIterator.asInstanceOf[NewVectorIterator[B]]
+    s.it = fullIterator
 }
 
 
@@ -440,6 +440,40 @@ private sealed abstract class InlineVector[+A] extends VectorImpl[A](null) {
     case 1 => new InlineVector1(apply(lo))
     case 2 => new InlineVector2(apply(lo), apply(lo + 1))
     case _ => new InlineVector3(apply(lo), apply(lo + 1), apply(lo + 2))
+  }
+
+  override protected[this] final def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val n = inlineLength
+    if (n + k > 4 && k <= WIDTH - n) {
+      val a = new Arr1(n + k)
+      var i = 0
+      while (i < n) {
+        a(i) = apply(i).asInstanceOf[AnyRef]
+        i += 1
+      }
+      @annotation.unused val copied = suffix match {
+        case it: Iterable[B] => it.copyToArray(a.asInstanceOf[Array[Any]], n)
+        case _               => suffix.iterator.copyToArray(a.asInstanceOf[Array[Any]], n)
+      }
+      new Vector1(a)
+    } else super.appendedAll0(suffix, k)
+  }
+
+  override protected[this] final def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val n = inlineLength
+    if (n + k > 4 && k <= WIDTH - n) {
+      val a = new Arr1(k + n)
+      @annotation.unused val copied = prefix match {
+        case it: Iterable[B] => it.copyToArray(a.asInstanceOf[Array[Any]], 0)
+        case _               => prefix.iterator.copyToArray(a.asInstanceOf[Array[Any]], 0)
+      }
+      var i = 0
+      while (i < n) {
+        a(k + i) = apply(i).asInstanceOf[AnyRef]
+        i += 1
+      }
+      new Vector1(a)
+    } else super.prependedAll0(prefix, k)
   }
 
   protected[immutable] final def vectorSliceCount: Int = 1
