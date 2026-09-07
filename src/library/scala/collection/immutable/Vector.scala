@@ -416,12 +416,130 @@ private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
   * 
   * Inline variants are fixed-size and store contents directly in fields.
   */
-private sealed abstract class InlineVector[+A] extends VectorImpl[A](null) {
+private sealed abstract class InlineVector[+A](private[immutable] val elem1: A) extends VectorImpl[A](null) {
 
-  private[immutable] def inlineLength: Int
-  private[immutable] def elem1: A
-  private[immutable] def lastElem: A
-  private[immutable] def inlineForeach[U](f: A => U): Unit
+  private[immutable] final def inlineLength: Int = this match {
+    case _: InlineVector1[_] => 1
+    case _: InlineVector2[_] => 2
+    case _: InlineVector3[_] => 3
+    case _: InlineVector4[_] => 4
+  }
+
+  private[immutable] final def lastElem: A = this match {
+    case v: InlineVector1[A @unchecked] => v.elem1
+    case v: InlineVector2[A @unchecked] => v.elem2
+    case v: InlineVector3[A @unchecked] => v.elem3
+    case v: InlineVector4[A @unchecked] => v.elem4
+  }
+
+  private[immutable] final def inlineForeach[U](f: A => U): Unit = this match {
+    case _: InlineVector1[_]            => f(elem1); ()
+    case v: InlineVector2[A @unchecked] => f(elem1); f(v.elem2); ()
+    case v: InlineVector3[A @unchecked] => f(elem1); f(v.elem2); f(v.elem3); ()
+    case v: InlineVector4[A @unchecked] => f(elem1); f(v.elem2); f(v.elem3); f(v.elem4); ()
+  }
+
+  final def apply(index: Int): A = this match {
+    case _: InlineVector1[_] =>
+      if (index == 0) elem1 else throw ioob(index)
+    case v: InlineVector2[A @unchecked] => index match {
+      case 0 => elem1
+      case 1 => v.elem2
+      case _ => throw ioob(index)
+    }
+    case v: InlineVector3[A @unchecked] => index match {
+      case 0 => elem1
+      case 1 => v.elem2
+      case 2 => v.elem3
+      case _ => throw ioob(index)
+    }
+    case v: InlineVector4[A @unchecked] => index match {
+      case 0 => elem1
+      case 1 => v.elem2
+      case 2 => v.elem3
+      case 3 => v.elem4
+      case _ => throw ioob(index)
+    }
+  }
+
+  final override def updated[B >: A](index: Int, elem: B): Vector[B] = this match {
+    case _: InlineVector1[_] =>
+      if (index == 0) new InlineVector1(elem) else throw ioob(index)
+    case v: InlineVector2[A @unchecked] => index match {
+      case 0 => new InlineVector2(elem, v.elem2)
+      case 1 => new InlineVector2(elem1, elem)
+      case _ => throw ioob(index)
+    }
+    case v: InlineVector3[A @unchecked] => index match {
+      case 0 => new InlineVector3(elem, v.elem2, v.elem3)
+      case 1 => new InlineVector3(elem1, elem, v.elem3)
+      case 2 => new InlineVector3(elem1, v.elem2, elem)
+      case _ => throw ioob(index)
+    }
+    case v: InlineVector4[A @unchecked] => index match {
+      case 0 => new InlineVector4(elem, v.elem2, v.elem3, v.elem4)
+      case 1 => new InlineVector4(elem1, elem, v.elem3, v.elem4)
+      case 2 => new InlineVector4(elem1, v.elem2, elem, v.elem4)
+      case 3 => new InlineVector4(elem1, v.elem2, v.elem3, elem)
+      case _ => throw ioob(index)
+    }
+  }
+
+  final override def appended[B >: A](elem: B): Vector[B] = this match {
+    case _: InlineVector1[_]            => new InlineVector2(elem1, elem)
+    case v: InlineVector2[A @unchecked] => new InlineVector3(elem1, v.elem2, elem)
+    case v: InlineVector3[A @unchecked] => new InlineVector4(elem1, v.elem2, v.elem3, elem)
+    case v: InlineVector4[A @unchecked] =>
+      val a = new Arr1(5)
+      a(0) = elem1.asInstanceOf[AnyRef]
+      a(1) = v.elem2.asInstanceOf[AnyRef]
+      a(2) = v.elem3.asInstanceOf[AnyRef]
+      a(3) = v.elem4.asInstanceOf[AnyRef]
+      a(4) = elem.asInstanceOf[AnyRef]
+      new Vector1(a)
+  }
+
+  final override def prepended[B >: A](elem: B): Vector[B] = this match {
+    case _: InlineVector1[_]            => new InlineVector2(elem, elem1)
+    case v: InlineVector2[A @unchecked] => new InlineVector3(elem, elem1, v.elem2)
+    case v: InlineVector3[A @unchecked] => new InlineVector4(elem, elem1, v.elem2, v.elem3)
+    case v: InlineVector4[A @unchecked] =>
+      val a = new Arr1(5)
+      a(0) = elem.asInstanceOf[AnyRef]
+      a(1) = elem1.asInstanceOf[AnyRef]
+      a(2) = v.elem2.asInstanceOf[AnyRef]
+      a(3) = v.elem3.asInstanceOf[AnyRef]
+      a(4) = v.elem4.asInstanceOf[AnyRef]
+      new Vector1(a)
+  }
+
+  final override def map[B](f: A => B): Vector[B] = this match {
+    case _: InlineVector1[_]            => new InlineVector1(f(elem1))
+    case v: InlineVector2[A @unchecked] => new InlineVector2(f(elem1), f(v.elem2))
+    case v: InlineVector3[A @unchecked] => new InlineVector3(f(elem1), f(v.elem2), f(v.elem3))
+    case v: InlineVector4[A @unchecked] => new InlineVector4(f(elem1), f(v.elem2), f(v.elem3), f(v.elem4))
+  }
+
+  final override def tail: Vector[A] = this match {
+    case _: InlineVector1[_]            => Vector0
+    case v: InlineVector2[A @unchecked] => new InlineVector1(v.elem2)
+    case v: InlineVector3[A @unchecked] => new InlineVector2(v.elem2, v.elem3)
+    case v: InlineVector4[A @unchecked] => new InlineVector3(v.elem2, v.elem3, v.elem4)
+  }
+
+  final override def init: Vector[A] = this match {
+    case _: InlineVector1[_]            => Vector0
+    case _: InlineVector2[_]            => new InlineVector1(elem1)
+    case v: InlineVector3[A @unchecked] => new InlineVector2(elem1, v.elem2)
+    case v: InlineVector4[A @unchecked] => new InlineVector3(elem1, v.elem2, v.elem3)
+  }
+
+  final override def foldLeft[B](z: B)(f: (B, A) => B): B = this match {
+    case _: InlineVector1[_]            => f(z, elem1)
+    case v: InlineVector2[A @unchecked] => f(f(z, elem1), v.elem2)
+    case v: InlineVector3[A @unchecked] => f(f(f(z, elem1), v.elem2), v.elem3)
+    case v: InlineVector4[A @unchecked] => f(f(f(f(z, elem1), v.elem2), v.elem3), v.elem4)
+  }
 
   private[immutable] final def inlineFilter(pred: A => Boolean, isFlipped: Boolean): Vector[A] = {
     val n   = inlineLength
@@ -488,156 +606,25 @@ private sealed abstract class InlineVector[+A] extends VectorImpl[A](null) {
 }
 
 
-private final class InlineVector1[+A](private[immutable] val elem1: A) extends InlineVector[A] {
-  private[immutable] def inlineLength: Int = 1
-  private[immutable] def lastElem: A = elem1
-  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); () }
-
-  @inline def apply(index: Int): A =
-    if (index == 0) elem1 else throw ioob(index)
-
-  override def updated[B >: A](index: Int, elem: B): Vector[B] =
-    if (index == 0) new InlineVector1(elem) else throw ioob(index)
-
-  override def appended[B >: A](elem: B): Vector[B] = new InlineVector2(elem1, elem)
-
-  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector2(elem, elem1)
-
-  override def map[B](f: A => B): Vector[B] = new InlineVector1(f(elem1))
-
-  override def tail: Vector[A] = Vector0
-
-  override def init: Vector[A] = Vector0
-
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(z, elem1)
-}
-
+private final class InlineVector1[+A](_elem1: A) extends InlineVector[A](_elem1)
 
 private final class InlineVector2[+A](
-  private[immutable] val elem1: A,
+  _elem1: A,
   private[immutable] val elem2: A,
-) extends InlineVector[A] {
-  private[immutable] def inlineLength: Int = 2
-  private[immutable] def lastElem: A = elem2
-  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); () }
-
-  @inline def apply(index: Int): A = index match {
-    case 0 => elem1
-    case 1 => elem2
-    case _ => throw ioob(index)
-  }
-
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
-    case 0 => new InlineVector2(elem, elem2)
-    case 1 => new InlineVector2(elem1, elem)
-    case _ => throw ioob(index)
-  }
-
-  override def appended[B >: A](elem: B): Vector[B] = new InlineVector3(elem1, elem2, elem)
-
-  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector3(elem, elem1, elem2)
-
-  override def map[B](f: A => B): Vector[B] = new InlineVector2(f(elem1), f(elem2))
-
-  override def tail: Vector[A] = new InlineVector1(elem2)
-
-  override def init: Vector[A] = new InlineVector1(elem1)
-
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(z, elem1), elem2)
-}
-
+) extends InlineVector[A](_elem1)
 
 private final class InlineVector3[+A](
-  private[immutable] val elem1: A,
+  _elem1: A,
   private[immutable] val elem2: A,
   private[immutable] val elem3: A,
-) extends InlineVector[A] {
-  private[immutable] def inlineLength: Int = 3
-  private[immutable] def lastElem: A = elem3
-  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); f(elem3); () }
-
-  @inline def apply(index: Int): A = index match {
-    case 0 => elem1
-    case 1 => elem2
-    case 2 => elem3
-    case _ => throw ioob(index)
-  }
-
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
-    case 0 => new InlineVector3(elem, elem2, elem3)
-    case 1 => new InlineVector3(elem1, elem, elem3)
-    case 2 => new InlineVector3(elem1, elem2, elem)
-    case _ => throw ioob(index)
-  }
-
-  override def appended[B >: A](elem: B): Vector[B] = new InlineVector4(elem1, elem2, elem3, elem)
-
-  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector4(elem, elem1, elem2, elem3)
-
-  override def map[B](f: A => B): Vector[B] = new InlineVector3(f(elem1), f(elem2), f(elem3))
-
-  override def tail: Vector[A] = new InlineVector2(elem2, elem3)
-
-  override def init: Vector[A] = new InlineVector2(elem1, elem2)
-
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(f(z, elem1), elem2), elem3)
-}
-
+) extends InlineVector[A](_elem1)
 
 private final class InlineVector4[+A](
-  private[immutable] val elem1: A,
+  _elem1: A,
   private[immutable] val elem2: A,
   private[immutable] val elem3: A,
   private[immutable] val elem4: A,
-) extends InlineVector[A] {
-  private[immutable] def inlineLength: Int = 4
-  private[immutable] def lastElem: A = elem4
-  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); f(elem3); f(elem4); () }
-
-  @inline def apply(index: Int): A = index match {
-    case 0 => elem1
-    case 1 => elem2
-    case 2 => elem3
-    case 3 => elem4
-    case _ => throw ioob(index)
-  }
-
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
-    case 0 => new InlineVector4(elem, elem2, elem3, elem4)
-    case 1 => new InlineVector4(elem1, elem, elem3, elem4)
-    case 2 => new InlineVector4(elem1, elem2, elem, elem4)
-    case 3 => new InlineVector4(elem1, elem2, elem3, elem)
-    case _ => throw ioob(index)
-  }
-
-  override def appended[B >: A](elem: B): Vector[B] = {
-    val a = new Arr1(5)
-    a(0) = elem1.asInstanceOf[AnyRef]
-    a(1) = elem2.asInstanceOf[AnyRef]
-    a(2) = elem3.asInstanceOf[AnyRef]
-    a(3) = elem4.asInstanceOf[AnyRef]
-    a(4) = elem.asInstanceOf[AnyRef]
-    new Vector1(a)
-  }
-
-  override def prepended[B >: A](elem: B): Vector[B] = {
-    val a = new Arr1(5)
-    a(0) = elem.asInstanceOf[AnyRef]
-    a(1) = elem1.asInstanceOf[AnyRef]
-    a(2) = elem2.asInstanceOf[AnyRef]
-    a(3) = elem3.asInstanceOf[AnyRef]
-    a(4) = elem4.asInstanceOf[AnyRef]
-    new Vector1(a)
-  }
-
-  override def map[B](f: A => B): Vector[B] = new InlineVector4(f(elem1), f(elem2), f(elem3), f(elem4))
-
-  override def tail: Vector[A] = new InlineVector3(elem2, elem3, elem4)
-
-  override def init: Vector[A] = new InlineVector3(elem1, elem2, elem3)
-
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(f(f(z, elem1), elem2), elem3), elem4)
-}
+) extends InlineVector[A](_elem1)
 
 
 private final class InlineVectorIterator[+A](v: InlineVector[A]) extends AbstractIterator[A] {
