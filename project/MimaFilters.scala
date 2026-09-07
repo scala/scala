@@ -64,6 +64,7 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector2"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector3"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector4"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVectorIterator"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorStatics.smallVector"),
   )
 

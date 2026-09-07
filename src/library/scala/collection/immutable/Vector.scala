@@ -95,7 +95,8 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
       case _: SecurityException => 250
     }
 
-  private val emptyIterator = new NewVectorIterator(Vector0, 0, 0)
+  private val emptyIterator: NewVectorIterator[Nothing] =
+    new NewVectorIterator(Vector0, 0, 0)
 }
 
 
@@ -139,6 +140,11 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
     }
 
   override final def iterator: Iterator[A] =
+    if(this.isInstanceOf[Vector0.type]) Vector.emptyIterator
+    else if (this.isInstanceOf[InlineVector[_]]) new InlineVectorIterator(this.asInstanceOf[InlineVector[A]])
+    else new NewVectorIterator(this, length, vectorSliceCount)
+
+  private[this] def fullIterator: NewVectorIterator[A] =
     if(this.isInstanceOf[Vector0.type]) Vector.emptyIterator
     else new NewVectorIterator(this, length, vectorSliceCount)
 
@@ -287,10 +293,10 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
 
   override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     val s = shape.shape match {
-      case StepperShape.IntShape    => new IntVectorStepper(iterator.asInstanceOf[NewVectorIterator[Int]])
-      case StepperShape.LongShape   => new LongVectorStepper(iterator.asInstanceOf[NewVectorIterator[Long]])
-      case StepperShape.DoubleShape => new DoubleVectorStepper(iterator.asInstanceOf[NewVectorIterator[Double]])
-      case _                        => shape.parUnbox(new AnyVectorStepper[A](iterator.asInstanceOf[NewVectorIterator[A]]))
+      case StepperShape.IntShape    => new IntVectorStepper(fullIterator.asInstanceOf[NewVectorIterator[Int]])
+      case StepperShape.LongShape   => new LongVectorStepper(fullIterator.asInstanceOf[NewVectorIterator[Long]])
+      case StepperShape.DoubleShape => new DoubleVectorStepper(fullIterator.asInstanceOf[NewVectorIterator[Double]])
+      case _                        => shape.parUnbox(new AnyVectorStepper[A](fullIterator.asInstanceOf[NewVectorIterator[A]]))
     }
     s.asInstanceOf[S with EfficientSplit]
   }
@@ -334,7 +340,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   private[collection] def startIndex: Int = 0
   private[collection] def endIndex: Int = length
   private[collection] def initIterator[B >: A](s: VectorIterator[B]): Unit =
-    s.it = iterator.asInstanceOf[NewVectorIterator[B]]
+    s.it = fullIterator.asInstanceOf[NewVectorIterator[B]]
 }
 
 
@@ -597,6 +603,20 @@ private final class InlineVector4[+A](
   override def init: Vector[A] = new InlineVector3(elem1, elem2, elem3)
 
   override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(f(f(z, elem1), elem2), elem3), elem4)
+}
+
+
+private final class InlineVectorIterator[+A](v: InlineVector[A]) extends AbstractIterator[A] {
+  private[this] val n = v.inlineLength
+  private[this] var i = 0
+
+  override def knownSize: Int = n - i
+
+  def hasNext: Boolean = i < n
+
+  def next(): A =
+    if (i < n) { val r = v(i); i += 1; r }
+    else Iterator.empty.next()
 }
 
 
@@ -2476,7 +2496,7 @@ private object VectorStatics {
 }
 
 
-private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLength: Int, private[this] val sliceCount: Int) extends AbstractIterator[A] with java.lang.Cloneable {
+private final class NewVectorIterator[+A](v: Vector[A], private[this] var totalLength: Int, private[this] val sliceCount: Int) extends AbstractIterator[A] with java.lang.Cloneable {
 
   private[this] var a1: Arr1 = {
     val p = v.prefix1
