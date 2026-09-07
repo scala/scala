@@ -41,6 +41,13 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
       case _ =>
         val knownSize = it.knownSize
         if (knownSize == 0) empty[E]
+        else if (knownSize == 1) {
+          val head = it match {
+            case it: Iterable[E] => it.head
+            case _               => it.iterator.next()
+          }
+          new InlineVector1[E](head)
+        }
         else if (knownSize > 0 && knownSize <= WIDTH) {
           val a1: Arr1 = it match {
             case as: ArraySeq.ofRef[_] if as.elemTag.runtimeClass == classOf[AnyRef] =>
@@ -125,13 +132,19 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
 
   override final def length: Int =
     if(this.isInstanceOf[BigVector[_]]) this.asInstanceOf[BigVector[_]].length0
-    else prefix1.length
+    else {
+      val p = prefix1
+      if (p eq null) this.asInstanceOf[InlineVector[_]].inlineLength // null prefix1 marks the inline variants
+      else p.length
+    }
 
   override final def iterator: Iterator[A] =
     if(this.isInstanceOf[Vector0.type]) Vector.emptyIterator
     else new NewVectorIterator(this, length, vectorSliceCount)
 
   override final protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Vector[A] = {
+    if (this.isInstanceOf[InlineVector[_]]) // no prefix1 array to walk
+      return this.asInstanceOf[InlineVector[A]].inlineFilter(pred, isFlipped)
     var i = 0
     val len = prefix1.length
     while (i != len) {
@@ -285,19 +298,30 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   protected[this] def ioob(index: Int): IndexOutOfBoundsException =
     CommonErrors.indexOutOfBounds(index = index, max = length - 1)
 
-  override final def head: A =
-    if (prefix1.length == 0) throw new NoSuchElementException("empty.head")
-    else prefix1(0).asInstanceOf[A]
+  override final def head: A = {
+    val p = prefix1
+    if (p eq null) this.asInstanceOf[InlineVector[A]].elem1
+    else if (p.length == 0) throw new NoSuchElementException("empty.head")
+    else p(0).asInstanceOf[A]
+  }
 
   override final def last: A = {
     if(this.isInstanceOf[BigVector[_]]) {
       val suffix = this.asInstanceOf[BigVector[_]].suffix1
       if(suffix.length == 0) throw new NoSuchElementException("empty.tail")
       else suffix(suffix.length-1)
-    } else prefix1(prefix1.length-1)
+    } else {
+      val p = prefix1
+      if (p eq null) this.asInstanceOf[InlineVector[_]].lastElem.asInstanceOf[AnyRef]
+      else p(p.length-1)
+    }
   }.asInstanceOf[A]
 
   override final def foreach[U](f: A => U): Unit = {
+    if (this.isInstanceOf[InlineVector[_]]) { // no slices to walk
+      this.asInstanceOf[InlineVector[A]].inlineForeach(f)
+      return
+    }
     val c = vectorSliceCount
     var i = 0
     while (i < c) {
@@ -348,9 +372,9 @@ private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
 
   override def updated[B >: Nothing](index: Int, elem: B): Vector[B] = throw ioob(index)
 
-  override def appended[B >: Nothing](elem: B): Vector[B] = new Vector1(wrap1(elem))
+  override def appended[B >: Nothing](elem: B): Vector[B] = new InlineVector1(elem)
 
-  override def prepended[B >: Nothing](elem: B): Vector[B] = new Vector1(wrap1(elem))
+  override def prepended[B >: Nothing](elem: B): Vector[B] = new InlineVector1(elem)
 
   override def map[B](f: Nothing => B): Vector[B] = this
 
@@ -381,6 +405,200 @@ private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
   override protected[this] def ioob(index: Int): IndexOutOfBoundsException =
     new IndexOutOfBoundsException(s"$index is out of bounds (empty vector)")
 }
+
+/** Base of inline vector variants.
+  * 
+  * Inline variants are fixed-size and store contents directly in fields.
+  */
+private sealed abstract class InlineVector[+A] extends VectorImpl[A](null) {
+
+  private[immutable] def inlineLength: Int
+  private[immutable] def elem1: A
+  private[immutable] def lastElem: A
+  private[immutable] def inlineForeach[U](f: A => U): Unit
+
+  private[immutable] final def inlineFilter(pred: A => Boolean, isFlipped: Boolean): Vector[A] = {
+    val n   = inlineLength
+    val buf = new Arr1(n)
+    var k   = 0
+    var i   = 0
+    while (i < n) {
+      val e = apply(i)
+      if (pred(e) != isFlipped) { buf(k) = e.asInstanceOf[AnyRef]; k += 1 }
+      i += 1
+    }
+    if (k == n) this else smallVector(buf, 0, k)
+  }
+
+  protected[this] final def slice0(lo: Int, hi: Int): Vector[A] = (hi - lo) match {
+    case 1 => new InlineVector1(apply(lo))
+    case 2 => new InlineVector2(apply(lo), apply(lo + 1))
+    case _ => new InlineVector3(apply(lo), apply(lo + 1), apply(lo + 2))
+  }
+
+  protected[immutable] final def vectorSliceCount: Int = 1
+  protected[immutable] final def vectorSlice(idx: Int): Array[_ <: AnyRef] = {
+    val n = inlineLength
+    val a = new Arr1(n)
+    var i = 0
+    while (i < n) { a(i) = apply(i).asInstanceOf[AnyRef]; i += 1 }
+    a
+  }
+  protected[immutable] final def vectorSlicePrefixLength(idx: Int): Int = inlineLength
+}
+
+
+private final class InlineVector1[+A](private[immutable] val elem1: A) extends InlineVector[A] {
+  private[immutable] def inlineLength: Int = 1
+  private[immutable] def lastElem: A = elem1
+  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); () }
+
+  @inline def apply(index: Int): A =
+    if (index == 0) elem1 else throw ioob(index)
+
+  override def updated[B >: A](index: Int, elem: B): Vector[B] =
+    if (index == 0) new InlineVector1(elem) else throw ioob(index)
+
+  override def appended[B >: A](elem: B): Vector[B] = new InlineVector2(elem1, elem)
+
+  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector2(elem, elem1)
+
+  override def map[B](f: A => B): Vector[B] = new InlineVector1(f(elem1))
+
+  override def tail: Vector[A] = Vector0
+
+  override def init: Vector[A] = Vector0
+
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(z, elem1)
+}
+
+
+private final class InlineVector2[+A](
+  private[immutable] val elem1: A,
+  private[immutable] val elem2: A,
+) extends InlineVector[A] {
+  private[immutable] def inlineLength: Int = 2
+  private[immutable] def lastElem: A = elem2
+  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); () }
+
+  @inline def apply(index: Int): A = index match {
+    case 0 => elem1
+    case 1 => elem2
+    case _ => throw ioob(index)
+  }
+
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
+    case 0 => new InlineVector2(elem, elem2)
+    case 1 => new InlineVector2(elem1, elem)
+    case _ => throw ioob(index)
+  }
+
+  override def appended[B >: A](elem: B): Vector[B] = new InlineVector3(elem1, elem2, elem)
+
+  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector3(elem, elem1, elem2)
+
+  override def map[B](f: A => B): Vector[B] = new InlineVector2(f(elem1), f(elem2))
+
+  override def tail: Vector[A] = new InlineVector1(elem2)
+
+  override def init: Vector[A] = new InlineVector1(elem1)
+
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(z, elem1), elem2)
+}
+
+
+private final class InlineVector3[+A](
+  private[immutable] val elem1: A,
+  private[immutable] val elem2: A,
+  private[immutable] val elem3: A,
+) extends InlineVector[A] {
+  private[immutable] def inlineLength: Int = 3
+  private[immutable] def lastElem: A = elem3
+  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); f(elem3); () }
+
+  @inline def apply(index: Int): A = index match {
+    case 0 => elem1
+    case 1 => elem2
+    case 2 => elem3
+    case _ => throw ioob(index)
+  }
+
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
+    case 0 => new InlineVector3(elem, elem2, elem3)
+    case 1 => new InlineVector3(elem1, elem, elem3)
+    case 2 => new InlineVector3(elem1, elem2, elem)
+    case _ => throw ioob(index)
+  }
+
+  override def appended[B >: A](elem: B): Vector[B] = new InlineVector4(elem1, elem2, elem3, elem)
+
+  override def prepended[B >: A](elem: B): Vector[B] = new InlineVector4(elem, elem1, elem2, elem3)
+
+  override def map[B](f: A => B): Vector[B] = new InlineVector3(f(elem1), f(elem2), f(elem3))
+
+  override def tail: Vector[A] = new InlineVector2(elem2, elem3)
+
+  override def init: Vector[A] = new InlineVector2(elem1, elem2)
+
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(f(z, elem1), elem2), elem3)
+}
+
+
+private final class InlineVector4[+A](
+  private[immutable] val elem1: A,
+  private[immutable] val elem2: A,
+  private[immutable] val elem3: A,
+  private[immutable] val elem4: A,
+) extends InlineVector[A] {
+  private[immutable] def inlineLength: Int = 4
+  private[immutable] def lastElem: A = elem4
+  private[immutable] def inlineForeach[U](f: A => U): Unit = { f(elem1); f(elem2); f(elem3); f(elem4); () }
+
+  @inline def apply(index: Int): A = index match {
+    case 0 => elem1
+    case 1 => elem2
+    case 2 => elem3
+    case 3 => elem4
+    case _ => throw ioob(index)
+  }
+
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = index match {
+    case 0 => new InlineVector4(elem, elem2, elem3, elem4)
+    case 1 => new InlineVector4(elem1, elem, elem3, elem4)
+    case 2 => new InlineVector4(elem1, elem2, elem, elem4)
+    case 3 => new InlineVector4(elem1, elem2, elem3, elem)
+    case _ => throw ioob(index)
+  }
+
+  override def appended[B >: A](elem: B): Vector[B] = {
+    val a = new Arr1(5)
+    a(0) = elem1.asInstanceOf[AnyRef]
+    a(1) = elem2.asInstanceOf[AnyRef]
+    a(2) = elem3.asInstanceOf[AnyRef]
+    a(3) = elem4.asInstanceOf[AnyRef]
+    a(4) = elem.asInstanceOf[AnyRef]
+    new Vector1(a)
+  }
+
+  override def prepended[B >: A](elem: B): Vector[B] = {
+    val a = new Arr1(5)
+    a(0) = elem.asInstanceOf[AnyRef]
+    a(1) = elem1.asInstanceOf[AnyRef]
+    a(2) = elem2.asInstanceOf[AnyRef]
+    a(3) = elem3.asInstanceOf[AnyRef]
+    a(4) = elem4.asInstanceOf[AnyRef]
+    new Vector1(a)
+  }
+
+  override def map[B](f: A => B): Vector[B] = new InlineVector4(f(elem1), f(elem2), f(elem3), f(elem4))
+
+  override def tail: Vector[A] = new InlineVector3(elem2, elem3, elem4)
+
+  override def init: Vector[A] = new InlineVector3(elem1, elem2, elem3)
+
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = f(f(f(f(z, elem1), elem2), elem3), elem4)
+}
+
 
 /** Flat ArraySeq-like structure */
 private final class Vector1[+A](_data1: Arr1) extends VectorImpl[A](_data1) {
@@ -415,11 +633,11 @@ private final class Vector1[+A](_data1: Arr1) extends VectorImpl[A](_data1) {
     new Vector1(copyOfRange(prefix1, lo, hi))
 
   override def tail: Vector[A] =
-    if(prefix1.length == 1) Vector0
+    if(prefix1.length <= 5) smallVector(prefix1, 1, prefix1.length - 1)
     else new Vector1(copyTail(prefix1))
 
   override def init: Vector[A] =
-    if(prefix1.length == 1) Vector0
+    if(prefix1.length <= 5) smallVector(prefix1, 0, prefix1.length - 1)
     else new Vector1(copyInit(prefix1))
 
   protected[immutable] def vectorSliceCount: Int = 1
@@ -1249,7 +1467,8 @@ private final class VectorSliceBuilder(lo: Int, hi: Int) {
               suffix2(0)
             }
           }
-        new Vector1(a)
+        if (len <= 4) smallVector[A](a, 0, len)
+        else new Vector1(a)
       }
     } else {
       balancePrefix(1)
@@ -1472,10 +1691,20 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     (v.vectorSliceCount: @switch) match {
       case 0 =>
       case 1 =>
-        val v1 = v.asInstanceOf[Vector1[_]]
-        depth = 1
-        setLen(v1.prefix1.length)
-        a1 = copyOrUse(v1.prefix1, 0, WIDTH)
+        v match { // the inline variants have the same sliceCount as Vector1 but no array
+          case iv: InlineVector[_] =>
+            val n = iv.inlineLength
+            depth = 1
+            setLen(n)
+            a1 = new Arr1(WIDTH)
+            var i = 0
+            while (i < n) { a1(i) = iv(i).asInstanceOf[AnyRef]; i += 1 }
+          case v1: Vector1[_] =>
+            depth = 1
+            setLen(v1.prefix1.length)
+            a1 = copyOrUse(v1.prefix1, 0, WIDTH)
+          case _ => throw new MatchError(v)
+        }
       case 3 =>
         val v2 = v.asInstanceOf[Vector2[_]]
         val d2 = v2.data2
@@ -1576,6 +1805,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       throw new UnsupportedOperationException("A non-empty VectorBuilder cannot be aligned retrospectively. Please call .reset() or use a new VectorBuilder.")
     val (prefixLength, maxPrefixLength) = bigVector match {
       case Vector0 => (0, 1)
+      case _: InlineVector[_] => (0, 1)
       case v1: Vector1[_] => (0, 1)
       case v2: Vector2[_] => (v2.len1, WIDTH)
       case v3: Vector3[_] => (v3.len12, WIDTH2)
@@ -1895,7 +2125,8 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if(realLen == 0) Vector.empty
     else if(len < 0) throw new IndexOutOfBoundsException(s"Vector cannot have negative size $len")
     else if(len <= WIDTH) {
-      new Vector1(copyIfDifferentSize(a1, realLen))
+      if (realLen <= 4) smallVector[A](a1, 0, realLen)
+      else new Vector1(copyIfDifferentSize(a1, realLen))
     } else if(len <= WIDTH2) {
       val i1 = (len-1) & MASK
       val i2 = (len-1) >>> BITS
@@ -2082,6 +2313,15 @@ private[immutable] object VectorInline {
 /** Helper methods and constants for Vector. */
 private object VectorStatics {
 
+  final def smallVector[A](a: Arr1, start: Int, len: Int): Vector[A] = len match {
+    case 0 => Vector0
+    case 1 => new InlineVector1(a(start).asInstanceOf[A])
+    case 2 => new InlineVector2(a(start).asInstanceOf[A], a(start + 1).asInstanceOf[A])
+    case 3 => new InlineVector3(a(start).asInstanceOf[A], a(start + 1).asInstanceOf[A], a(start + 2).asInstanceOf[A])
+    case 4 => new InlineVector4(a(start).asInstanceOf[A], a(start + 1).asInstanceOf[A], a(start + 2).asInstanceOf[A], a(start + 3).asInstanceOf[A])
+    case _ => new Vector1(copyOrUse(a, start, start + len))
+  }
+
   final def copyAppend1(a: Arr1, elem: Any): Arr1 = {
     val alen = a.length
     val ac = new Arr1(alen+1)
@@ -2238,7 +2478,11 @@ private object VectorStatics {
 
 private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLength: Int, private[this] val sliceCount: Int) extends AbstractIterator[A] with java.lang.Cloneable {
 
-  private[this] var a1: Arr1 = v.prefix1
+  private[this] var a1: Arr1 = {
+    val p = v.prefix1
+    if (p ne null) p
+    else v.vectorSlice(0).asInstanceOf[Arr1]
+  }
   private[this] var a2: Arr2 = _
   private[this] var a3: Arr3 = _
   private[this] var a4: Arr4 = _

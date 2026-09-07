@@ -57,6 +57,14 @@ object MimaFilters extends AutoPlugin {
     // scala/scala#11242
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.LazyList"), // superclass change from AbstractSeq to LazyListBase
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyListBase*"), // private[immutable]
+
+    // package-private classes, inline representation for Vectors of size 1-4
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector1"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector2"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector3"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.InlineVector4"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorStatics.smallVector"),
   )
 
   override val buildSettings = Seq(
