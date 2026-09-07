@@ -41,12 +41,23 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
       case _ =>
         val knownSize = it.knownSize
         if (knownSize == 0) empty[E]
-        else if (knownSize == 1) {
-          val head = it match {
-            case it: Iterable[E] => it.head
-            case _               => it.iterator.next()
+        else if (knownSize >= 1 && knownSize <= 4) {
+          it match {
+            case is: collection.IndexedSeq[E] => knownSize match {
+              case 1 => new InlineVector1[E](is(0))
+              case 2 => new InlineVector2[E](is(0), is(1))
+              case 3 => new InlineVector3[E](is(0), is(1), is(2))
+              case _ => new InlineVector4[E](is(0), is(1), is(2), is(3))
+            }
+            case _ =>
+              val i = it.iterator
+              knownSize match {
+                case 1 => new InlineVector1[E](i.next())
+                case 2 => new InlineVector2[E](i.next(), i.next())
+                case 3 => new InlineVector3[E](i.next(), i.next(), i.next())
+                case _ => new InlineVector4[E](i.next(), i.next(), i.next(), i.next())
+              }
           }
-          new InlineVector1[E](head)
         }
         else if (knownSize > 0 && knownSize <= WIDTH) {
           val a1: Arr1 = it match {

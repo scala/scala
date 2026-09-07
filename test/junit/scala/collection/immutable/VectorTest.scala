@@ -267,7 +267,8 @@ class VectorTest {
   }
 
   @Test def factoryReuseArraySet(): Unit = {
-    val arraySeq = ArraySeq[AnyRef]("a", "b")
+    // Has to be between 5 and 32, as 1-4 elements are InlineVector, and 33+ elements become Vector2+
+    val arraySeq = ArraySeq[AnyRef]("a", "b", "c", "d", "e")
     val vectorFromArraySeq = Vector.from(arraySeq)
     val prefix1Field = classOf[Vector[_]].getDeclaredField("prefix1")
     prefix1Field.setAccessible(true)
