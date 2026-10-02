@@ -114,6 +114,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     val memberRef = processDependency(DependencyByMemberRef, allowLocal = false)(_)
     val inheritance = processDependency(DependencyByInheritance, allowLocal = true)(_)
     val localInheritance = processDependency(LocalDependencyByInheritance, allowLocal = true)(_)
+    val scala2MacroExpansion = processDependency(DependencyByMacroExpansion, allowLocal = false)(_)
 
     @deprecated("Use processDependency that takes allowLocal.", "1.1.0")
     def processDependency(context: DependencyContext)(dep: ClassDependency): Unit =
@@ -218,6 +219,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     private val _memberRefCache = new JavaSet[ClassDependency]()
     private val _inheritanceCache = new JavaSet[ClassDependency]()
     private val _localInheritanceCache = new JavaSet[ClassDependency]()
+    private val _dependencyByMacroExpansionCache = new JavaSet[ClassDependency]()
     private val _topLevelImportCache = new JavaSet[Symbol]()
 
     private var _currentDependencySource: Symbol = _
@@ -367,10 +369,28 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       override def addDependency(symbol: global.Symbol) = handler(symbol)
     }
 
-    def addTypeDependencies(tpe: Type): Unit = {
+    object TypeDependencyTraverserForMacro extends TypeDependencyTraverser {
+      private var owner: Symbol = _
+      def setOwner(symbol: Symbol) = owner = symbol
+      override def addDependency(symbol: global.Symbol): Unit = {
+        addClassDependency(
+          _dependencyByMacroExpansionCache,
+          processor.scala2MacroExpansion,
+          owner,
+          symbol
+        )
+      }
+    }
+
+    def addTypeDependencies(tpe: Type, forMacro: Boolean = false): Unit = {
       val fromClass = resolveDependencySource
-      TypeDependencyTraverser.setOwner(fromClass)
-      TypeDependencyTraverser.traverse(tpe)
+      if (forMacro) {
+        TypeDependencyTraverserForMacro.setOwner(fromClass)
+        TypeDependencyTraverserForMacro.traverse(tpe)
+      } else {
+        TypeDependencyTraverser.setOwner(fromClass)
+        TypeDependencyTraverser.traverse(tpe)
+      }
     }
 
     private def addInheritanceDependency(dep: Symbol): Unit = {
@@ -445,7 +465,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           addDependency(symbol)
         }
 
-        inheritanceTypes.foreach(addTypeDependencies)
+        inheritanceTypes.foreach(addTypeDependencies(_, forMacro = false))
         addTypeDependencies(self.tpt.tpe)
 
         traverseTrees(body)
@@ -466,6 +486,14 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         addTypeDependencies(typeTree.tpe)
 
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
+        // TODO: typesTouchedDuringMacroExpansion can be provided by compiler
+        // in the form of tree attachment
+        val typesTouchedDuringMacroExpansion = original match {
+          case Apply(TypeApply(_, args), _) => args.map(_.tpe)
+          case TypeApply(_, args)           => args.map(_.tpe)
+          case _                            => List.empty[Type]
+        }
+        typesTouchedDuringMacroExpansion.foreach(addTypeDependencies(_, forMacro = true))
         traverse(original)
         super.traverse(m)
 
