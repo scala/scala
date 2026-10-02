@@ -331,7 +331,7 @@ class ExtractAPI[GlobalType <: Global](
         case returnType =>
           val retType = processType(in, dropConst(returnType))
           xsbti.api.Def.of(
-            simpleName(s),
+            simpleNameForMethod(s),
             getAccess(s),
             getModifiers(s),
             annotations(in, s),
@@ -844,9 +844,23 @@ class ExtractAPI[GlobalType <: Global](
   }
 
   private def simpleName(s: Symbol): String = {
-    val n = s.unexpandedName
-    val n2 = if (n == nme.CONSTRUCTOR) constructorNameAsString(s.enclClass) else n.decode.toString
-    n2.trim
+    s.unexpandedName.decode.toString.trim
+  }
+
+  private def simpleNameForMethod(s: Symbol): String = {
+    val name = s.unexpandedName
+    val untrimmedName =
+      if (name == nme.CONSTRUCTOR)
+        constructorNameAsString(s.enclClass)
+      else {
+        val decoded = name.decode.toString
+        val constructorWithDefaultArgument = "<init>\\$default\\$(\\d+)".r
+        decoded match {
+          case constructorWithDefaultArgument(index) => constructorNameAsString(s.enclClass, index)
+          case _                                     => decoded
+        }
+      }
+    untrimmedName.trim
   }
 
   private def staticAnnotations(annotations: List[AnnotationInfo]): List[AnnotationInfo] =
