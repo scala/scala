@@ -62,6 +62,9 @@ trait ClassName extends Compat {
   protected def constructorNameAsString(cls: Symbol): String =
     cls.fullName(';') ++ ";init;"
 
+  protected def constructorNameAsString(cls: Symbol, index: String): String =
+    cls.fullName(';') ++ s";init;default;$index"
+
   /**
    * Mangle a JVM symbol name in a format better suited for internal uses by sbt.
    */
