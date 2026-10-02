@@ -3,6 +3,8 @@ package scala.tools.xsbt
 import org.junit.Test
 import org.junit.Assert.{assertEquals, assertTrue}
 
+import xsbti.api.DependencyContext.DependencyByMacroExpansion
+
 import scala.tools.xsbt.TestCallback.ExtractedClassDependencies
 
 class DependencyTest extends BridgeTesting {
@@ -88,6 +90,24 @@ class DependencyTest extends BridgeTesting {
     assertEquals(inheritance("Outer"), Set.empty)
     assertEquals(memberRef("Bar"), Set("Outer", "Outer.Inner"))
     assertEquals(inheritance("Bar"), Set.empty)
+  }
+
+  @Test
+  def `Dependency phase should record type arguments of a macro call as macro expansion dependencies`(): Unit = {
+    val srcMacros =
+      """import scala.language.experimental.macros
+        |import scala.reflect.macros.blackbox
+        |object Macros {
+        |  def foo[T]: Unit = macro impl[T]
+        |  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = { import c.universe._; q"()" }
+        |}
+        |class A""".stripMargin
+    val srcApp = "class App { def x = Macros.foo[A] }"
+    val deps = withTemporaryDirectory { tmpDir =>
+      val (_, testCallback) = compileSrcss(tmpDir, mkReporter, List(List(srcMacros), List(srcApp)))
+      testCallback.binaryDependencies.toList.collect { case (_, on, from, context) => (on, from, context) }
+    }
+    assertTrue(deps.toString, deps.contains(("A", "App", DependencyByMacroExpansion)))
   }
 
   @Test
