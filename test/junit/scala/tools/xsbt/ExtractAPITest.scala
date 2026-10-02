@@ -36,6 +36,49 @@ class ExtractAPITest extends BridgeTesting {
     assertEquals(fooClassApi.definitionType, DefinitionType.PackageModule)
   }
 
+  // Regression guard for https://github.com/sbt/sbt/issues/1079.
+  // A type parameter of a type alias declared inside a refinement (a type lambda) is named
+  // by `Symbol.fullName`, whose owner chain passes through the anonymous `<refinement>`
+  // class. The pickler rewrites that class's owner (scala/bug#6596), so the parameter is
+  // named `test.<refinement>.a` from source and `test.KleisliMonadReader.<refinement>.a`
+  // when unpickled, flipping the API hash of every class built on the type lambda.
+  @Test
+  def `ExtractAPI should give stable names to type parameters owned by a refinement class (sbt-sbt-1079)`(): Unit = {
+    val monadReader =
+      """|package test
+         |trait MonadReader[F[_], R] {
+         |  def ask: F[R]
+         |  def local[A](f: R => R)(fa: F[A]): F[A]
+         |}
+         |""".stripMargin
+    val kleisli =
+      """|package test
+         |case class Kleisli[F[_], R, A](run: R => F[A])
+         |trait KleisliMonadReader[F[_], R]
+         |    extends MonadReader[({ type l[a] = Kleisli[F, R, a] })#l, R] {
+         |  def ask: Kleisli[F, R, R] = ???
+         |  def local[A](f: R => R)(fa: Kleisli[F, R, A]): Kleisli[F, R, A] = ???
+         |}
+         |""".stripMargin
+    val impl =
+      """|package test
+         |class Impl extends KleisliMonadReader[Option, Int]
+         |""".stripMargin
+    // compile everything together (from source), then recompile `impl` alone,
+    // unpickling the support types from class files.
+    val apis = extractApisFromSrcs(List(monadReader, kleisli, impl), List(impl))
+    val List(_, _, implFromSource, implUnpickled) = apis.toList
+    def implClass(as: Set[ClassLike]): ClassLike = as.find(_.name == "test.Impl").get
+    val fromSource = implClass(implFromSource)
+    val unpickled = implClass(implUnpickled)
+    // Upstream additionally asserts on the rendered API (ShowAPI, not available in this test suite)
+    // that the parameter is named `<refinement>.a` with no owner prefix.
+    assertTrue(
+      "Impl API differs between compiling from source and unpickling",
+      SameAPI(fromSource, unpickled)
+    )
+  }
+
   @Test
   def `ExtractAPI should extract nested classes`(): Unit = {
     val src =
