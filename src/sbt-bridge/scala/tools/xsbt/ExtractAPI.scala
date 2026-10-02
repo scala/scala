@@ -854,9 +854,8 @@ class ExtractAPI[GlobalType <: Global](
         constructorNameAsString(s.enclClass)
       else {
         val decoded = name.decode.toString
-        val constructorWithDefaultArgument = "<init>\\$default\\$(\\d+)".r
         decoded match {
-          case constructorWithDefaultArgument(index) => constructorNameAsString(s.enclClass, index)
+          case ExtractAPI.ConstructorWithDefaultArgument(index) => constructorNameAsString(s.enclClass, index)
           case _                                     => decoded
         }
       }
@@ -883,5 +882,6 @@ class ExtractAPI[GlobalType <: Global](
 }
 
 object ExtractAPI {
+  private val ConstructorWithDefaultArgument = "<init>\\$default\\$(\\d+)".r
   private val emptyAnnotationArray = new Array[xsbti.api.Annotation](0)
 }
