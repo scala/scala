@@ -465,6 +465,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       case sel @ SelectFromTypeTree(qual, _) =>
         traverse(qual); addTreeDependency(sel)
 
+      // A compound type's parents (`B with C`) are not inherited by the enclosing class.
+      case CompoundTypeTree(templ) =>
+        traverseTrees(templ.parents)
+        traverse(templ.self)
+        traverseTrees(templ.body)
+
       case Template(parents, self, body) =>
         // use typeSymbol to dealias type aliases -- we want to track the dependency on the real class in the alias's RHS
         def flattenTypeToSymbols(tp: Type): List[Symbol] =
