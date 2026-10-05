@@ -36,6 +36,23 @@ class ExtractAPITest extends BridgeTesting {
     assertEquals(fooClassApi.definitionType, DefinitionType.PackageModule)
   }
 
+  // Default getters of constructor arguments are all named `<init>$default$N`, so a change to
+  // one class's constructor would invalidate clients of every other class with one.
+  @Test
+  def `ExtractAPI should name default getters of constructor arguments after their class`(): Unit = {
+    val src =
+      """|class B(z: Int) { def this(x: Int, y: Int = 2) = this(x + y) }
+         |class C(z: String) { def this(x: Int, y: Int = 2) = this("") }
+         |""".stripMargin
+    val apis = extractApisFromSrc(src)
+    def moduleDefNames(name: String): Set[String] = {
+      val module = apis.find(c => c.name == name && c.definitionType == DefinitionType.Module).get
+      module.structure.declared.map(_.name).toSet
+    }
+    assertEquals(Set("B;init;default;2"), moduleDefNames("B").filter(_.contains("default")))
+    assertEquals(Set("C;init;default;2"), moduleDefNames("C").filter(_.contains("default")))
+  }
+
   // Regression guard for https://github.com/sbt/sbt/issues/1079.
   // A type parameter of a type alias declared inside a refinement (a type lambda) is named
   // by `Symbol.fullName`, whose owner chain passes through the anonymous `<refinement>`
