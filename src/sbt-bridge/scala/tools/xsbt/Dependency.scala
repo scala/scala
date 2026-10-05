@@ -28,6 +28,13 @@ import java.util.{ HashMap => JavaMap }
 
 object Dependency {
   def name = "xsbt-dependency"
+
+  // DependencyByMacroExpansion only exists in Zinc 1.10 and later
+  private lazy val macroExpansionContext: DependencyContext =
+    try DependencyByMacroExpansion
+    catch {
+      case _: NoSuchFieldError => DependencyByMemberRef
+    }
 }
 
 /**
@@ -114,7 +121,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     val memberRef = processDependency(DependencyByMemberRef, allowLocal = false)(_)
     val inheritance = processDependency(DependencyByInheritance, allowLocal = true)(_)
     val localInheritance = processDependency(LocalDependencyByInheritance, allowLocal = true)(_)
-    val scala2MacroExpansion = processDependency(DependencyByMacroExpansion, allowLocal = false)(_)
+    val scala2MacroExpansion = processDependency(Dependency.macroExpansionContext, allowLocal = false)(_)
 
     @deprecated("Use processDependency that takes allowLocal.", "1.1.0")
     def processDependency(context: DependencyContext)(dep: ClassDependency): Unit =
