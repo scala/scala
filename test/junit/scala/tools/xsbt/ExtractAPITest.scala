@@ -96,6 +96,34 @@ class ExtractAPITest extends BridgeTesting {
     )
   }
 
+  // Since sbt/zinc#1782 a type parameter declared in a refinement is named relative to the
+  // outermost refinement, so the parameters of sibling type lambdas share a name.
+  @Test
+  def `ExtractAPI should tell apart type parameters of sibling refinements with the same name`(): Unit = {
+    def fooApi(arg1: String, arg2: String): ClassLike = {
+      val src =
+        s"""|trait Two[F[_], G[_]]
+            |class X[A]
+            |class Y[A]
+            |class H[F[_]]
+            |trait Foo extends Two[({ type l[a] = $arg1 })#l, ({ type l[a] = $arg2 })#l]
+            |""".stripMargin
+      extractApisFromSrc(src).find(_.name == "Foo").get
+    }
+    def nested(body: String): String = s"H[({ type m[b] = $body })#m]"
+    assertTrue(SameAPI(fooApi("X[a]", "Y[a]"), fooApi("X[a]", "Y[a]")))
+    assertFalse(SameAPI(fooApi("X[a]", "Y[a]"), fooApi("Y[a]", "X[a]")))
+    assertFalse(SameAPI(fooApi("X[a]", "X[Int]"), fooApi("X[Int]", "X[a]")))
+    assertTrue(SameAPI(fooApi(nested("Map[a, b]"), "X[a]"), fooApi(nested("Map[a, b]"), "X[a]")))
+    assertFalse(SameAPI(fooApi(nested("Map[a, b]"), "X[a]"), fooApi(nested("Map[b, a]"), "X[a]")))
+    assertFalse(
+      SameAPI(
+        fooApi(nested("Map[a, b]"), nested("Map[b, a]")),
+        fooApi(nested("Map[b, a]"), nested("Map[a, b]"))
+      )
+    )
+  }
+
   @Test
   def `ExtractAPI should extract nested classes`(): Unit = {
     val src =
