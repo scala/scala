@@ -1,0 +1,6 @@
+[WARNING] [source-t13161.scala,line-8,offset=346]: Unicode escapes in triple quoted strings are deprecated; use the literal character instead
+[WARNING] [RangePosition(t13161.scala, 206, 206, 208)]: Unicode escapes in raw interpolations are deprecated; use literal characters instead
+[WARNING] [RangePosition(t13161.scala, 499, 499, 501)]: Unicode escapes in raw interpolations are deprecated; use literal characters instead
+[ERROR] [NoPosition]: No warnings can be incurred under -Werror.
+3 warnings
+1 error

@@ -37,6 +37,8 @@ object Function1 {
       *              println("Not matched")
       *          }
       *          }}}
+      *
+      *  @return a `PartialFunction` that is defined where `f` returns `Some` and undefined where `f` returns `None`
       */
     def unlift: PartialFunction[A, B] = Function.unlift(f)
   }
@@ -65,7 +67,9 @@ object Function1 {
  */
 @annotation.implicitNotFound(msg = "No implicit view available from ${T1} => ${R}.")
 trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.Return) +R] extends AnyRef { self =>
-  /** Apply the body of this function to the argument.
+  /** Applies the body of this function to the argument.
+   *
+   *  @param v1 the function argument
    *  @return   the result of function application.
    */
   def apply(v1: T1): R
@@ -81,7 +85,7 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    *  @param    g   a function A => T1
    *  @return       a new function `f` such that `f(x) == apply(g(x))`
    */
-  @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+  @annotation.unspecialized def compose[A](g: A => T1): A => R = { (x: A) => apply(g(x)) }
 
   /** Composes two instances of `Function1` in a new `Function1`, with this function applied first.
    *
@@ -89,7 +93,7 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    *  @param    g   a function R => A
    *  @return       a new function `f` such that `f(x) == g(apply(x))`
    */
-  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
+  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { (x: T1) => g(apply(x)) }
 
   override def toString(): String = "<function1>"
 }

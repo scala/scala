@@ -507,8 +507,8 @@ object Either {
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
     if (test) Right(right) else Left(left)
 
-  /** Allows use of a `merge` method to extract values from Either instances
-   *  regardless of whether they are Left or Right.
+  /** Allows use of a `merge` method to extract values from `Either` instances
+   *  regardless of whether they are `Left` or `Right`.
    *
    *  {{{
    *  val l = Left(List(1)): Either[List[Int], Vector[Int]]

@@ -1,0 +1,18 @@
+Doing first compilation
+scripteditor:7: error: ')' expected but '}' found.
+      }
+      ^
+Compilation failed!
+Compilation successful!
+scripteditor:4: error: not found: value printlnx
+          printlnx("Hi there!")
+          ^
+Compilation failed!
+scripteditor:7: error: ')' expected but '}' found.
+      }
+      ^
+Compilation failed!
+
+
+Doing last compilation
+Compilation successful!

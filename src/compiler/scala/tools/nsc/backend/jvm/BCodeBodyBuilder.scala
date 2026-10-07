@@ -1584,25 +1584,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genCallMethod(Object_equals, InvokeStyle.Virtual, pos)
           genCZJUMP(success, failure, TestOp.NE, BOOL, targetIfNoJump)
         } else {
-          // l == r -> if (l eq null) r eq null else l.equals(r)
-          val eqEqTempLocal = locals.makeLocal(ObjectRef, nme.EQEQ_LOCAL_VAR.toString)
-          val lNull    = new asm.Label
-          val lNonNull = new asm.Label
-
+          // l == r -> Objects.equals(l, r)
           genLoad(l, ObjectRef)
           genLoad(r, ObjectRef)
-          locals.store(eqEqTempLocal)
-          bc dup ObjectRef
-          genCZJUMP(lNull, lNonNull, TestOp.EQ, ObjectRef, targetIfNoJump = lNull)
-
-          markProgramPoint(lNull)
-          bc drop ObjectRef
-          locals.load(eqEqTempLocal)
-          genCZJUMP(success, failure, TestOp.EQ, ObjectRef, targetIfNoJump = lNonNull)
-
-          markProgramPoint(lNonNull)
-          locals.load(eqEqTempLocal)
-          genCallMethod(Object_equals, InvokeStyle.Virtual, pos)
+          genCallMethod(Objects_equals, InvokeStyle.Static, pos)
           genCZJUMP(success, failure, TestOp.NE, BOOL, targetIfNoJump)
         }
       }

@@ -312,11 +312,24 @@ trait Checkable {
       if (P0.typeSymbol == SingletonClass)
         context.warning(tree.pos, s"fruitless type test: every non-null value will be a Singleton dynamically", WarningCategory.Other)
       else {
+        def deepDealias(tp: Type): Type =
+          tp.dealiasWiden match {
+            case TypeRef(pre, ArrayClass, args) => TypeRef(pre, ArrayClass, args.map(deepDealias))
+            case tp => tp
+          }
         // singleton types not considered here, dealias the pattern
-        val P = P0.dealiasWiden
+        val P = deepDealias(P0)
         val X = X0.widen
 
-        def PString = if (P eq P0) P.toString else s"$P (the underlying of $P0)"
+        def PString = {
+          val pstr = P.toString
+          if (P eq P0) pstr
+          else {
+            val ostr = P0.toString
+            if (pstr == ostr) pstr
+            else s"$pstr (the underlying of $ostr)"
+          }
+        }
 
         P match {
           // Prohibit top-level type tests for these, but they are ok nested (e.g. case Foldable[Nothing] => ... )

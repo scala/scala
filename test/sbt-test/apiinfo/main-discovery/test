@@ -1,6 +1,13 @@
 > setup; reload
 
 > compile
-> checkMainClasses src/main/java/runjava/MainJava.java: runjava.MainJava runjava.MainJava.StaticInner
-> checkMainClasses src/main/java/runjava/oMainJava.java:
-> checkMainClasses src/main/scala/Hello.scala: runscala.MainScala runscala.MainScala.StaticInner
+
+# before Java 25
+> checkMainClasses 24 src/main/java/runjava/MainJava.java: runjava.MainJava runjava.MainJava.StaticInner
+> checkMainClasses 24 src/main/java/runjava/oMainJava.java:
+> checkMainClasses 24 src/main/scala/Hello.scala: runscala.MainScala runscala.MainScala.StaticInner
+
+# starting Java 25
+> checkMainClasses 25 src/main/java/runjava/MainJava.java: runjava.MainJava runjava.MainJava.StaticInner
+> checkMainClasses 25 src/main/java/runjava/oMainJava.java:
+> checkMainClasses 25 src/main/scala/Hello.scala: runscala.MainScala runscala.MainScala.StaticInner runscala.NoStatic runscala.NoArgs runscala.Protected runscala.InheritTrait

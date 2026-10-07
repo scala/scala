@@ -5,7 +5,7 @@ class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
   private def bippy(x: Int): Int      = bippy(x)  // warn
   private def boop(x: Int)            = x+a+b     // warn
-  final private val MILLIS1           = 2000      // no warn, might have been inlined
+  final private val MILLIS1           = 2000      // now warn, might have been inlined
   final private val MILLIS2: Int      = 1000      // warn
   final private val HI_COMPANION: Int = 500       // no warn, accessed from companion
   def hi() = Bippy.HI_INSTANCE
@@ -40,7 +40,7 @@ class Boppy extends {
   val dinger = hom
   private val hummer = "def" // warn
 
-  private final val bum   = "ghi"       // no warn, might have been (was) inlined
+  private final val bum   = "ghi"       // now warn, might have been (was) inlined
   final val bum2          = "ghi"       // no warn, same
 }
 
@@ -276,5 +276,35 @@ class `recursive reference is not a usage` {
     else f(i-1)
   private class P {
     def f() = new P()
+  }
+}
+
+class Constantly {
+  private final val Here = "here"
+  private final val There = "there" // warn
+  def bromide = Here + " today, gone tomorrow."
+}
+
+class Annots {
+  import annotation._
+
+  trait T {
+    def value: Int
+  }
+
+  class C {
+    private final val Here = "here"
+    private final val There = "msg=there"
+    def f(implicit @implicitNotFound(Here) t: T) = t.value
+    def x: String @nowarn(There) = ""
+  }
+
+  // cf HashMap#mergeInto which looped on type of new unchecked
+  // case bm: BitmapIndexedMapNode[K, V] @unchecked =>
+  class Weird[K, V] {
+    def f(other: Weird[K, V]) =
+      other match {
+        case weird: Weird[K, V] @unchecked =>
+      }
   }
 }

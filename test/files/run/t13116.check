@@ -1,0 +1,5 @@
+Expectations(assertion failed
+
+expect(s"$x" == "42")
+
+Use the `clue` function to troubleshoot)

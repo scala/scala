@@ -20,7 +20,7 @@ package <empty> {
     def unapply[T](c: C[T]): C[T] = c;
     final def isEmpty$extension[A]($this: C[A]): Boolean = scala.Predef.???;
     final def get$extension[A]($this: C[A]): A = scala.Predef.???;
-    final <synthetic> def hashCode$extension[A]($this: C[A])(): Int = $this.x.hashCode();
+    final <synthetic> def hashCode$extension[A]($this: C[A])(): Int = java.util.Objects.hashCode($this.x);
     final <synthetic> def equals$extension[A]($this: C[A])(x$1: Any): Boolean = {
   case <synthetic> val x1: Any = x$1;
   case5(){

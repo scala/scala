@@ -200,7 +200,7 @@ trait MatchTranslation {
       if (phase.id >= currentRun.uncurryPhase.id)
         devWarning(s"running translateMatch past uncurry (at $phase) on $selector match $cases")
 
-      debug.patmat("translating "+ cases.mkString("{", "\n", "}"))
+      debug.patmat(cases.mkString("translating {", "\n", "}"))
 
       val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatNanos) else null
 

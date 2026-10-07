@@ -42,7 +42,7 @@ trait IndexedSeqOps[A, +CC[_], +C <: AnyRef]
     this
   }
 
-  /** Sorts this $coll in place according to an Ordering.
+  /** Sorts this $coll in place according to an `Ordering`.
     *
     * @see [[scala.collection.SeqOps.sorted]]
     * @param  ord the ordering to be used to compare elements.

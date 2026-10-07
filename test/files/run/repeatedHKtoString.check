@@ -1,0 +1,25 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> RepeatedParamClass.tpe.toString
+val res0: String = T0*
+
+scala> JavaRepeatedParamClass.tpe.toString
+val res1: String = T0*
+
+scala> ByNameParamClass.tpe.toString
+val res2: String = => T0
+
+scala> RepeatedParamClass.tpeHK.toString
+val res3: String = <repeated>
+
+scala> JavaRepeatedParamClass.tpeHK.toString
+val res4: String = <repeated...>
+
+scala> ByNameParamClass.tpeHK.toString
+val res5: String = <byname>
+
+scala> :quit

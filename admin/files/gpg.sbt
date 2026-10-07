@@ -1,4 +1,1 @@
-// TODO: are the resolvers needed?
-resolvers ++= Seq(Resolver.typesafeIvyRepo("releases"), Resolver.sbtPluginRepo("releases"))
-
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.1")

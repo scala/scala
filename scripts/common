@@ -33,8 +33,6 @@ mkdir "${BOOTSTRAP_REPO_DIR}"
 addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
 addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
 
-stApi="https://oss.sonatype.org/service/local"
-
 # General debug logging
 # $* - message
 function debug () {
@@ -131,36 +129,6 @@ update() {
   git reset --hard
 }
 
-##### sonatype interface
-
-st_curl(){
-  curl -H "Content-Type: application/json" -H "accept: application/json,application/vnd.siesta-error-v1+json,application/vnd.siesta-validation-errors-v1+json"  -K ~/.sonatype-curl -s -o - $@
-}
-
-st_stagingRepos() {
- st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang")'
-}
-
-st_stagingReposOpen() {
- st_stagingRepos | jq 'select(.type == "open")'
-}
-
-st_stagingRepoStatus() {
-  st_stagingRepos | jq -r "select(.repositoryId == \"$1\") | .type"
-}
-
-st_stagingRepoDrop() {
-  repo=$1
-  message=$2
-  echo "{\"data\":{\"description\":\"$message\",\"stagedRepositoryIds\":[\"$repo\"]}}" | st_curl -X POST -d @- "$stApi/staging/bulk/drop"
-}
-
-st_stagingRepoClose() {
-  repo=$1
-  message=$2
-  echo "{\"data\":{\"description\":\"$message\",\"stagedRepositoryIds\":[\"$repo\"]}}" | st_curl -X POST -d @- "$stApi/staging/bulk/close"
-}
-
 #### sbt tools
 
 clearIvyCache() {
@@ -174,19 +142,23 @@ clearIvyCache() {
 #### travis
 
 triggerScalaDist() {
-  local jsonTemplate='{ "request": { "branch": "%s", "message": "Scala Dist %s", "config": { "before_install": "export version=%s mode=release scala_sha=%s" } } }'
-  local json=$(printf "$jsonTemplate" "$TRAVIS_BRANCH" "$SCALA_VER" "$SCALA_VER" "$TRAVIS_COMMIT")
+  if [ "$publishToSonatype" = "yes" ]; then
+    echo "Not triggering scala-dist: after sonatype migration to central repository, staged (but unreleased) builds are not available through any resolver."
+  else
+    local jsonTemplate='{ "request": { "branch": "%s", "message": "Scala Dist %s", "config": { "before_install": "export version=%s mode=release scala_sha=%s" } } }'
+    local json=$(printf "$jsonTemplate" "$TRAVIS_BRANCH" "$SCALA_VER" "$SCALA_VER" "$TRAVIS_COMMIT")
 
-  local curlStatus=$(curl \
-    -s -o /dev/null -w "%{http_code}" \
-    -H "Travis-API-Version: 3" \
-    -H "Authorization: token $TRAVIS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$json" \
-    https://api.travis-ci.com/repo/scala%2Fscala-dist/requests)
+    local curlStatus=$(curl \
+      -s -o /dev/null -w "%{http_code}" \
+      -H "Travis-API-Version: 3" \
+      -H "Authorization: token $TRAVIS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "$json" \
+      https://api.travis-ci.com/repo/scala%2Fscala-dist/requests)
 
-  [[ "$curlStatus" == "202" ]] || {
-    echo "failed to start job"
-    exit 1
-  }
+    [[ "$curlStatus" == "202" ]] || {
+      echo "failed to start job"
+      exit 1
+    }
+  fi
 }

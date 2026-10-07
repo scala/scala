@@ -575,6 +575,7 @@ The following character escape sequences are recognized in character and string 
 | `‘\‘ ‘n‘`     | `\u000a` | linefeed        |  `LF`  |
 | `‘\‘ ‘f‘`     | `\u000c` | form feed       |  `FF`  |
 | `‘\‘ ‘r‘`     | `\u000d` | carriage return |  `CR`  |
+| `‘\‘ ‘s‘`     | `\u0020` | space           |  ` `   |
 | `‘\‘ ‘"‘`     | `\u0022` | double quote    |  `"`   |
 | `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
 | `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |

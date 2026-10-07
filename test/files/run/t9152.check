@@ -1,0 +1,42 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> import rootMirror._
+import rootMirror._
+
+scala> getClassIfDefined("p.C1$I").info
+val res0: $r.intp.global.Type =
+p.C1 {
+  private[package p] def <init>(): p.C1$I
+}
+
+scala> getClassIfDefined("p.C2$I").info
+val res1: $r.intp.global.Type =
+Object {
+  private[package p] def <init>(): p.C2$I
+  private[package p] def foo(): p.C2[_]
+}
+
+scala> getClassIfDefined("p.C1$I") // symbol unlinked after reading C1
+val res2: $r.intp.global.Symbol = <none>
+
+scala> getClassIfDefined("p.C2$I") // symbol unlinked after reading C2
+val res3: $r.intp.global.Symbol = <none>
+
+scala> getClassIfDefined("p.C1").info.member(TypeName("I")).info
+val res4: $r.intp.global.Type =
+p.C1[X] {
+  private[package p] def <init>(): C1.this.I
+}
+
+scala> getClassIfDefined("p.C2").info.member(TypeName("I")).info
+val res5: $r.intp.global.Type =
+Object {
+  private[package p] def <init>(): C2.this.I
+  private[package p] def foo(): p.C2[X]
+}
+
+scala> :quit

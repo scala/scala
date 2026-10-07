@@ -38,13 +38,13 @@ import scala.collection.Stepper.EfficientSplit
   * @tparam A the element type of the Stepper
   */
 trait Stepper[@specialized(Double, Int, Long) +A] {
-  /** Check if there's an element available. */
+  /** Checks if there's an element available. */
   def hasStep: Boolean
 
-  /** Return the next element and advance the stepper */
+  /** Returns the next element and advances the stepper */
   def nextStep(): A
 
-  /** Split this stepper, if applicable. The elements of the current Stepper are split up between
+  /** Splits this stepper, if applicable. The elements of the current Stepper are split up between
     * the resulting Stepper and the current stepper.
     *
     * May return `null`, in which case the current Stepper yields the same elements as before.

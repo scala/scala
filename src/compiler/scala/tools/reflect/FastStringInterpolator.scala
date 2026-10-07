@@ -41,23 +41,24 @@ trait FastStringInterpolator extends FormatInterpolator {
       }
       val treated = parts.mapConserve {
         case lit @ Literal(Constant(stringVal: String)) =>
-          def asRaw = if (currentRun.sourceFeatures.unicodeEscapesRaw) stringVal else {
-            val processed = processUnicode(stringVal)
-            if (processed == stringVal) stringVal else {
-              val pos = {
-                val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
-                  case ((p, o), i) if p != o => i
-                }.getOrElse(processed.length - 1)
-                lit.pos.withShift(diffindex)
-              }
-              def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
-              if (currentRun.isScala3)
-                runReporting.warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), Scala3Migration, c.internal.enclosingOwner)
-              else
-                runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")
-              processed
+          def asRaw = if (currentRun.sourceFeatures.unicodeEscapesRaw) stringVal else
+            processUnicode(stringVal) match {
+              case `stringVal` => stringVal
+              case processed =>
+                val pos = {
+                  val index = processed.zip(stringVal).indexWhere { case (p, s) => p != s }
+                  adjustedEscPos(lit.pos, index)
+                }
+                def msg(fate: String) =
+                  s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
+                def ignored =
+                  msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)")
+                if (currentRun.isScala3)
+                  runReporting.warning(pos, msg=ignored, Scala3Migration, site=c.internal.enclosingOwner)
+                else
+                  runReporting.deprecationWarning(pos, msg=msg("deprecated"), since="2.13.2", site="", origin="")
+                processed
             }
-          }
           val value =
             try if (isRaw) asRaw else processEscapes(stringVal)
             catch {
@@ -65,7 +66,8 @@ trait FastStringInterpolator extends FormatInterpolator {
               case iue: InvalidUnicodeEscapeException => c.abort(adjustedEscPos(lit.pos, iue.index), iue.getMessage)
             }
           val k = Constant(value)
-          // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
+          // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly.
+          // scala/bug#11196
           treeCopy.Literal(lit, k).setType(ConstantType(k))
         case x => throw new MatchError(x)
       }

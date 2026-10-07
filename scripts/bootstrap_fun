@@ -18,7 +18,7 @@
 
 # Credentials
 #  - `PRIVATE_REPO_PASS` password for `scala-ci` user on scala-ci.typesafe.com/artifactory
-#  - `SONA_USER` / `SONA_PASS` for sonatype
+#  - `SONATYPE_USERNAME` / `SONATYPE_PASSWORD` for sonatype central repository
 
 
 publishPrivateTask=${publishPrivateTask-"publish"}
@@ -55,13 +55,6 @@ determineScalaVersion() {
   echo "Building Scala $SCALA_VER."
 }
 
-createNetrcFile() {
-  local netrcFile=$HOME/`basename $1`-netrc
-  grep 'host=' $1 | sed 's/host=\(.*\)/machine \1/'          >  $netrcFile
-  grep 'user=' $1 | sed 's/user=\(.*\)/login \1/'            >> $netrcFile
-  grep 'password=' $1 | sed 's/password=\(.*\)/password \1/' >> $netrcFile
-}
-
 # deletes existing artifacts matching the $SCALA_VER from the repository passed as argument
 removeExistingBuilds() {
   local repoUrl=$1
@@ -70,7 +63,6 @@ removeExistingBuilds() {
     local repoId=${1#$repoPrefix}
     local storageApiUrl="${repoPrefix}api/storage/$repoId"
 
-    createNetrcFile "$HOME/.credentials-private-repo"
     local netrcFile="$HOME/.credentials-private-repo-netrc"
 
     # "module" is not a scala module, but an artifact of a bootstrap build. the variable
@@ -86,44 +78,6 @@ removeExistingBuilds() {
     done
   else
     echo "Unknown repo, not deleting anything: $repoUrl"
-  fi
-}
-
-pollForStagingReposClosed() {
-  OK=false
-
-  for i in $(seq 1 10); do
-    OK=true
-    for repo in $1; do
-      if [[ "$(st_stagingRepoStatus $repo)" != "closed" ]]; then
-        echo "Staging repo $repo not yet closed, waiting 30 seconds ($i / 10)"
-        OK=false
-        break
-      fi
-    done
-    if [ "$OK" = "true" ]; then break; fi
-    sleep 30s
-  done
-
-  if [ "$OK" = "false" ]; then
-    echo "Failed to close staging repos in 5 minutes: $1"
-    exit 1
-  fi
-}
-
-closeStagingRepos() {
-  if [ "$publishToSonatype" = "yes" ]; then
-      open=$(st_stagingReposOpen)
-      allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
-      allOpen=$(echo $open | jq  '.repositoryId' | tr -d \")
-
-      echo "Closing open repos: $allOpen"
-      for repo in $allOpen; do st_stagingRepoClose $repo; done
-
-      # ensure the release is available on sonatype staging before triggering scala-dist
-      pollForStagingReposClosed "$allOpen"
-
-      echo "Closed sonatype staging repos: $allOpenUrls."
   fi
 }
 
@@ -190,15 +144,11 @@ buildQuick() {
   clearIvyCache
   if [ "$publishToSonatype" = "yes" ]; then
     invokeQuickInternal \
-      'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
-      'set pgpPassphrase in Global := Some(Array.empty)' \
       "setupBootstrapPublish \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
-      $clean $publishSonatypeTaskCore
+      $clean $publishSonatypeTaskCore sonaUpload
   else
     invokeQuick $clean publish
   fi
-
-  closeStagingRepos
 }
 
 testStability() {

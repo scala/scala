@@ -1,4 +1,4 @@
-//> using options -Xlint -Werror
+//> using options -Xlint -Werror -feature -language:reflectiveCalls
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base._

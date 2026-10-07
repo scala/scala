@@ -4,6 +4,7 @@ import org.junit.Assert.{ assertArrayEquals, assertFalse, assertTrue }
 import org.junit.Test
 
 import scala.runtime.BoxedUnit
+import scala.tools.testkit.AssertUtil._
 import scala.util.chaining._
 
 class ArrayTest {
@@ -48,5 +49,9 @@ class ArrayTest {
     //assertTrue(Array.equals(xs, ys))  // would be nice
     assertTrue("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("hello, world")))
     assertFalse("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("goodbye, cruel world")))
+  }
+
+  @Test def `i24877 range throws on naive step`: Unit = {
+    assertSameElements(Array[Int](27), Array.range(27, 42, Int.MaxValue))
   }
 }

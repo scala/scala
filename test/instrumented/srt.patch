@@ -15,7 +15,7 @@
 
 +  var arrayApplyCount = 0
 +
-   /** Retrieve generic array element */
+   /** Retrieves generic array element */
    def array_apply(xs: AnyRef, idx: Int): Any = {
 +    arrayApplyCount += 1
      (xs: @unchecked) match {

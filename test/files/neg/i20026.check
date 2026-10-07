@@ -1,4 +1,7 @@
-JTest.java:3: error: illegal start of type declaration
+JTest.java:3: error: illegal start of type
 import java.util.*;
-       ^
-1 error
+^
+JTest.java:3: error: identifier expected but `;` found.
+import java.util.*;
+                  ^
+2 errors

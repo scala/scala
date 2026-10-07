@@ -16,7 +16,11 @@ package mutable
 import scala.annotation.nowarn
 
 
-/** A `Buffer` is a growable and shrinkable `Seq`. */
+/** A `Buffer` is a growable and shrinkable `Seq`.
+ *
+ *  @define coll buffer
+ *  @define Coll `Buffer`
+ */
 trait Buffer[A]
   extends Seq[A]
     with SeqOps[A, Buffer, Buffer[A]]
@@ -230,7 +234,7 @@ trait Buffer[A]
     if (idx < 0) this else takeInPlace(idx)
   }
 
-  /** Append the given element to this $coll until a target length is reached.
+  /** Appends the given element to this $coll until a target length is reached.
    *
    *  @param   len   the target length
    *  @param   elem  the padding value
@@ -252,7 +256,7 @@ trait IndexedBuffer[A] extends IndexedSeq[A]
 
   override def iterableFactory: SeqFactory[IndexedBuffer] = IndexedBuffer
 
-  /** Replace the contents of this $coll with the flatmapped result.
+  /** Replaces the contents of this $coll with the flatmapped result.
    *
    *  @param f the mapping function
    *  @return this $coll
@@ -269,9 +273,9 @@ trait IndexedBuffer[A] extends IndexedSeq[A]
     this
   }
 
-  /** Replace the contents of this $coll with the filtered result.
+  /** Replaces the contents of this $coll with the filtered result.
    *
-   *  @param f the filtering function
+   *  @param p the filtering function
    *  @return this $coll
    */
   def filterInPlace(p: A => Boolean): this.type = {

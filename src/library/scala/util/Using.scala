@@ -125,8 +125,8 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *   - `java.lang.LinkageError`
   *   - `java.lang.InterruptedException` and `java.lang.ThreadDeath`
   *   - [[scala.util.control.NonFatal fatal exceptions]], excluding `scala.util.control.ControlThrowable`
+  *   - all other exceptions, excluding `scala.util.control.ControlThrowable`
   *   - `scala.util.control.ControlThrowable`
-  *   - all other exceptions
   *
   * When more than two exceptions are thrown, the first two are combined and
   * re-thrown as described above, and each successive exception thrown is combined
@@ -265,9 +265,9 @@ object Using {
       case _: VirtualMachineError                   => 4
       case _: LinkageError                          => 3
       case _: InterruptedException | _: ThreadDeath => 2
-      case _: ControlThrowable                      => 0
+      case _: ControlThrowable                      => -1 // below everything
       case e if !NonFatal(e)                        => 1 // in case this method gets out of sync with NonFatal
-      case _                                        => -1
+      case _                                        => 0
     }
     @inline def suppress(t: Throwable, suppressed: Throwable): Throwable = { t.addSuppressed(suppressed); t }
 

@@ -88,7 +88,12 @@ object TastyUnpickler {
     final def upgradeReaderHowTo(version: TastyVersion): String =
       if (version.major == 28) {
         // scala 3.x.y series
-        if (version.experimental > 0)
+        if (version.minor > toolVersion.minor)
+          // TASTy from 3.8 or newer is not supported
+          s"""migrate to Scala 3; the TASTy reader in Scala 2.13
+             |  only supports Scala 3 versions up to 3.${toolVersion.minor}. Alternatively, use a version of the library
+             |  that is compatible with 3.${toolVersion.minor} (or with Scala 2.13)""".stripMargin
+        else if (version.experimental > 0)
           // scenario here is someone using 2.13.12 to read 3.4.1-RC1-NIGHTLY, in this case
           // Scala 2.13 can not read it.
           s"either use a stable version of the library, or try from the same Scala 3.x nightly or snapshot compiler"

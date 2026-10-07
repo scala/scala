@@ -19,6 +19,8 @@ import java.lang.System.lineSeparator
 import scala.annotation.nowarn
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
+  import self.analyzer.OriginalTreeAttachment
+
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree {
@@ -323,8 +325,18 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
               // The typer does not accept UnApply. Replace it with Apply, which can be retyped.
               case UnApply(Unapplied(Applied(Select(fun, nme.unapply | nme.unapplySeq), _, _)), args) =>
                 Apply(transform(fun), transformTrees(args))
-              case _ =>
-                val dupl = tree.duplicate
+              case tree =>
+                val dupl = {
+                  val original = tree match {
+                    case tree @ Literal(_) =>
+                      tree.attachments.get[OriginalTreeAttachment] match {
+                        case Some(OriginalTreeAttachment(original)) => original
+                        case _ => tree
+                      }
+                    case tree => tree
+                  }
+                  original.duplicate
+                }
                 // Typically the resetAttrs transformer cleans both symbols and types.
                 // However there are exceptions when we cannot erase symbols due to idiosyncrasies of the typer.
                 // vetoXXX local variables declared below describe the conditions under which we cannot erase symbols.

@@ -15,9 +15,9 @@ package typechecker
 
 import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.reflect.internal.Depth
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.control.ControlThrowable
 import symtab.Flags._
-import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -55,7 +55,7 @@ trait Infer extends Checkable {
 
       val n = numArgs - numFormals + 1
       // Optimized version of: formals1.init ::: List.fill(n)(lastType)
-      val result = mutable.ListBuffer[Type]()
+      val result = ListBuffer.empty[Type]
       var fs = formals1
       while ((fs ne Nil) && (fs.tail ne Nil)) {
         result.addOne(fs.head)
@@ -237,32 +237,6 @@ trait Infer extends Checkable {
         withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
     }
 
-    // When filtering sym down to the accessible alternatives leaves us empty handed.
-    private def checkAccessibleError(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
-      if (settings.isDebug) {
-        Console.println(context)
-        Console.println(tree)
-        Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
-      }
-      ErrorUtils.issueTypeError(AccessError(tree, sym, pre, context.enclClass.owner,
-        if (settings.check.isDefault)
-          analyzer.lastAccessCheckDetails
-        else
-          ptBlock("because of an internal error (no accessible symbol)",
-            "sym.ownerChain"                -> sym.ownerChain,
-            "underlyingSymbol(sym)"         -> underlyingSymbol(sym),
-            "pre"                           -> pre,
-            "site"                          -> site,
-            "tree"                          -> tree,
-            "sym.accessBoundary(sym.owner)" -> sym.accessBoundary(sym.owner),
-            "context.owner"                 -> context.owner,
-            "context.outer.enclClass.owner" -> context.outer.enclClass.owner
-          )
-      ))(context)
-
-      setError(tree)
-    }
-
     /* -- Tests & Checks---------------------------------------------------- */
 
     /** Check that `sym` is defined and accessible as a member of
@@ -279,6 +253,32 @@ trait Infer extends Checkable {
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
      */
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree, isJava: Boolean): Tree = {
+      // When filtering sym down to the accessible alternatives leaves us empty handed.
+      def checkAccessibleError(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
+        if (settings.isDebug) {
+          Console.println(context)
+          Console.println(tree)
+          Console.println(s"$pre ${sym.owner} ${context.owner} ${context.outer.enclClass.owner} ${sym.owner.thisType
+            } ${pre =:= sym.owner.thisType}")
+        }
+        ErrorUtils.issueTypeError(AccessError(tree, sym, pre, context.enclClass.owner,
+          if (settings.check.isDefault)
+            analyzer.lastAccessCheckDetails
+          else
+            ptBlock("because of an internal error (no accessible symbol)",
+              "sym.ownerChain"                -> sym.ownerChain,
+              "underlyingSymbol(sym)"         -> underlyingSymbol(sym),
+              "pre"                           -> pre,
+              "site"                          -> site,
+              "tree"                          -> tree,
+              "sym.accessBoundary(sym.owner)" -> sym.accessBoundary(sym.owner),
+              "context.owner"                 -> context.owner,
+              "context.outer.enclClass.owner" -> context.outer.enclClass.owner
+            )
+        ))(context)
+
+        setError(tree)
+      }
       def malformed(ex: MalformedType, instance: Type): Type = {
         val what    = if (ex.msg contains "malformed type") "is malformed" else s"contains a ${ex.msg}"
         val message = s"\n because its instance type $instance $what"
@@ -286,34 +286,38 @@ trait Infer extends Checkable {
         ErrorUtils.issueTypeError(error)(context)
         ErrorType
       }
-      def accessible = sym.filter(context.isAccessible(_, pre, site.isInstanceOf[Super])) match {
-        case NoSymbol if sym.isJavaDefined && context.unit.isJava => sym  // don't try to second guess Java; see #4402
-        case sym1                                                 => sym1
-      }
       if (context.unit.exists && settings.YtrackDependencies.value)
         context.unit.registerDependency(sym.enclosingTopLevelClass)
 
       if (sym.isError)
-        tree setSymbol sym setType ErrorType
-      else accessible match {
-        case NoSymbol                                                 => checkAccessibleError(tree, sym, pre, site)
-        case acc if context.owner.isTermMacro && (acc hasFlag LOCKED) => throw CyclicReference(acc, CheckAccessibleMacroCycle)
-        case acc                                                      =>
-          val sym1 = if (acc.isTerm) acc.cookJavaRawInfo() else acc // xform java rawtypes into existentials
-          val owntype = (
-            try pre memberType sym1
-            catch { case ex: MalformedType => malformed(ex, pre memberType underlyingSymbol(sym)) }
-          )
-          tree setSymbol sym1 setType (
+        tree.setSymbol(sym).setType(ErrorType)
+      else {
+        val accessible = sym.filter(context.isAccessible(_, pre, site.isInstanceOf[Super])) match {
+          case NoSymbol if sym.isJavaDefined && context.unit.isJava => sym  // don't try to second guess Java; see #4402
+          case sym1                                                 => sym1
+        }
+        if (accessible eq NoSymbol)
+          checkAccessibleError(tree, sym, pre, site)
+        else if (context.owner.isTermMacro && accessible.hasFlag(LOCKED))
+          throw CyclicReference(accessible, CheckAccessibleMacroCycle)
+        else {
+          val sym1 =
+            if (accessible.isTerm) accessible.cookJavaRawInfo() // xform java rawtypes into existentials
+            else accessible
+          val owntype =
+            try pre.memberType(sym1)
+            catch { case ex: MalformedType => malformed(ex, pre.memberType(underlyingSymbol(sym))) }
+          val owntype1 =
             pre match {
               // OPT: avoid lambda allocation and Type.map for super constructor calls
               case _: SuperType if !sym.isConstructor && !owntype.isInstanceOf[OverloadedType] =>
-                owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
+                owntype.map((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
               case _ =>
                 if ((owntype eq ObjectTpe) && isJava) ObjectTpeJava
                 else owntype
             }
-          )
+          tree.setSymbol(sym1).setType(owntype1)
+        }
       }
     }
 
@@ -495,10 +499,8 @@ trait Infer extends Checkable {
      *    type parameters that are inferred as `scala.Nothing` and that are not covariant in `restpe` are taken to be undetermined
      */
     def adjustTypeArgs(tparams: List[Symbol], tvars: List[TypeVar], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs  = {
-      val okParams = ListBuffer[Symbol]()
-      val okArgs = ListBuffer[Type]()
-      val undetParams = ListBuffer[Symbol]()
-      val allArgs = ListBuffer[Type]()
+      val okParams, undetParams = ListBuffer.empty[Symbol]
+      val okArgs, allArgs = ListBuffer.empty[Type]
 
       foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
         val retract = (
@@ -588,8 +590,8 @@ trait Infer extends Checkable {
       if (settings.warnInferAny && !fn.isEmpty)
         foreach2(targs, tvars) { (targ, tvar) =>
           if (topTypes.contains(targ.typeSymbol) &&
-              !tvar.constr.loBounds.exists(t => topTypes.contains(t.typeSymbol)) &&
-              !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
+            !tvar.constr.loBounds.exists(t => topTypes.contains(t.typeSymbol)) &&
+            !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
             context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
         }
       adjustTypeArgs(tparams, tvars, targs, restpe)

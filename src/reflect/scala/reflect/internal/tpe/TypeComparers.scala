@@ -18,6 +18,7 @@ package tpe
 import scala.annotation.tailrec
 import scala.collection.mutable
 import util.{StringContextStripMarginOps, TriState}
+import java.util.IdentityHashMap
 
 trait TypeComparers {
   self: SymbolTable =>
@@ -29,6 +30,9 @@ trait TypeComparers {
 
   private[this] val _pendingSubTypes = new mutable.HashSet[SubTypePair]
   def pendingSubTypes = _pendingSubTypes
+
+  private[this] val _knownFalseSubTypes = new IdentityHashMap[Type, List[Type]]
+  def knownFalseSubTypes = _knownFalseSubTypes
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
     // scala/bug#8146 we used to implement equality here in terms of pairwise =:=.
@@ -84,9 +88,10 @@ trait TypeComparers {
     }
   } finally {
     subsametypeRecursions -= 1
-    // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)
-    // it doesn't help to keep separate recursion counts for the three methods that now share it
-    // if (subsametypeRecursions == 0) undoLog.clear()
+    if (subsametypeRecursions == 0) {
+      knownFalseSubTypes.clear()
+      // undoLog.clear() // too eager, breaks #3281, #3866
+    }
   }
 
   def isDifferentTypeConstructor(tp1: Type, tp2: Type) = !isSameTypeConstructor(tp1, tp2)
@@ -121,9 +126,10 @@ trait TypeComparers {
   }
   finally {
     subsametypeRecursions -= 1
-    // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)
-    // it doesn't help to keep separate recursion counts for the three methods that now share it
-    // if (subsametypeRecursions == 0) undoLog.clear()
+    if (subsametypeRecursions == 0) {
+      knownFalseSubTypes.clear()
+      // undoLog.clear() // too eager, breaks #3281, #3866
+    }
   }
 
   // @pre: at least one argument has annotations
@@ -195,7 +201,7 @@ trait TypeComparers {
   private def methodHigherOrderTypeParamsSubVariance(low: Symbol, high: Symbol) =
     methodHigherOrderTypeParamsSameVariance(low, high) || low.variance.isInvariant
 
-  def isSameType2(tp1: Type, tp2: Type): Boolean = {
+  private def isSameType2(tp1: Type, tp2: Type): Boolean = {
     def retry() = {
       // OPT no need to compare eta-expansions of a pair of distinct class type refs, we'd get the same result (false).
       // e.g. we know that TypeRef(..., Some, Nil) is not the same as TypeRef(..., Option, Nil) without needing to compare
@@ -291,16 +297,22 @@ trait TypeComparers {
 
     try result = { // if subtype test fails, it should not affect constraints on typevars
       if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
-        val p = new SubTypePair(tp1, tp2)
-        if (pendingSubTypes(p))
+        val p = SubTypePair(tp1, tp2)
+        if (pendingSubTypes(p)) {
+          val ts = knownFalseSubTypes.get(tp1)
+          val cur = if (ts != null) ts else Nil
+          knownFalseSubTypes.put(tp1, tp2 :: cur) // see scala/bug#13119
           false // see neg/t8146-no-finitary*
-        else
+        } else
           try {
             pendingSubTypes += p
             isSubType1(tp1, tp2, depth)
           } finally {
             pendingSubTypes -= p
           }
+      } else if (!knownFalseSubTypes.isEmpty && { val ts = knownFalseSubTypes.get(tp1); ts != null && ts.contains(tp2) }) {
+        // redundant `isEmpty` check is probably premature optimization, but isSubType is perf sensitive
+        false
       } else {
         isSubType1(tp1, tp2, depth)
       }
@@ -309,9 +321,10 @@ trait TypeComparers {
     result
   } finally {
     subsametypeRecursions -= 1
-    // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)
-    // it doesn't help to keep separate recursion counts for the three methods that now share it
-    // if (subsametypeRecursions == 0) undoLog.clear()
+    if (subsametypeRecursions == 0) {
+      knownFalseSubTypes.clear()
+      // undoLog.clear() // too eager, breaks #3281, #3866
+    }
   }
 
   /** Check whether the subtype or type equivalence relationship
@@ -379,7 +392,7 @@ trait TypeComparers {
   }
 
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
-  def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
+  private def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
 
     def hkSubVariance(tparams1: List[Symbol], tparams2: List[Symbol]) =
       (tparams1 corresponds tparams2)(methodHigherOrderTypeParamsSubVariance)
@@ -638,18 +651,17 @@ trait TypeComparers {
         isSubType(tp1, tp2)
     }
 
-  def isNumericSubType(tp1: Type, tp2: Type) = (
-    isNumericSubClass(primitiveBaseClass(tp1.dealiasWiden), primitiveBaseClass(tp2.dealias))
-   )
-
-  /** If the given type has a primitive class among its base classes,
-   *  the symbol of that class. Otherwise, NoSymbol.
-   */
-  private def primitiveBaseClass(tp: Type): Symbol = {
-    @tailrec def loop(bases: List[Symbol]): Symbol = bases match {
-      case Nil     => NoSymbol
-      case x :: xs => if (isPrimitiveValueClass(x)) x else loop(xs)
+  def isNumericSubType(tp1: Type, tp2: Type) = {
+    /* If the given type has a primitive class among its base classes,
+     * the symbol of that class. Otherwise, NoSymbol.
+     */
+    def primitiveBaseClass(tp: Type): Symbol = {
+      def loop(bases: List[Symbol]): Symbol = bases match {
+        case base :: bases => if (isPrimitiveValueClass(base)) base else loop(bases)
+        case nil => NoSymbol
+      }
+      loop(tp.baseClasses)
     }
-    loop(tp.baseClasses)
+    isNumericSubClass(primitiveBaseClass(tp1.dealiasWiden), primitiveBaseClass(tp2.dealias))
   }
 }

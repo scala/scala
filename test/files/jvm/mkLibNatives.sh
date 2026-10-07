@@ -1,4 +1,5 @@
-#!/bin/sh -e
+#!/bin/sh
+set -eu
 
 ##############################################################################
 # Author  : Stephane Micheloud
@@ -26,14 +27,14 @@ CLASS_DIR=natives-jvm.obj
 
 if [ ! -f "${CLASS_DIR}/${CLASS_NAME}.class" ]; then
   echo "first you need to run this within sbt:"
-  echo "partest --debug test/files/jvm/natives.scala"
+  echo "sbt \"partest --debug test/files/jvm/natives.scala\""
   exit
 fi
 
 OBJ_NAME=natives
 LIB_NAME=libnatives
 
-if [ -z "${JAVA_HOME}" ]; then
+if [ -z "${JAVA_HOME:-}" ]; then
   echo "environment variable JAVA_HOME is undefined."
   exit
 elif $cygwin; then
@@ -42,16 +43,7 @@ elif $cygwin; then
 fi
 
 JAVAH=${JAVA_HOME}/bin/javah
-JAVAH_OPTIONS="-jni -force -classpath ${CLASS_DIR} -o ${OBJ_NAME}.h"
-
-if [ ! -f "${JAVAH}" ]; then
-  # Oracle removed `javah`. The replacement is `javac -h`, but
-  # requiring 8 seems fine for now, especially since we commit
-  # the generated files to version control, so this script hardly
-  # ever needs to be run at all
-  echo "this script only works on Java 8"
-  exit
-fi
+JAVA=${JAVA_HOME}/bin/java
 
 CC=gcc
 
@@ -76,11 +68,35 @@ else
   FULL_LIB_NAME=${LIB_NAME}.so
 fi
 
+ljavah() {
+  local lclass_dir="${1}"
+  local lobj_name="${2}"
+  local lclass_name="${3}"
+  if [ -f "${JAVAH}" ]; then
+    echo "javah exists in JAVA_HOME, will be used."
+    ${JAVAH} -jni -force -classpath ${lclass_dir} -o ${lobj_name}.h ${lclass_name}
+  else
+    echo "javah does not exist in JAVA_HOME. Wrapper for .h generation from .class filess will be downloaded and used."
+    local gjavah_version=0.3.1
+    local gjava=gjavah-${gjavah_version}.jar
+    local asm=asm-9.1.jar
+    local url="https://github.com/Glavo/gjavah/releases/download/${gjavah_version}"
+     if [ ! -f "${gjava}" ]; then
+       curl -k -f -L -O "${url}/${gjava}"
+     fi
+     if [ ! -f "${asm}" ]; then
+       curl -k -f -L -O "${url}/${asm}"
+     fi
+     ${JAVA} -jar ${gjava} -classpath ${lclass_dir} ${lclass_name}
+     mv Test__.h ${lobj_name}.h
+  fi
+}
+
 ##############################################################################
 # commands
 
-[ $debug ] && echo ${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
-${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
+[ $debug ] && echo ljavah ${CLASS_DIR} ${OBJ_NAME} ${CLASS_NAME}
+ljavah ${CLASS_DIR} ${OBJ_NAME} ${CLASS_NAME}
 
 [ $debug ] && echo ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
 ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c

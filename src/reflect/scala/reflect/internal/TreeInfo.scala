@@ -788,6 +788,7 @@ abstract class TreeInfo {
         case Apply(f, _)           => hasExplicitUnit(f)
         case TypeApply(f, _)       => hasExplicitUnit(f)
         case AppliedTypeTree(f, _) => hasExplicitUnit(f)
+        case Block(_, expr)        => hasExplicitUnit(expr)
         case _                     => false
       }
     }
@@ -1014,8 +1015,8 @@ abstract class TreeInfo {
       case _ => EmptyTree
     }
 
-    def unapply(tree: Tree) = refPart(tree) match {
-      case ref: RefTree => {
+    def unapply(tree: Tree): Option[(Boolean, Boolean, Symbol, Symbol, List[Tree])] = refPart(tree) match {
+      case ref: RefTree =>
         val qual = ref.qualifier
         val isBundle = definitions.isMacroBundleType(qual.tpe)
         val isBlackbox =
@@ -1031,8 +1032,7 @@ abstract class TreeInfo {
             if (qualSym.isModule) qualSym.moduleClass else qualSym
           }
         Some((isBundle, isBlackbox, owner, ref.symbol, dissectApplied(tree).targs))
-      }
-      case _  => None
+      case _ => None
     }
   }
 

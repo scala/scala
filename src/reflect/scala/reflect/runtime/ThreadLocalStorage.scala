@@ -13,18 +13,23 @@
 package scala.reflect
 package runtime
 
-import java.lang.Thread._
+import java.lang.Thread.currentThread
+import java.util.Collections.synchronizedMap
+import java.util.{WeakHashMap => jWeakHashMap}
 
 private[reflect] trait ThreadLocalStorage {
   self: SymbolTable =>
 
   // see a discussion at scala-internals for more information:
   // https://groups.google.com/group/scala-internals/browse_thread/thread/337ce68aa5e51f79
-  trait ThreadLocalStorage[T] { def get: T; def set(newValue: T): Unit }
+  trait ThreadLocalStorage[T] {
+    def get: T
+    def set(newValue: T): Unit
+  }
   private class MyThreadLocalStorage[T](initialValue: => T) extends ThreadLocalStorage[T] {
-    // TODO: how do we use org.cliffc.high_scale_lib.NonBlockingHashMap here?
-    //       (we would need a version that uses weak keys)
-    private[this] val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
+    // consider a nonblocking map such as org.cliffc.high_scale_lib.NonBlockingHashMap
+    // but we would need a version that uses weak keys
+    private[this] val values = synchronizedMap(new jWeakHashMap[Thread, T])
     def get: T = {
       if (values containsKey currentThread) values.get(currentThread)
       else {

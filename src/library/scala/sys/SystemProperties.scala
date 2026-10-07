@@ -15,14 +15,13 @@ package sys
 
 import scala.collection.{mutable, Iterator}
 import scala.jdk.CollectionConverters._
-import java.security.AccessControlException
 import scala.language.implicitConversions
 
 /** A bidirectional map wrapping the java System properties.
  *  Changes to System properties will be immediately visible in the map,
  *  and modifications made to the map will be immediately applied to the
  *  System properties.  If a security manager is in place which prevents
- *  the properties from being read or written, the AccessControlException
+ *  the properties from being read or written, the `SecurityException`
  *  will be caught and discarded.
  *  @define Coll `collection.mutable.Map`
  *  @define coll mutable map
@@ -52,9 +51,8 @@ extends mutable.AbstractMap[String, String] {
   def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
   def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
 
-  @annotation.nowarn("cat=deprecation") // AccessControlException is deprecated on JDK 17
   def wrapAccess[T](body: => T): Option[T] =
-    try Some(body) catch { case _: AccessControlException => None }
+    try Some(body) catch { case _: SecurityException => None }
 }
 
 /** The values in SystemProperties can be used to access and manipulate

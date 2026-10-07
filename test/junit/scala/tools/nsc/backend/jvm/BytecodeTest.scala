@@ -106,16 +106,11 @@ class BytecodeTest extends BytecodeTesting {
       Label(7), Op(ICONST_2), Op(IRETURN)))
 
     // t3: Array == is translated to reference equality, AnyRef == to null checks and equals
-    assertSameCode(getMethod(c, "t3"), List(
-      // Array ==
-      VarOp(ALOAD, 1), VarOp(ALOAD, 2), Jump(IF_ACMPEQ, Label(23)),
-      // AnyRef ==
-      VarOp(ALOAD, 2), VarOp(ALOAD, 1), VarOp(ASTORE, 3), Op(DUP), Jump(IFNONNULL, Label(14)),
-      Op(POP), VarOp(ALOAD, 3), Jump(IFNULL, Label(19)), Jump(GOTO, Label(23)),
-      Label(14), VarOp(ALOAD, 3), InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"), Jump(IFEQ, Label(23)),
-      Label(19), Op(ICONST_1), Jump(GOTO, Label(26)),
-      Label(23), Op(ICONST_0),
-      Label(26), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t3"),  List(
+      VarOp(ALOAD, 1), VarOp(ALOAD, 2), Jump(IF_ACMPEQ, Label(11)),
+      VarOp(ALOAD, 2), VarOp(ALOAD, 1),
+      Invoke(INVOKESTATIC, "java/util/Objects", "equals", "(Ljava/lang/Object;Ljava/lang/Object;)Z", itf = false),
+      Jump(IFEQ, Label(11)), Op(ICONST_1), Jump(GOTO, Label(14)), Label(11), Op(ICONST_0), Label(14), Op(IRETURN)))
 
     val t4t5 = List(
       VarOp(ALOAD, 1), Jump(IFNULL, Label(6)),
@@ -1076,5 +1071,44 @@ class BytecodeTest extends BytecodeTesting {
     assertInvoke(getMethod(t, "t4"), "j/J", "k")
     assertInvoke(getMethod(t, "t5"), "j/J", "k")
     assertInvoke(getMethod(t, "t6"), "j/J", "k")
+  }
+
+  @Test def t7852(): Unit = {
+    val code =
+      """class C {
+        |  def string: Unit = {
+        |    "" == toString
+        |  }
+        |
+        |  def module: Unit = {
+        |    scala.collection.immutable.Nil == (toString: Any)
+        |  }
+        |
+        |  def moduleIndirect: Unit = {
+        |    val n: Nil.type = null
+        |    n == (toString: Any) // still need null checks here.
+        |  }
+        |
+        |  def nilModuleViaScalaPackageAlias: Unit = {
+        |    Nil == (toString: Any)
+        |  }
+        |
+        |  def moduleViaScalaPackageAlias: Unit = {
+        |    Right == (toString: Any)
+        |  }
+        |}
+        |""".stripMargin
+    val c = compileClass(code)
+    val nullChecks = Set(Opcodes.IFNONNULL, Opcodes.IFNULL)
+    def check(name: String, n: Boolean) = {
+      val m = getMethod(c, name)
+      assertEquals(0, m.instructions.count(i => nullChecks(i.opcode)))
+      assertInvoke(m, if (n) "java/util/Objects" else "java/lang/Object", "equals")
+    }
+    check("string", n = false)
+    check("module", n = false)
+    check("moduleIndirect", n = true)
+    check("nilModuleViaScalaPackageAlias", n = false)
+    check("moduleViaScalaPackageAlias", n = true)
   }
 }

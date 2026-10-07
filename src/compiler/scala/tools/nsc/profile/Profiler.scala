@@ -354,16 +354,12 @@ object EventType extends Enumeration {
 }
 
 sealed trait ProfileReporter {
-  @nowarn("cat=lint-inaccessible")
   def reportBackground(profiler: RealProfiler, threadRange: ProfileRange): Unit
-  @nowarn("cat=lint-inaccessible")
   def reportForeground(profiler: RealProfiler, threadRange: ProfileRange): Unit
 
   def reportGc(data: GcEventData): Unit
 
-  @nowarn("cat=lint-inaccessible")
   def header(profiler: RealProfiler) :Unit
-  @nowarn("cat=lint-inaccessible")
   def close(profiler: RealProfiler) :Unit
 }
 

@@ -1,6 +1,9 @@
 import concurrent.ExecutionContext.Implicits.global
 
-class Admin extends javax.swing.JApplet {
+// this test used to use JApplet, which has ceased to exist
+// in JDK 26. I've substituted JFrame without checking to see whether
+// the original issue still reproduces on Scala 2.8 with the change, :shrug:
+class Admin extends javax.swing.JFrame {
   val jScrollPane = new javax.swing.JScrollPane (null, 0, 0)
   def t2484: Unit = {
     scala.concurrent.Future {jScrollPane.synchronized {

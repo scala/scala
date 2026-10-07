@@ -8,7 +8,7 @@ macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo2(x: Any) = macro Impls.foo(null)(null)
                                  ^
-Macros_Test_2.scala:5: error: missing argument list for method foo in object Impls
+Macros_Test_2.scala:5: error: missing argument list for method foo in object Impls of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any]): Nothing
 Unapplied methods are only converted to functions when a function type is expected.
 You can make this conversion explicit by writing `foo _` or `foo(_)(_)` instead of `foo`.
   def foo3(x: Any) = macro {2; Impls.foo}

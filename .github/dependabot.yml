@@ -4,3 +4,4 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "2.12.x"

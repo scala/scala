@@ -127,7 +127,7 @@ trait Iterable[+A] extends IterableOnce[A]
   * @define willNotTerminateInf
   *
   *    Note: will not terminate for infinite-sized collections.
-  *  @define undefinedorder
+  * @define undefinedorder
   *  The order in which operations are performed on elements is unspecified
   *  and may be nondeterministic.
   */
@@ -140,9 +140,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def toIterable: Iterable[A]
 
   /** Converts this $coll to an unspecified Iterable.  Will return
-    *  the same collection if this instance is already Iterable.
-    *  @return An Iterable containing all elements of this $coll.
-    */
+   *  the same collection if this instance is already Iterable.
+   *  @return An Iterable containing all elements of this $coll.
+   */
   @deprecated("toTraversable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.0")
   final def toTraversable: Traversable[A] = toIterable
 
@@ -208,24 +208,24 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   protected def newSpecificBuilder: Builder[A @uncheckedVariance, C]
 
-  /** The empty iterable of the same type as this iterable.
+  /** The empty $coll.
     *
-    * @return an empty iterable of type `C`.
+    * @return an empty iterable of type $Coll.
     */
   def empty: C = fromSpecific(Nil)
 
   /** Selects the first element of this $coll.
-    *  $orderDependent
-    *  @return  the first element of this $coll.
-    *  @throws NoSuchElementException if the $coll is empty.
-    */
+   *  $orderDependent
+   *  @return  the first element of this $coll.
+   *  @throws NoSuchElementException if the $coll is empty.
+   */
   def head: A = iterator.next()
 
   /** Optionally selects the first element.
-    *  $orderDependent
-    *  @return  the first element of this $coll if it is nonempty,
-    *           `None` if it is empty.
-    */
+   *  $orderDependent
+   *  @return  the first element of this $coll if it is nonempty,
+   *           `None` if it is empty.
+   */
   def headOption: Option[A] = {
     val it = iterator
     if (it.hasNext) Some(it.next()) else None
@@ -244,32 +244,32 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   }
 
   /** Optionally selects the last element.
-    *  $orderDependent
-    *  @return  the last element of this $coll$ if it is nonempty,
-    *           `None` if it is empty.
-    */
+   *  $orderDependent
+   *  @return  the last element of this $coll if it is nonempty,
+   *           `None` if it is empty.
+   */
   def lastOption: Option[A] = if (isEmpty) None else Some(last)
 
   /** A view over the elements of this collection. */
   def view: View[A] = View.fromIteratorProvider(() => iterator)
 
   /** Compares the size of this $coll to a test value.
-    *
-    *   @param   otherSize the test value that gets compared with the size.
-    *   @return  A value `x` where
-    *   {{{
-    *        x <  0       if this.size <  otherSize
-    *        x == 0       if this.size == otherSize
-    *        x >  0       if this.size >  otherSize
-    *   }}}
-    *
-    *  The method as implemented here does not call `size` directly; its running time
-    *  is `O(size min otherSize)` instead of `O(size)`. The method should be overridden
-    *  if computing `size` is cheap and `knownSize` returns `-1`.
-    *
-    *  @see [[sizeIs]]
-    */
-  def sizeCompare(otherSize: Int): Int = {
+   *
+   *  @param   otherSize the test value that gets compared with the size.
+   *  @return  A value `x` where
+   *  {{{
+   *       x <  0       if this.size <  otherSize
+   *       x == 0       if this.size == otherSize
+   *       x >  0       if this.size >  otherSize
+   *  }}}
+   *
+   *  The method as implemented here does not call `size` directly; its running time
+   *  is `O(size min otherSize)` instead of `O(size)`. The method should be overridden
+   *  if computing `size` is cheap and `knownSize` returns `-1`.
+   *
+   *  @see [[sizeIs]]
+   */
+  def sizeCompare(otherSize: Int): Int =
     if (otherSize < 0) 1
     else {
       val known = knownSize
@@ -285,7 +285,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
         i - otherSize
       }
     }
-  }
 
   /** Returns a value class containing operations for comparing the size of this $coll to a test value.
     *
@@ -304,19 +303,19 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @inline final def sizeIs: IterableOps.SizeCompareOps = new IterableOps.SizeCompareOps(this)
 
   /** Compares the size of this $coll to the size of another `Iterable`.
-    *
-    *   @param   that the `Iterable` whose size is compared with this $coll's size.
-    *   @return  A value `x` where
-    *   {{{
-    *        x <  0       if this.size <  that.size
-    *        x == 0       if this.size == that.size
-    *        x >  0       if this.size >  that.size
-    *   }}}
-    *
-    *  The method as implemented here does not call `size` directly; its running time
-    *  is `O(this.size min that.size)` instead of `O(this.size + that.size)`.
-    *  The method should be overridden if computing `size` is cheap and `knownSize` returns `-1`.
-    */
+   *
+   *  @param   that the `Iterable` whose size is compared with this $coll's size.
+   *  @return  A value `x` where
+   *  {{{
+   *       x <  0       if this.size <  that.size
+   *       x == 0       if this.size == that.size
+   *       x >  0       if this.size >  that.size
+   *  }}}
+   *
+   *  The method as implemented here does not call `size` directly; its running time
+   *  is `O(this.size min that.size)` instead of `O(this.size + that.size)`.
+   *  The method should be overridden if computing `size` is cheap and `knownSize` returns `-1`.
+   */
   def sizeCompare(that: Iterable[_]): Int = {
     val thatKnownSize = that.knownSize
 
@@ -345,39 +344,39 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def view(from: Int, until: Int): View[A] = view.slice(from, until)
 
   /** Transposes this $coll of iterable collections into
-    *  a $coll of ${coll}s.
-    *
-    *    The resulting collection's type will be guided by the
-    *    static type of $coll. For example:
-    *
-    *    {{{
-    *    val xs = List(
-    *               Set(1, 2, 3),
-    *               Set(4, 5, 6)).transpose
-    *    // xs == List(
-    *    //         List(1, 4),
-    *    //         List(2, 5),
-    *    //         List(3, 6))
-    *
-    *    val ys = Vector(
-    *               List(1, 2, 3),
-    *               List(4, 5, 6)).transpose
-    *    // ys == Vector(
-    *    //         Vector(1, 4),
-    *    //         Vector(2, 5),
-    *    //         Vector(3, 6))
-    *    }}}
-    *
-    *  $willForceEvaluation
-    *
-    *  @tparam B the type of the elements of each iterable collection.
-    *  @param  asIterable an implicit conversion which asserts that the
-    *          element type of this $coll is an `Iterable`.
-    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
-    *          the ''n''th column of this $coll.
-    *  @throws IllegalArgumentException if all collections in this $coll
-    *          are not of the same size.
-    */
+   *  a $coll of ${coll}s.
+   *
+   *  The resulting collection's type will be guided by the
+   *  static type of $coll. For example:
+   *
+   *  {{{
+   *  val xs = List(
+   *             Set(1, 2, 3),
+   *             Set(4, 5, 6)).transpose
+   *  // xs == List(
+   *  //         List(1, 4),
+   *  //         List(2, 5),
+   *  //         List(3, 6))
+   *
+   *  val ys = Vector(
+   *             List(1, 2, 3),
+   *             List(4, 5, 6)).transpose
+   *  // ys == Vector(
+   *  //         Vector(1, 4),
+   *  //         Vector(2, 5),
+   *  //         Vector(3, 6))
+   *  }}}
+   *
+   *  $willForceEvaluation
+   *
+   *  @tparam B the type of the elements of each iterable collection.
+   *  @param  asIterable an implicit conversion which asserts that the
+   *          element type of this $coll is an `Iterable`.
+   *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
+   *          the ''n''th column of this $coll.
+   *  @throws IllegalArgumentException if all collections in this $coll
+   *          are not of the same size.
+   */
   def transpose[B](implicit asIterable: A => /*<:<!!!*/ Iterable[B]): CC[CC[B] @uncheckedVariance] = {
     if (isEmpty)
       return iterableFactory.empty[CC[B]]
@@ -717,32 +716,34 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     (iterableFactory.from(left), iterableFactory.from(right))
   }
 
-  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
-    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
-    *  the element types of the two operands.
-    *
-    *  @param suffix   the iterable to append.
-    *  @tparam B     the element type of the returned collection.
-    *  @return       a new $coll which contains all elements
-    *                of this $coll followed by all elements of `suffix`.
-    */
-  def concat[B >: A](suffix: IterableOnce[B]): CC[B] = iterableFactory.from(suffix match {
-    case xs: Iterable[B] => new View.Concat(this, xs)
-    case xs => iterator ++ suffix.iterator
-  })
+  /** Returns a new $ccoll containing the elements from the left hand operand followed by the elements from the
+   *  right hand operand. The element type of the $ccoll is the most specific superclass encompassing
+   *  the element types of the two operands.
+   *
+   *  @param suffix   the iterable to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a new $coll which contains all elements
+   *                of this $coll followed by all elements of `suffix`.
+   */
+  def concat[B >: A](suffix: IterableOnce[B]): CC[B] = iterableFactory.from {
+    suffix match {
+      case suffix: Iterable[B] => new View.Concat(this, suffix)
+      case suffix => iterator ++ suffix.iterator
+    }
+  }
 
   /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
+  @inline final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
 
-  /** Returns a $coll formed from this $coll and another iterable collection
-    *  by combining corresponding elements in pairs.
-    *  If one of the two collections is longer than the other, its remaining elements are ignored.
-    *
-    *  @param   that  The iterable providing the second half of each result pair
-    *  @tparam  B     the type of the second half of the returned pairs
-    *  @return        a new $coll containing pairs consisting of corresponding elements of this $coll and `that`.
-    *                 The length of the returned collection is the minimum of the lengths of this $coll and `that`.
-    */
+  /** Returns a $ccoll formed from this $coll and another iterable collection
+   *  by combining corresponding elements in pairs.
+   *  If one of the two collections is longer than the other, its remaining elements are ignored.
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @return        a new $ccoll containing pairs consisting of corresponding elements of this $coll and `that`.
+   *                 The length of the returned collection is the minimum of the lengths of this $coll and `that`.
+   */
   def zip[B](that: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = iterableFactory.from(that match { // sound bcs of VarianceNote
     case that: Iterable[B] => new View.Zip(this, that)
     case _ => iterator.zip(that)
@@ -862,7 +863,7 @@ object IterableOps {
   /** Operations for comparing the size of a collection to a test value.
     *
     * These operations are implemented in terms of
-    * [[scala.collection.IterableOps.sizeCompare(Int) `sizeCompare(Int)`]].
+    * [[scala.collection.IterableOps!.sizeCompare(Int):Int* `sizeCompare(Int)`]]
     */
   final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
     /** Tests if the size of the collection is less than some value. */

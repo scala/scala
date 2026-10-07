@@ -1,0 +1,12 @@
+t6779.scala:9: warning: class Annotee is deprecated
+  def f = new Annotee // error
+              ^
+t6779.scala:15: warning: type TR in class C is deprecated
+  final def g: String = if (b) g else "" // error
+            ^
+t6779.scala:17: warning: type TR in class C is deprecated
+  def h = new TR // error
+              ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

@@ -3,8 +3,12 @@ reload: Completions.scala
 askTypeCompletion at Completions.scala(14,12)
 ================================================================================
 [response] askTypeCompletion at (14,12)
-retrieved 35 members
+retrieved 39 members
 [inaccessible] private[this] def secretPrivateThis(): Unit
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
@@ -41,7 +45,11 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(16,11)
 ================================================================================
 [response] askTypeCompletion at (16,11)
-retrieved 35 members
+retrieved 39 members
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
@@ -79,7 +87,11 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(22,11)
 ================================================================================
 [response] askTypeCompletion at (22,11)
-retrieved 34 members
+retrieved 38 members
+[inaccessible] private[this] val self: accessibility.AccessibilityChecks
+[inaccessible] private[this] val self: accessibility.AccessibilityChecks
+[inaccessible] private[this] val self: accessibility.AccessibilityChecks
+[inaccessible] private[this] val self: accessibility.AccessibilityChecks
 def +(other: String): String
 def ->[B](y: B): (accessibility.AccessibilityChecks, B)
 def ensuring(cond: Boolean): accessibility.AccessibilityChecks
@@ -116,9 +128,13 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(28,10)
 ================================================================================
 [response] askTypeCompletion at (28,10)
-retrieved 35 members
+retrieved 39 members
 [inaccessible] private def secretPrivate(): Unit
 [inaccessible] private[this] def secretPrivateThis(): Unit
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
 [inaccessible] protected def secretProtected(): Unit
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
@@ -154,9 +170,13 @@ protected[package accessibility] def secretProtectedInPackage(): Unit
 askTypeCompletion at Completions.scala(37,8)
 ================================================================================
 [response] askTypeCompletion at (37,8)
-retrieved 35 members
+retrieved 39 members
 [inaccessible] private def secretPrivate(): Unit
 [inaccessible] private[this] def secretPrivateThis(): Unit
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
+[inaccessible] private[this] val self: accessibility.Foo
 [inaccessible] protected def secretProtected(): Unit
 [inaccessible] protected[package accessibility] def secretProtectedInPackage(): Unit
 [inaccessible] protected[package lang] def clone(): Object

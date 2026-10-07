@@ -24,13 +24,13 @@ import symtab.Flags._
   * The underlying field symbol does not exist until this phase.
   *
   * For `val`s defined in classes, we still emit a field immediately.
-  * TODO: uniformly assign getter symbol to all `ValDef`s, stop using `accessed`.
+  * Would be nice to uniformly assign getter symbol to all `ValDef`s, stop using `accessed`.
   *
   * This phase synthesizes accessors, fields and bitmaps (for lazy or init-checked vals under -Xcheckinit)
   * in the first (closest in the subclassing lattice) subclass (not a trait) of a trait.
   *
   * For lazy vals and modules, we emit accessors that using double-checked locking (DCL) to balance thread safety
-  * and performance. For both lazy vals and modules, the a compute method contains the DCL's slow path.
+  * and performance. For both lazy vals and modules, the compute method contains the DCL's slow path.
   *
   * Local lazy vals do not receive bitmaps, but use a Lazy*Holder that has the volatile init bit and the computed value.
   * See `mkLazyLocalDef`.
@@ -74,10 +74,10 @@ import symtab.Flags._
   * The only change due to overriding is that its value is never written to the field
   * (the overridden val's value is, of course, stored in the field in addition to its side-effect being performed).
   *
-  * TODO: Java 9 support for vals defined in traits. They are currently emitted as final,
-  *       but the write (putfield) to the val does not occur syntactically within the <init> method
-  *       (it's done by the trait setter, which is called from the trait's mixin constructor,
-  *       which is called from the subclass's constructor...)
+  * Would be nice to accommodate Java 9 support for vals defined in traits.
+  * They are currently emitted as final, but the write (putfield) to the val does not occur syntactically
+  * within the <init> method (it's done by the trait setter, which is called from the trait's mixin constructor,
+  * which is called from the subclass's constructor...)
   */
 abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransformers with AccessorSynthesis {
   import global._

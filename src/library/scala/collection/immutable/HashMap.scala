@@ -306,7 +306,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     * }}}
     *
     * @param that the HashMap to merge this HashMap with
-    * @param mergef the merge function which resolves collisions between the two HashMaps. If `mergef` is null, then
+    * @param mergef the merge function which resolves collisions between the two HashMaps. If `mergef` is `null`, then
     *               keys from `this` will overwrite keys from `that`, making the behaviour equivalent to
     *               `that.concat(this)`
     *
@@ -556,9 +556,9 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
     * @param originalHash the original hash of `key`
     * @param hash the improved hash of `key`
     * @param shift the shift of the node (distanceFromRoot * BitPartitionSize)
-    * @param replaceValue if true, then the value currently associated to `key` will be replaced with the passed value
+    * @param replaceValue if `true`, then the value currently associated to `key` will be replaced with the passed value
     *                     argument.
-    *                     if false, then the key will be inserted if not already present, however if the key is present
+    *                     if `false`, then the key will be inserted if not already present, however if the key is present
     *                     then the passed value will not replace the current value. That is, if `false`, then this
     *                     method has `update if not exists` semantics.
     */
@@ -787,7 +787,7 @@ private final class BitmapIndexedMapNode[K, +V](
     * @param shallowlyMutableNodeMap bitmap of child nodes of this node, which can be shallowly mutated
     *                                during the call to this method
     *
-    * @return Int which is the bitwise OR of shallowlyMutableNodeMap and any freshly created nodes, which will be
+    * @return `Int` which is the bitwise OR of `shallowlyMutableNodeMap` and any freshly created nodes, which will be
     *         available for mutations in subsequent calls.
     */
   def updateWithShallowMutations[V1 >: V](key: K, value: V1, originalHash: Int, keyHash: Int, shift: Int, shallowlyMutableNodeMap: Int): Int = {
@@ -800,7 +800,7 @@ private final class BitmapIndexedMapNode[K, +V](
       val key0UnimprovedHash = getHash(index)
       if (key0UnimprovedHash == originalHash && key0 == key) {
         val value0 = this.getValue(index)
-        if (!((key0.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) && (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]))) {
+        if ((key0.asInstanceOf[AnyRef] ne key.asInstanceOf[AnyRef]) || (value0.asInstanceOf[AnyRef] ne value.asInstanceOf[AnyRef])) {
           val dataIx = dataIndex(bitpos)
           val idx = TupleLength * dataIx
           content(idx + 1) = value
@@ -871,7 +871,7 @@ private final class BitmapIndexedMapNode[K, +V](
       if (key0 == key) {
         if (this.payloadArity == 2 && this.nodeArity == 0) {
           /*
-           * Create new node with remaining pair. The new node will a) either become the new root
+           * Creates new node with remaining pair. The new node will a) either become the new root
            * returned, or b) unwrapped and inlined during returning.
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(keyHash, 0))
@@ -1344,6 +1344,8 @@ private final class BitmapIndexedMapNode[K, +V](
 
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
+
+  override def toString = s"${getClass.getName}@${Integer.toHexString(System.identityHashCode(this))}"
 
   override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): BitmapIndexedMapNode[K, V1] = that match {
     case bm: BitmapIndexedMapNode[K, V] @unchecked =>
@@ -2090,6 +2092,8 @@ private final class HashCollisionMapNode[K, +V ](
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
+  override def toString = s"${getClass.getName}@${Integer.toHexString(System.identityHashCode(this))}"
+
   override def cachedJavaKeySetHashCode: Int = size * hash
 
 }
@@ -2205,7 +2209,7 @@ object HashMap extends MapFactory[HashMap] {
       case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  /** Create a new Builder which can be reused after calling `result()` without an
+  /** Creates a new Builder which can be reused after calling `result()` without an
     * intermediate call to `clear()` in order to build multiple related results.
     */
   def newBuilder[K, V]: ReusableBuilder[(K, V), HashMap[K, V]] = new HashMapBuilder[K, V]

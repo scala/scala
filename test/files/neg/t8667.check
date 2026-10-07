@@ -143,4 +143,70 @@ t8667.scala:91: error: unknown parameter name: k
 t8667.scala:91: error: too many arguments (found 3, expected 2) for method f2: (i: Int, j: Int): Unit
     f2(17, 27, k = 42)
       ^
-48 errors
+t8667.scala:98: error: type mismatch;
+ found   : String("not a num 1")
+ required: Double
+  def close() = almostTupleAdapted(math.floor("not a num 1"), math.floor("not a num 2"))
+                                              ^
+t8667.scala:98: error: type mismatch;
+ found   : String("not a num 2")
+ required: Double
+  def close() = almostTupleAdapted(math.floor("not a num 1"), math.floor("not a num 2"))
+                                                                         ^
+t8667.scala:98: error: too many arguments (found 2, expected 2-tuple) for method almostTupleAdapted: (t2: (Int, String)): Unit
+  def close() = almostTupleAdapted(math.floor("not a num 1"), math.floor("not a num 2"))
+                                                                        ^
+t8667.scala:102: error: type mismatch;
+ found   : String("not a num")
+ required: Double
+  def missed() = missingArgs(math.floor("not a num"))
+                                        ^
+t8667.scala:102: error: not enough arguments for method missingArgs: (d: Double, s: String): Unit.
+Unspecified value parameter s.
+  def missed() = missingArgs(math.floor("not a num"))
+                            ^
+t8667.scala:106: error: type mismatch;
+ found   : String("not a num")
+ required: Double
+  def miscount() = tooManyArgs(math.floor("not a num"))
+                                          ^
+t8667.scala:106: error: not enough arguments for method tooManyArgs: (s: String, i: Int): Unit.
+Unspecified value parameter i.
+  def miscount() = tooManyArgs(math.floor("not a num"))
+                              ^
+t8667.scala:108: error: not found: value doesntExist
+  def nonesuch(): Unit = doesntExist(math.floor("not a num 1"), math.floor("not a num 2"))
+                         ^
+t8667.scala:108: error: type mismatch;
+ found   : String("not a num 1")
+ required: Double
+  def nonesuch(): Unit = doesntExist(math.floor("not a num 1"), math.floor("not a num 2"))
+                                                ^
+t8667.scala:108: error: type mismatch;
+ found   : String("not a num 2")
+ required: Double
+  def nonesuch(): Unit = doesntExist(math.floor("not a num 1"), math.floor("not a num 2"))
+                                                                           ^
+t8667.scala:110: error: not found: value doesntExist
+  def nonesuchical: Unit = doesntExist(i = math.floor("not a num 1"), j = math.floor("not a num 2"))
+                           ^
+t8667.scala:110: error: type mismatch;
+ found   : String("not a num 1")
+ required: Double
+  def nonesuchical: Unit = doesntExist(i = math.floor("not a num 1"), j = math.floor("not a num 2"))
+                                                      ^
+t8667.scala:110: error: type mismatch;
+ found   : String("not a num 2")
+ required: Double
+  def nonesuchical: Unit = doesntExist(i = math.floor("not a num 1"), j = math.floor("not a num 2"))
+                                                                                     ^
+t8667.scala:112: error: value munge is not a member of List[Int]
+  def badApplied: Unit = List(42).munge(x = 27)
+                                  ^
+t8667.scala:114: error: value munge is not a member of List[Int]
+  def badApply: Unit = List(42).munge { x = 27 }
+                                ^
+t8667.scala:114: error: not found: value x
+  def badApply: Unit = List(42).munge { x = 27 }
+                                        ^
+64 errors

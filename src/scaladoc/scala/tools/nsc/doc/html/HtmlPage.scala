@@ -239,10 +239,21 @@ abstract class HtmlPage extends Page { thisPage =>
     val Trait, Class, Type, Object, Package = Value
   }
 
+  /** Small inline SVG icons, used in place of icon-font glyphs so that no
+    * font needs to be bundled just to draw a handful of UI icons. */
+  object Icons {
+    private def svg(inner: String): String =
+      s"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">$inner</svg>"""
+
+    val search: String = svg("""<circle cx="10" cy="10" r="6"/><line x1="20" y1="20" x2="14.5" y2="14.5"/>""")
+    val clear: String  = svg("""<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>""")
+    val arrow: String  = svg("""<polyline points="9 6 15 12 9 18"/>""")
+  }
+
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     Span(`class`= "permalink", elems=
       A(href=memberToUrl(template), title="Permalink", elems =
-        I(`class`="material-icons", elems=Txt("\uE157"))
+        I(elems=Txt("\u00b6"))
         ))
 
   def docEntityImageClass(tpl: DocTemplateEntity): String =

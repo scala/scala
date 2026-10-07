@@ -1,3 +1,5 @@
+warning: -Xmain-class is deprecated: the Scala compiler will stop emitting the Main-Class manifest entry, since it is only supported by the legacy `scala` runner.
+scala-cli disregards the entry, instead it finds main classes when running a jar.
 main2.scala:7: warning: X has a valid main method (args: Array[String]): Unit,
   but p.X will not have an entry point on the JVM.
   Reason: companion is a trait, which means no static forwarder can be generated.
@@ -5,5 +7,5 @@ main2.scala:7: warning: X has a valid main method (args: Array[String]): Unit,
   object X {
          ^
 error: No warnings can be incurred under -Werror.
-1 warning
+2 warnings
 1 error

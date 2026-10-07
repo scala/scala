@@ -3,5 +3,9 @@ reload: CompleteLocalImport.scala
 askTypeCompletion at CompleteLocalImport.scala(2,14)
 ================================================================================
 [response] askTypeCompletion at (2,14)
+#partest !java26+
 retrieved 14 members
+#partest java26+
+retrieved 13 members
+#partest
 ================================================================================

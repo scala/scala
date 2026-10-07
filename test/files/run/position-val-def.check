@@ -41,8 +41,16 @@ class C4 { val (x, y) = (42, 27) }
 [19]    [19]    [19]           -> <stable> <accessor> def y(): Int = C4.this.y
 <15:32> [24:32]                -> C4.this.x$1 = {...
 [24:32] [24:32] [24:32]        -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+[24:32]                        -> new Tuple2$mcII$sp(42, 27)
+  [25:27]                      -> 42
+  [29:31]                      -> 27
+<15:21>                        -> x1.ne(null)
+  <15:21>                      -> null
 <16:17> <16:17> <16:17>        -> val x: Int = x1._1$mcI$sp()
 <19:20> <19:20> <19:20>        -> val y: Int = x1._2$mcI$sp()
+<15:21>                        -> new Tuple2$mcII$sp(x, y)
+  <16:17>                      -> x
+  <19:20>                      -> y
 [16:17] [16]                   -> C4.this.x = C4.this.x$1._1$mcI$sp()
 [19:20] [19]                   -> C4.this.y = C4.this.x$1._2$mcI$sp()
 --
@@ -59,14 +67,27 @@ class C5 { val (x, y), (w, z) = (42, 27) }
 [27]    [27]    [27]           -> <stable> <accessor> def z(): Int = C5.this.z
 <15:40> [32]                   -> C5.this.x$1 = {...
 [32]    [32]    [32]           -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+<15:21>                        -> x1.ne(null)
+  <15:21>                      -> null
 <16:17> <16:17> <16:17>        -> val x: Int = x1._1$mcI$sp()
 <19:20> <19:20> <19:20>        -> val y: Int = x1._2$mcI$sp()
+<15:21>                        -> new Tuple2$mcII$sp(x, y)
+  <16:17>                      -> x
+  <19:20>                      -> y
 [16:17] [16]                   -> C5.this.x = C5.this.x$1._1$mcI$sp()
 [19:20] [19]                   -> C5.this.y = C5.this.x$1._2$mcI$sp()
 <23:40> [32:40]                -> C5.this.x$2 = {...
 [32:40] [32:40] [32:40]        -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+[32:40]                        -> new Tuple2$mcII$sp(42, 27)
+  [33:35]                      -> 42
+  [37:39]                      -> 27
+<23:29>                        -> x1.ne(null)
+  <23:29>                      -> null
 <24:25> <24:25> <24:25>        -> val w: Int = x1._1$mcI$sp()
 <27:28> <27:28> <27:28>        -> val z: Int = x1._2$mcI$sp()
+<23:29>                        -> new Tuple2$mcII$sp(w, z)
+  <24:25>                      -> w
+  <27:28>                      -> z
 [24:25] [24]                   -> C5.this.w = C5.this.x$2._1$mcI$sp()
 [27:28] [27]                   -> C5.this.z = C5.this.x$2._2$mcI$sp()
 --
@@ -85,4 +106,8 @@ class C7 { val Some(_) = Option(42) }
 [11:35] [11:35] [NoPosition]   -> <synthetic> <artifact> private[this] val x$1: scala.runtime.BoxedUnit = _
 [11:35] [25:35]                -> C7.this.x$1 = {...
 [25:35] [25:35] [25:35]        -> case <synthetic> val x1: Option = (scala.Option.apply(scala.Int.box(42)): Option)
+[25:35]                        -> scala.Option.apply(scala.Int.box(42))
+  [32:34]                      -> scala.Int.box(42)
+[32:34]                        -> scala.Int.box(42)
+  [32:34]                      -> 42
 --

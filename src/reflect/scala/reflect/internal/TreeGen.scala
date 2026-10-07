@@ -693,16 +693,20 @@ abstract class TreeGen {
       Apply(Select(qual, meth).setPos(qual.pos).updateAttachment(ForAttachment),
         List(makeClosure(pos, pat, body))).setPos(pos)
 
-    /* If `pat` is not yet a `Bind` wrap it in one with a fresh name */
+    /* If `pat` is not yet a `Bind` wrap it in one with a fresh name.
+     * If the fresh patvar is for tupling in the desugared expression,
+     * it receives the transparent position of the pattern, so it is never warned about.
+     * Otherwise, add NoWarnAttachment.
+     */
     def makeBind(pat: Tree): Bind = pat match {
       case pat: Bind => pat
-      case _ => Bind(freshTermName(), pat).setPos(pat.pos).updateAttachment(NoWarnAttachment)
+      case _ => Bind(freshTermName(), pat).setPos(pat.pos)
+                .tap(bind => if (!bind.pos.isTransparent) bind.updateAttachment(NoWarnAttachment))
     }
 
     /* A reference to the name bound in Bind `pat`. */
-    def makeValue(pat: Tree): Ident = pat match {
+    def makeValue(pat: Bind): Ident = pat match {
       case Bind(name, _) => Ident(name).setPos(pat.pos.focus)
-      case x             => throw new MatchError(x)
     }
 
     // The position of the closure that starts with generator at position `genpos`.
@@ -823,7 +827,10 @@ abstract class TreeGen {
           rhs1,
           List(
             atPos(pat1.pos) {
-              CaseDef(pat1, EmptyTree, mkTuple(vars.map(_._1).map(Ident.apply)).updateAttachment(ForAttachment))
+              val args = vars.map {
+                case (name, _, pos, _) => Ident(name).setPos(pos.makeTransparent) // cf makeValue
+              }
+              CaseDef(pat1, EmptyTree, mkTuple(args).updateAttachment(ForAttachment))
             }
           ))
       }
@@ -862,19 +869,11 @@ abstract class TreeGen {
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
 
-  private def unwarnable(pat: Tree): pat.type = {
-    pat foreach {
-      case b @ Bind(_, _) => b.updateAttachment(NoWarnAttachment)
-      case _ =>
-    }
-    pat
-  }
-
   def mkCheckIfRefutable(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator) =
     if (treeInfo.isVarPatternDeep(pat)) rhs
     else {
       val cases = List(
-        CaseDef(unwarnable(pat.duplicate), EmptyTree, Literal(Constant(true))),
+        CaseDef(pat.duplicate, EmptyTree, Literal(Constant(true))),
         CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
       )
       val visitor = mkVisitor(cases, checkExhaustive = false, nme.CHECK_IF_REFUTABLE_STRING)
@@ -910,34 +909,36 @@ abstract class TreeGen {
    *  synthetic for all nodes that contain a variable position.
    */
   class GetVarTraverser extends Traverser {
-    val buf = new ListBuffer[(Name, Tree, Position, Tree)]
+    val buf = ListBuffer.empty[(Name, Tree, Position, Bind)]
 
     def namePos(tree: Tree, name: Name): Position =
       if (!tree.pos.isRange || name.containsName(nme.raw.DOLLAR)) tree.pos.focus
       else {
         val start = tree.pos.start
         val end = start + name.decode.length
-        rangePos(tree.pos.source, start, start, end)
+        rangePos(tree.pos.source, start = start, point = start, end = end) // Bind should get NamePos in parser
       }
 
     override def traverse(tree: Tree): Unit = {
-      def seenName(name: Name)     = buf exists (_._1 == name)
-      def add(name: Name, t: Tree) = if (!seenName(name)) buf += ((name, t, namePos(tree, name), tree))
+      def add(name: Name, t: Tree, b: Bind) = {
+        val seenName = buf.exists(_._1 == name)
+        if (!seenName) buf.addOne((name, t, namePos(tree, name), b))
+      }
       val bl = buf.length
 
       tree match {
-        case Bind(nme.WILDCARD, _)          =>
+        case Bind(nme.WILDCARD, _) =>
           super.traverse(tree)
 
-        case Bind(name, Typed(tree1, tpt))  =>
+        case tree @ Bind(name, Typed(tree1, tpt)) =>
           val newTree = if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt.duplicate
-          add(name, newTree)
+          add(name, newTree, tree)
           traverse(tree1)
 
-        case Bind(name, tree1)              =>
+        case tree @ Bind(name, tree1) =>
           // can assume only name range as position, as otherwise might overlap
           // with binds embedded in pattern tree1
-          add(name, TypeTree())
+          add(name, TypeTree(), tree)
           traverse(tree1)
 
         case _ =>

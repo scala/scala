@@ -20,6 +20,25 @@ object Product18 {
 }
 
 /** Product18 is a Cartesian product of 18 components.
+ *
+ *  @tparam T1 the type of the 1st element
+ *  @tparam T2 the type of the 2nd element
+ *  @tparam T3 the type of the 3rd element
+ *  @tparam T4 the type of the 4th element
+ *  @tparam T5 the type of the 5th element
+ *  @tparam T6 the type of the 6th element
+ *  @tparam T7 the type of the 7th element
+ *  @tparam T8 the type of the 8th element
+ *  @tparam T9 the type of the 9th element
+ *  @tparam T10 the type of the 10th element
+ *  @tparam T11 the type of the 11th element
+ *  @tparam T12 the type of the 12th element
+ *  @tparam T13 the type of the 13th element
+ *  @tparam T14 the type of the 14th element
+ *  @tparam T15 the type of the 15th element
+ *  @tparam T16 the type of the 16th element
+ *  @tparam T17 the type of the 17th element
+ *  @tparam T18 the type of the 18th element
  */
 trait Product18[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +T13, +T14, +T15, +T16, +T17, +T18] extends Any with Product {
   /** The arity of this product.
@@ -31,8 +50,8 @@ trait Product18[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
   /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
-   *  @param n number of the projection to be returned
-   *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
+   *  @param n the zero-based index of the projection to be returned
+   *  @return  the element at the given zero-based index, equivalent to `._(n+1)` (e.g., `productElement(0)` returns `._1`)
    *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= 18).
    */
 

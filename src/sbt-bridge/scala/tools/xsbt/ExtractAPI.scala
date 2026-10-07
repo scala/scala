@@ -774,9 +774,8 @@ class ExtractAPI[GlobalType <: Global](
     allNonLocalClassesInSrc += classWithMembers
     allNonLocalClassSymbols += sym
 
-    if (sym.isStatic && defType == DefinitionType.Module && definitions.hasJavaMainMethod(sym)) {
+    if (hasMainMethod(sym, defType))
       _mainClasses += name
-    }
 
     val classDef = xsbti.api.ClassLikeDef.of(
       name,
@@ -787,6 +786,24 @@ class ExtractAPI[GlobalType <: Global](
       defType
     ) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
     classDef
+  }
+
+  private def hasMainMethod(sym: Symbol, defType: DefinitionType): Boolean = {
+    val is25 = scala.util.Properties.isJavaAtLeast(25)
+
+    def hasMain: Boolean = {
+      val mains = sym.tpe.member(nme.main).alternatives
+      mains.exists(_.info match {
+        case MethodType(p :: Nil, restpe) =>
+          definitions.isArrayOfSymbol(p.tpe, definitions.StringClass) && restpe.typeSymbol == definitions.UnitClass
+        case MethodType(Nil, restpe) if is25 =>
+          restpe.typeSymbol == definitions.UnitClass
+        case _ => false
+      })
+    }
+
+    if (is25) !sym.isAbstract && hasMain
+    else sym.isStatic && defType == DefinitionType.Module && hasMain
   }
 
   // TODO: could we restrict ourselves to classes, ignoring the term symbol for modules,

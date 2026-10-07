@@ -115,7 +115,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   override protected def newSpecificBuilder: Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder
   override def empty: PriorityQueue[A] = PriorityQueue.empty
 
-  /** Replace the contents of this $coll with the mapped result.
+  /** Replaces the contents of this $coll with the mapped result.
    *
    *  @param f the mapping function
    *  @return this $coll

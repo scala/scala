@@ -338,4 +338,13 @@ class ListBufferTest {
     assertEquals(3, b.last)
     assertEquals(List(1, 2, 3), b.toList)
   }
+
+  @Test def `sliding throws on mutation`: Unit = {
+    val b = ListBuffer.from(1 to 10)
+    val it = b.sliding(size = 2, step = 1)
+    assertTrue(it.hasNext)
+    assertEquals(2, it.next().size)
+    b(2) = 42
+    assertThrows[java.util.ConcurrentModificationException](it.hasNext)
+  }
 }

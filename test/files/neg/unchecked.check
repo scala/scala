@@ -1,4 +1,4 @@
-unchecked.scala:20: warning: non-variable type argument String in type pattern Iterable[String] (the underlying of Iterable[String]) is unchecked since it is eliminated by erasure
+unchecked.scala:20: warning: non-variable type argument String in type pattern Iterable[String] is unchecked since it is eliminated by erasure
     case xs: Iterable[String] => xs.head // unchecked
              ^
 unchecked.scala:24: warning: non-variable type argument Any in type pattern scala.collection.immutable.Set[Any] (the underlying of Set[Any]) is unchecked since it is eliminated by erasure

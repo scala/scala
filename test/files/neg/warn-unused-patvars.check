@@ -1,5 +1,5 @@
-warn-unused-patvars.scala:11: warning: private val x in trait Boundings is never used
-  private val x = 42                      // warn, sanity check
+warn-unused-patvars.scala:10: warning: private val x in trait Boundings is never used
+  private val x = 42                      // warn, to ensure that warnings are enabled
               ^
 error: No warnings can be incurred under -Werror.
 1 warning

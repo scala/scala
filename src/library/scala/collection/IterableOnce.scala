@@ -21,6 +21,8 @@ import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 import scala.runtime.{AbstractFunction1, AbstractFunction2}
 
+import IterableOnce.elemsToCopyToArray
+
 /**
   * A template trait for collections which can be traversed either once only
   * or one or more times.
@@ -40,6 +42,7 @@ import scala.runtime.{AbstractFunction1, AbstractFunction2}
   * without inheriting unwanted implementations.
   *
   * @define coll collection
+  * @define ccoll $coll
   */
 trait IterableOnce[+A] extends Any {
 
@@ -263,16 +266,25 @@ object IterableOnce {
   @inline implicit def iterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A] =
     new IterableOnceExtensionMethods[A](it)
 
-  /** Computes the number of elements to copy to an array from a source IterableOnce
-    *
-    * @param srcLen the length of the source collection
-    * @param destLen the length of the destination array
-    * @param start the index in the destination array at which to start copying elements to
-    * @param len the requested number of elements to copy (we may only be able to copy less than this)
-    * @return the number of elements that will be copied to the destination array
-    */
-  @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int =
-    math.max(math.min(math.min(len, srcLen), destLen - start), 0)
+  /** Computes the number of elements to copy to an array from a source IterableOnce.
+   *
+   *  If `start` is less than zero, it is taken as zero.
+   *  If any of the length inputs is less than zero, the computed result is zero.
+   *
+   *  The result is the smaller of the remaining capacity in the destination and the requested count.
+   *
+   *  @param srcLen the length of the source collection
+   *  @param destLen the length of the destination array
+   *  @param start the index in the destination array at which to start copying elements
+   *  @param len the requested number of elements to copy (we may only be able to copy less than this)
+   *  @return the number of elements that will be copied to the destination array
+   */
+  @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int = {
+    val limit = math.min(len, srcLen)
+    val capacity = if (start < 0) destLen else destLen - start
+    val total = math.min(capacity, limit)
+    math.max(0, total)
+  }
 
   /** Calls `copyToArray` on the given collection, regardless of whether or not it is an `Iterable`. */
   @inline private[collection] def copyElemsToArray[A, B >: A](elems: IterableOnce[A],
@@ -318,8 +330,6 @@ object IterableOnce {
   *              The order of applications of the operator is unspecified and may be nondeterministic.
   * @define exactlyOnce
   *              Each element appears exactly once in the computation.
-  * @define coll collection
-  *
   */
 trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
@@ -436,54 +446,55 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @return  a $coll containing the elements greater than or equal to
    *           index `from` extending up to (but not including) index `until`
    *           of this $coll.
+   *  @example
+   *    `List('a', 'b', 'c', 'd', 'e').slice(1, 3) == List('b', 'c')`
    */
   def slice(from: Int, until: Int): C
 
-  /** Builds a new $coll by applying a function to all elements of this $coll.
+  /** Builds a new $ccoll by applying a function to all elements of this $coll.
    *
    *  @param f      the function to apply to each element.
-   *  @tparam B     the element type of the returned $coll.
-   *  @return       a new $coll resulting from applying the given function
+   *  @tparam B     the element type of the returned $ccoll.
+   *  @return       a new $ccoll resulting from applying the given function
    *                `f` to each element of this $coll and collecting the results.
    */
   def map[B](f: A => B): CC[B]
 
-  /** Builds a new $coll by applying a function to all elements of this $coll
+  /** Builds a new $ccoll by applying a function to all elements of this $coll
    *  and using the elements of the resulting collections.
    *
    *    For example:
    *
    *    {{{
-   *      def getWords(lines: Seq[String]): Seq[String] = lines flatMap (line => line split "\\W+")
+   *      def getWords(lines: Seq[String]): Seq[String] = lines.flatMap(line => line.split("\\W+"))
    *    }}}
    *
-   *    The type of the resulting collection is guided by the static type of $coll. This might
+   *    The type of the resulting collection is guided by the static type of this $coll. This might
    *    cause unexpected results sometimes. For example:
    *
    *    {{{
    *      // lettersOf will return a Seq[Char] of likely repeated letters, instead of a Set
-   *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
+   *      def lettersOf(words: Seq[String]) = words.flatMap(word => word.toSet)
    *
    *      // lettersOf will return a Set[Char], not a Seq
-   *      def lettersOf(words: Seq[String]) = words.toSet flatMap ((word: String) => word.toSeq)
+   *      def lettersOf(words: Seq[String]) = words.toSet.flatMap(word => word.toSeq)
    *
    *      // xs will be an Iterable[Int]
-   *      val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)
+   *      val xs = Map("a" -> List(11, 111), "b" -> List(22, 222)).flatMap(_._2)
    *
    *      // ys will be a Map[Int, Int]
-   *      val ys = Map("a" -> List(1 -> 11,1 -> 111), "b" -> List(2 -> 22,2 -> 222)).flatMap(_._2)
+   *      val ys = Map("a" -> List(1 -> 11, 1 -> 111), "b" -> List(2 -> 22, 2 -> 222)).flatMap(_._2)
    *    }}}
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
-   *  @return       a new $coll resulting from applying the given collection-valued function
+   *  @return       a new $ccoll resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    */
   def flatMap[B](f: A => IterableOnce[B]): CC[B]
 
-  /** Converts this $coll of iterable collections into
-   *  a $coll formed by the elements of these iterable
-   *  collections.
+  /** Given that the elements of this collection are themselves iterable collections,
+   *  converts this $coll into a $ccoll comprising the elements of these iterable collections.
    *
    *    The resulting collection's type will be guided by the
    *    type of $coll. For example:
@@ -505,16 +516,16 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @tparam B the type of the elements of each iterable collection.
    *  @param asIterable an implicit conversion which asserts that the element
    *          type of this $coll is an `Iterable`.
-   *  @return a new $coll resulting from concatenating all element ${coll}s.
+   *  @return a new $ccoll resulting from concatenating all element collections.
    */
   def flatten[B](implicit asIterable: A => IterableOnce[B]): CC[B]
 
-  /** Builds a new $coll by applying a partial function to all elements of this $coll
+  /** Builds a new $ccoll by applying a partial function to all elements of this $coll
    *  on which the function is defined.
    *
    *  @param pf     the partial function which filters and maps the $coll.
    *  @tparam B     the element type of the returned $coll.
-   *  @return       a new $coll resulting from applying the given partial function
+   *  @return       a new $ccoll resulting from applying the given partial function
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    */
@@ -522,7 +533,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Zips this $coll with its indices.
    *
-   *  @return        A new $coll containing pairs consisting of all elements of this $coll paired with their index.
+   *  @return        A new $ccoll containing pairs consisting of all elements of this $coll paired with their index.
    *                 Indices start at `0`.
    *  @example
    *    `List("a", "b", "c").zipWithIndex == List(("a", 0), ("b", 1), ("c", 2))`
@@ -533,7 +544,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  Note: `c span p`  is equivalent to (but possibly more efficient than)
    *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the
-   *  predicate `p` does not cause any side-effects.
+   *  predicate `p` does not cause any side effects.
    *  $orderDependent
    *
    *  @param p the test predicate
@@ -986,28 +997,29 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Copies elements to an array, returning the number of elements written.
    *
-   *  Fills the given array `xs` starting at index `start` with values of this $coll.
+   *  Fills the given array `dest` starting at index `start` with values of this $coll.
    *
    *  Copying will stop once either all the elements of this $coll have been copied,
    *  or the end of the array is reached.
    *
-   *  @param  xs     the array to fill.
+   *  @param  dest   the array to fill.
    *  @tparam B      the type of the elements of the array.
    *  @return        the number of elements written to the array
    *
    *  @note    Reuse: $consumesIterator
    */
   @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
-  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0, Int.MaxValue)
+  def copyToArray[B >: A](@deprecatedName("xs", since="2.13.17") dest: Array[B]): Int =
+    copyToArray(dest, start = 0, n = Int.MaxValue)
 
   /** Copies elements to an array, returning the number of elements written.
    *
-   *  Fills the given array `xs` starting at index `start` with values of this $coll.
+   *  Fills the given array `dest` starting at index `start` with values of this $coll.
    *
    *  Copying will stop once either all the elements of this $coll have been copied,
    *  or the end of the array is reached.
    *
-   *  @param  xs     the array to fill.
+   *  @param  dest   the array to fill.
    *  @param  start  the starting index of xs.
    *  @tparam B      the type of the elements of the array.
    *  @return        the number of elements written to the array
@@ -1015,29 +1027,40 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @note    Reuse: $consumesIterator
    */
   @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
-  def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray(xs, start, Int.MaxValue)
+  def copyToArray[B >: A](@deprecatedName("xs", since="2.13.17") dest: Array[B], start: Int): Int =
+    copyToArray(dest, start = start, n = Int.MaxValue)
 
-  /** Copy elements to an array, returning the number of elements written.
+  /** Copies elements to an array and returns the number of elements written.
    *
-   *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
+   *  Fills the given array `dest` starting at index `start` with at most `n` elements of this $coll.
    *
    *  Copying will stop once either all the elements of this $coll have been copied,
-   *  or the end of the array is reached, or `len` elements have been copied.
+   *  or the end of the array is reached, or `n` elements have been copied.
    *
-   *  @param  xs     the array to fill.
+   *  If `start` is less than zero, it is taken as zero.
+   *
+   *  @param  dest   the array to fill.
    *  @param  start  the starting index of xs.
-   *  @param  len    the maximal number of elements to copy.
+   *  @param  n      the maximal number of elements to copy.
    *  @tparam B      the type of the elements of the array.
    *  @return        the number of elements written to the array
    *
    *  @note    Reuse: $consumesIterator
    */
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+  def copyToArray[B >: A](
+    @deprecatedName("xs", since="2.13.17") dest: Array[B],
+    start: Int,
+    @deprecatedName("len", since="2.13.17") n: Int
+  ): Int = {
     val it = iterator
     var i = start
-    val end = start + math.min(len, xs.length - start)
+    val srclen = knownSize match {
+      case -1 => dest.length
+      case  k => k
+    }
+    val end = start + elemsToCopyToArray(srclen, dest.length, start, n)
     while (i < end && it.hasNext) {
-      xs(i) = it.next()
+      dest(i) = it.next()
       i += 1
     }
     i - start
@@ -1148,12 +1171,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  $willNotTerminateInf
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @throws   UnsupportedOperationException if this $coll is empty.
    *  @return   the first element of this $coll with the largest value measured by function `f`
-   *            with respect to the ordering `cmp`.
+   *            with respect to the ordering `ord`.
    */
   def maxBy[B](f: A => B)(implicit ord: Ordering[B]): A =
     knownSize match {
@@ -1188,11 +1211,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  $willNotTerminateInf
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @return   an option value containing the first element of this $coll with the
-   *            largest value measured by function `f` with respect to the ordering `cmp`.
+   *            largest value measured by function `f` with respect to the ordering `ord`.
    */
   def maxByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
     knownSize match {
@@ -1204,12 +1227,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  $willNotTerminateInf
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @throws   UnsupportedOperationException if this $coll is empty.
    *  @return   the first element of this $coll with the smallest value measured by function `f`
-   *            with respect to the ordering `cmp`.
+   *            with respect to the ordering `ord`.
    */
   def minBy[B](f: A => B)(implicit ord: Ordering[B]): A =
     knownSize match {
@@ -1221,12 +1244,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  $willNotTerminateInf
    *
-   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @param    ord   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @return   an option value containing the first element of this $coll
    *            with the smallest value measured by function `f`
-   *            with respect to the ordering `cmp`.
+   *            with respect to the ordering `ord`.
    */
   def minByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
     knownSize match {
@@ -1243,7 +1266,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @param pf   the partial function
    *  @return     an option value containing pf applied to the first
    *              value for which it is defined, or `None` if none exists.
-   *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
+   *  @example    `Seq("a", 1, 5L).collectFirst { case x: Int => x*10 } = Some(10)`
    */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself

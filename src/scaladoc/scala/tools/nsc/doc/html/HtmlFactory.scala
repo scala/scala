@@ -46,40 +46,12 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     "object_comp_trait.svg",
     "object_comp_annotation.svg",
     "abstract_type.svg",
-    "lato-v11-latin-100.eot",
-    "lato-v11-latin-100.ttf",
-    "lato-v11-latin-100.woff",
-    "lato-v11-latin-regular.eot",
-    "lato-v11-latin-regular.ttf",
-    "lato-v11-latin-regular.woff",
-    "open-sans-v13-latin-regular.eot",
-    "open-sans-v13-latin-regular.ttf",
-    "open-sans-v13-latin-regular.woff",
-    "open-sans-v13-latin-400i.eot",
-    "open-sans-v13-latin-400i.ttf",
-    "open-sans-v13-latin-400i.woff",
-    "open-sans-v13-latin-700.eot",
-    "open-sans-v13-latin-700.ttf",
-    "open-sans-v13-latin-700.woff",
-    "open-sans-v13-latin-700i.eot",
-    "open-sans-v13-latin-700i.ttf",
-    "open-sans-v13-latin-700i.woff",
-    "source-code-pro-v6-latin-700.eot",
-    "source-code-pro-v6-latin-700.ttf",
-    "source-code-pro-v6-latin-700.woff",
-    "source-code-pro-v6-latin-regular.eot",
-    "source-code-pro-v6-latin-regular.ttf",
-    "source-code-pro-v6-latin-regular.woff",
-    "MaterialIcons-Regular.eot",
-    "MaterialIcons-Regular.ttf",
-    "MaterialIcons-Regular.woff",
 
     "index.js",
     "scheduler.js",
     "template.js",
 
     "index.css",
-    "ref-index.css",
     "template.css",
     "diagrams.css",
     "print.css",
@@ -95,7 +67,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
   )
 
   final def webjarResources = List(
-    ("jquery.min.js", "/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=")
+    ("jquery.min.js", "OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=")
   )
 
   /** Generates the Scaladoc site for a model into the site root.

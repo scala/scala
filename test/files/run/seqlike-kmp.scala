@@ -1,32 +1,66 @@
+import collection.Seq
+import collection.immutable.LazyList
+import math.BigInt
+import util.chaining._
+
 object Test {
-  val source = 0 to 99
-  val idxes = (-1 to 2) ++ (97 to 100)
-  def str(xs: Seq[Int]) = xs.mkString("(", ", ", ")")
+  val idxes = (-1 to 2) ++ (9 to 10)
+  def str[A](xs: Seq[A]) = xs.mkString("(", ", ", ")")
 
-  def f(tgt: Seq[Int]) = {
-    println("indexOfSlice")
-    // the first index `>= from` such that...
-    for (x <- idxes) {
-      val res = source.indexOfSlice(tgt, x)
-      println("  %s with idx >= %d = %d".format(str(tgt), x, res))
+  // the first index `>= from` such that...
+  def first[A](source: Seq[A], tgt: Seq[A]) = {
+    println(s"indexOfSlice of ${source.getClass}")
+    for (from <- idxes) {
+      val res = source.indexOfSlice(tgt, from = from)
+      println(f"  ${str(tgt)} with idx >= $from%d = $res%d")
     }
-    // the last index `<= end` such that...
+  }
+  // the last index `<= end` such that...
+  def last[A](source: Seq[A], tgt: Seq[A]) = {
     println("lastIndexOfSlice")
-    for (x <- idxes) {
-      val res = source.lastIndexOfSlice(tgt, x)
-      println("  %s with idx <= %d = %d".format(str(tgt), x, res))
+    for (end <- idxes) {
+      val res = source.lastIndexOfSlice(tgt, end)
+      println(f"  ${str(tgt)} with idx <= $end%d = $res%d")
     }
   }
 
-  def g(idx: Int, len: Int) = {
-    f(source.slice(idx, idx + len))
+  def both(source: Seq[Int], idx: Int, len: Int) = {
+    first(source, source.slice(idx, idx + len))
+    last(source, source.slice(idx, idx + len))
   }
+
+  def listed(source: Seq[Int], idx: Int, len: Int) = {
+    first(source, source.slice(idx, idx + len).toList)
+    last(source, source.slice(idx, idx + len).toList)
+  }
+
+  val fibs: LazyList[BigInt] =
+    BigInt(0) #:: BigInt(1) #::
+      fibs.zip(fibs.tail).map{ n =>
+        println(s"Adding ${n._1} and ${n._2}")
+        n._1 + n._2
+      }
 
   def main(args: Array[String]): Unit = {
-    g(97, 1)
-    g(97, 2)
-    g(97, 3)
-    g(98, 2)
-    g(99, 1)
+    val source = (0 to 9).toVector
+    both(source, 7, 1)
+    both(source, 7, 2)
+    both(source, 7, 3)
+    both(source, 8, 2)
+    both(source, 9, 1)
+    val mut: Seq[Int] = source.toArray
+    listed(mut, 7, 1)
+    listed(mut, 7, 2)
+    listed(mut, 7, 3)
+    listed(mut, 8, 2)
+    listed(mut, 9, 1)
+    val xs: Seq[Int] = source.toList
+    listed(xs, 7, 1)
+    listed(xs, 7, 2)
+    listed(xs, 7, 3)
+    listed(xs, 8, 2)
+    listed(xs, 9, 1)
+    first(fibs.take(10), List(3,5))
+    last(fibs, List(3,5))
   }
 }

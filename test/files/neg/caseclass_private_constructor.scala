@@ -30,7 +30,7 @@ object QPrivTest {
 
 case class E protected (i: Int)
 object ETest {
-  def e1: E = E(1)
+  def e1: E = E(1) // error: apply is protected
   def e2: E = e2.copy(2) // error: copy is protected
 }
 
@@ -39,7 +39,7 @@ object qualified_protected {
 }
 object QProtTest {
   import qualified_protected._
-  def f1: F = F(1)
+  def f1: F = F(1) // error: apply is protected
   def f2: F = f2.copy(2) // error: copy is protected
 }
 

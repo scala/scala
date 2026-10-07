@@ -16,9 +16,9 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{StringBuilder => JStringBuilder}
-
 import scala.annotation.tailrec
 import scala.collection.generic.SerializeEnd
+import scala.collection.immutable.LazyListBase.InRace
 import scala.collection.mutable.{Builder, ReusableBuilder, StringBuilder}
 import scala.language.implicitConversions
 import scala.runtime.Statics
@@ -264,7 +264,7 @@ import scala.runtime.Statics
   */
 @SerialVersionUID(4L)
 final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => LazyList[A] */)
-  extends AbstractSeq[A]
+  extends LazyListBase[A](if (lazyState eq LazyList.EmptyMarker) null else lazyState)
     with LinearSeq[A]
     with LinearSeqOps[A, LazyList, LazyList[A]]
     with IterableFactoryDefaults[A, LazyList]
@@ -276,56 +276,86 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
   private def this(head: A, tail: LazyList[A]) = {
     this(LazyList.EmptyMarker)
     _head = head
-    _tail = tail
+    setRawTail(tail)
   }
 
-  // used to synchronize lazy state evaluation
-  // after initialization (`_head ne Uninitialized`)
+  // `_head` and `_tail` are used to synchronize lazy state evaluation.
+  //
+  // initially, `_head` is `Uninitialized`. after initialization, `_head` holds:
   //   - `null` if this is an empty lazy list
-  //   - `head: A` otherwise (can be `null`, `_tail == null` is used to test emptiness)
-  @volatile private[this] var _head: Any /* Uninitialized | A */ =
+  //   - `head: A` otherwise (can be the `null` value, `_tail == null` is used to test emptiness)
+  //
+  // `_tail` (declared in `LazyListBase`) can hold the following values:
+  //   - when `_head eq Uninitialized`
+  //     - `lazyState: () => LazyList[A]`
+  //     - while evaluating `lazyState`: the evaluating `Thread`
+  //     - if multiple threads attempt initialization: an `InRace` instance
+  //   - when `_head ne Uninitialized`
+  //     - `null` if this is an empty lazy list
+  //     - `tail: LazyList[A]` otherwise
+  @volatile private var _head: Any /* Uninitialized | A */ =
     if (lazyState eq EmptyMarker) null else Uninitialized
 
-  // when `_head eq Uninitialized`
-  //   - `lazySate: () => LazyList[A]`
-  //   - MidEvaluation while evaluating lazyState
-  // when `_head ne Uninitialized`
-  //   - `null` if this is an empty lazy list
-  //   - `tail: LazyList[A]` otherwise
-  private[this] var _tail: AnyRef /* () => LazyList[A] | MidEvaluation.type | LazyList[A] */ =
-    if (lazyState eq EmptyMarker) null else lazyState
-
   private def rawHead: Any = _head
-  private def rawTail: AnyRef = _tail
 
   @inline private def isEvaluated: Boolean = _head.asInstanceOf[AnyRef] ne Uninitialized
 
-  private def initState(): Unit = synchronized {
-    if (!isEvaluated) {
-      // if it's already mid-evaluation, we're stuck in an infinite
-      // self-referential loop (also it's empty)
-      if (_tail eq MidEvaluation)
-        throw new RuntimeException(
-          "LazyList evaluation depends on its own result (self-reference); see docs for more info")
+  private def initState(): Unit = {
+    def selfRef(): Nothing =
+      // if it's already mid-evaluation, we're stuck in an infinite self-referential loop (also it's empty)
+      throw new RuntimeException(
+        "LazyList evaluation depends on its own result (self-reference); see docs for more info")
 
-      val fun = _tail.asInstanceOf[() => LazyList[A]]
-      _tail = MidEvaluation
-      val l =
-        // `fun` returns a LazyList that represents the state (head/tail) of `this`. We call `l.evaluated` to ensure
-        // `l` is initialized, to prevent races when reading `rawTail` / `rawHead` below.
-        // Often, lazy lists are created with `newLL(eagerCons(...))` so `l` is already initialized, but `newLL` also
-        // accepts non-evaluated lazy lists.
-        try fun().evaluated
-        // restore `fun` in finally so we can try again later if an exception was thrown (similar to lazy val)
-        finally _tail = fun
-      _tail = l.rawTail
-      _head = l.rawHead
+    while (!isEvaluated) {
+      rawTail match {
+        case t: Thread =>
+          if (LazyListBase.isCurrentThread(t)) selfRef()
+          val ir = InRace(t)
+          if (_tailUpdater.compareAndSet(this, t, ir))
+            ir.await()
+          // loop on lost CAS
+
+        case ir: InRace =>
+          if (LazyListBase.isCurrentThread(ir.owner)) selfRef()
+          ir.await()
+
+        case fun: Function0[_] =>
+          // use the current thread as marker that `fun` is being evaluated.
+          // this way, there is no allocation in the common case where there's no race.
+          // if multiple threads attempt to initialize a LazyList, an `InRace` instance is created to coordinate.
+          if (_tailUpdater.compareAndSet(this, fun, Thread.currentThread)) {
+            var ex: Throwable = null
+            // `fun` returns a LazyList that represents the state (head/tail) of `this`. We call `evaluated` to ensure
+            // the result is initialized, to prevent races when reading `rawTail` / `rawHead` below.
+            // Often, lazy lists are created with `newLL(eagerCons(...))` so `l` is already initialized, but `newLL`
+            // also accepts non-evaluated lazy lists.
+            val l = try fun().asInstanceOf[LazyList[A]].evaluated catch {
+              case t: Throwable =>
+                ex = t
+                null
+            }
+            // update `_tail` before `_head`, because `_head` is used to test `isEvaluated`
+            val newTail = if (ex == null) l.rawTail else fun
+            val sentinel = _tailUpdater.getAndSet(this, newTail)
+            if (ex == null) _head = l.rawHead
+            sentinel match {
+              case ir: InRace => ir.countDown()
+              case _ =>
+            }
+            if (ex != null) throw ex
+          }
+          // loop on lost CAS
+
+        case _ =>
+          // loop when _tail is a LazyList but _head is still `Uninitialized`
+          // could call `Thread.onSpinWait()` on JDK 9+
+      }
     }
   }
 
   @tailrec private def evaluated: LazyList[A] =
     if (isEvaluated) {
-      if (_tail == null) Empty
+      if (rawTail == null) Empty
       else this
     } else {
       initState()
@@ -402,7 +432,7 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
     if (knownIsEmpty) Iterator.empty
     else new LazyIterator(this)
 
-  /** Apply the given function `f` to each element of this linear sequence
+  /** Applies the given function `f` to each element of this linear sequence
     * (while respecting the order of the elements).
     *
     *  @param f The treatment to apply to each element.
@@ -1047,10 +1077,11 @@ object LazyList extends SeqFactory[LazyList] {
   // def kount(): Unit = k += 1
 
   private object Uninitialized extends Serializable
-  private object MidEvaluation
   private object EmptyMarker
 
   private val Empty: LazyList[Nothing] = new LazyList(EmptyMarker)
+
+  private val _tailUpdater: LazyListBase.TailUpdater = Empty.makeTailUpdater
 
   /** Creates a new LazyList. */
   @inline private def newLL[A](state: => LazyList[A]): LazyList[A] = new LazyList[A](() => state)
@@ -1258,7 +1289,7 @@ object LazyList extends SeqFactory[LazyList] {
     }
 
   /**
-    * Create an infinite LazyList starting at `start` and incrementing by
+    * Creates an infinite LazyList starting at `start` and incrementing by
     * step `step`.
     *
     * @param start the start value of the LazyList
@@ -1269,7 +1300,7 @@ object LazyList extends SeqFactory[LazyList] {
     newLL(eagerCons(start, from(start + step, step)))
 
   /**
-    * Create an infinite LazyList starting at `start` and incrementing by `1`.
+    * Creates an infinite LazyList starting at `start` and incrementing by `1`.
     *
     * @param start the start value of the LazyList
     * @return the LazyList starting at value `start`.
@@ -1277,7 +1308,7 @@ object LazyList extends SeqFactory[LazyList] {
   def from(start: Int): LazyList[Int] = from(start, 1)
 
   /**
-    * Create an infinite LazyList containing the given element expression (which
+    * Creates an infinite LazyList containing the given element expression (which
     * is computed for each occurrence).
     *
     * @param elem the element composing the resulting LazyList

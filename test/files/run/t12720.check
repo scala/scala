@@ -1,4 +1,7 @@
 newSource1.scala:14: error: missing argument list for method f*** in class D***
+with overloaded members in D***
+  (x***: Int***): String***
+  (x***: String***): String***
 Unapplied methods are only converted to functions when a function type is expected.
 You can make this conversion explicit by writing `f _` or `f(_)` instead of `f`.
   def f = d.f

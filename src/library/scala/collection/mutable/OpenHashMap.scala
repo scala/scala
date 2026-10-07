@@ -120,7 +120,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     deleted = 0
   }
 
-  /** Return the index of the first slot in the hash table (in probe order)
+  /** Returns the index of the first slot in the hash table (in probe order)
     * that is, in order of preference, either occupied by the given key, deleted, or empty.
     *
     * @param hash hash value for `key`
@@ -222,7 +222,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
   }
 
   /** An iterator over the elements of this map. Use of this iterator follows
-    *  the same contract for concurrent modification as the foreach method.
+    *  the same contract for concurrent modification as the `foreach` method.
     *
     *  @return   the iterator
     */

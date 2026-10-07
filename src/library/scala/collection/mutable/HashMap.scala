@@ -219,7 +219,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     * @param key the key to add
     * @param value the value to add
     * @param hash the **improved** hashcode of `key` (see computeHash)
-    * @param getOld if true, then the previous value for `key` will be returned, otherwise, false
+    * @param getOld if `true`, then the previous value for `key` will be returned, otherwise `false`
     */
   private[this] def put0(key: K, value: V, hash: Int, getOld: Boolean): Some[V] = {
     if(contentSize + 1 >= threshold) growTable(table.length * 2)

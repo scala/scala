@@ -101,7 +101,7 @@ A pattern ´p´ _implies_ a type ´T´ if the pattern matches only values of the
 ```
 
 A _literal pattern_ ´L´ matches any value that is equal (in terms of
-`==`) to the literal ´L´. The type of ´L´ must conform to the
+`==`) to the literal ´L´. The type of ´L´ must weakly conform to the
 expected type of the pattern.
 
 ### Interpolated string patterns
@@ -159,7 +159,7 @@ where linktext is a variable bound by the pattern.
 ```
 
 A _stable identifier pattern_ is a [stable identifier](03-types.html#paths) ´r´.
-The type of ´r´ must conform to the expected
+The type of ´r´ must weakly conform to the expected
 type of the pattern. The pattern matches any value ´v´ such that
 `´r´ == ´v´` (see [here](12-the-scala-standard-library.html#root-classes)).
 

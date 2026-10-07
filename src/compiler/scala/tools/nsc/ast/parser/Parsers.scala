@@ -1014,7 +1014,7 @@ self =>
       def mkNamed(args: List[Tree]) = if (!isExpr) args else
         args.map(treeInfo.assignmentToMaybeNamedArg(_))
           .tap(res => if (currentRun.isScala3 && args.lengthCompare(1) == 0 && (args.head ne res.head))
-            deprecationWarning(args.head.pos.point, "named argument is deprecated for infix syntax", since="2.13.16"))
+            migrationWarning(args.head.pos.point, "named argument is deprecated for infix syntax", since="2.13.16"))
       var isMultiarg = false
       val arguments = right match {
         case Parens(Nil)               => literalUnit :: Nil
@@ -1278,7 +1278,10 @@ self =>
           else
             mkOp(infixType(InfixMode.RightOp))
         }
-        if (isIdent) checkRepeatedParam orElse asInfix
+        if (isIdent) checkRepeatedParam.orElse {
+          if (t.pos.isDefined) asInfix
+          else t
+        }
         else t
       }
 
@@ -2197,13 +2200,10 @@ self =>
        */
       def pattern1(): Tree = pattern2() match {
         case p @ Ident(name) if in.token == COLON =>
-          if (nme.isVariableName(name)) {
-            p.removeAttachment[BackquotedIdentifierAttachment.type]
-            atPos(p.pos.start, in.skipToken())(Typed(p, compoundType()))
-          } else {
-            syntaxError(in.offset, "Pattern variables must start with a lower-case letter. (SLS 8.1.1.)")
-            p
-          }
+          if (!nme.isVariableName(name))
+            syntaxError(p.pos.point, "Pattern variables must start with a lower-case letter. (SLS 8.1.1.)")
+          p.removeAttachment[BackquotedIdentifierAttachment.type]
+          atPos(p.pos.start, in.skipToken())(Typed(p, compoundType()))
         case p => p
       }
 

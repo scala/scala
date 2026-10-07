@@ -9,7 +9,7 @@ object SaferExceptions {
 
   class DivByZero extends Exception
 
-  erased class CanThrowCapability[-E <: Exception]
+  class CanThrowCapability[-E <: Exception] extends compiletime.Erased
 
   infix type mayThrow[+A, +E <: Exception] = (erased CanThrowCapability[E]) ?=> A
 

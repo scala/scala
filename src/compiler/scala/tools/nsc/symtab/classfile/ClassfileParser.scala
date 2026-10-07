@@ -528,15 +528,21 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       val parentIndex = u2()
       val parentName = if (parentIndex == 0) null else pool.getClassName(parentIndex)
       val ifaceCount = u2()
-      val ifaces = for (_ <- List.range(0, ifaceCount)) yield pool.getSuperClassName(index = u2())
+      val ifaces = List.fill(ifaceCount.toInt)(pool.getSuperClassName(index = u2()))
       val completer = new ClassTypeCompleter(clazz.name, jflags, parentName, ifaces)
 
       enterOwnInnerClasses()
 
-      clazz setInfo completer
-      clazz setFlag sflags
+      clazz.setInfo(completer)
+      clazz.setFlag(sflags)
+
+      // Kotlin interop (scala/bug#13110)
+      if (clazz.isAbstract)
+        clazz.resetFlag(Flags.FINAL)
+
       moduleClass setInfo staticInfo
       moduleClass setFlag JAVA
+
       staticModule setInfo moduleClass.tpe
       staticModule setFlag JAVA
 
@@ -625,6 +631,15 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       addJavaFlagsAnnotations(sym, jflags)
       getScope(jflags) enter sym
     }
+  }
+
+  private class SigToTypeFail(msg: String) extends Throwable(msg)
+
+  // scala/bug#9152: sigToType can fail when directly accessing the symbol of a Java nested class
+  // `None` if `sig == null` or when `sigToType` fails
+  private def sigToTypeOpt(sym: Symbol, sig: String): Option[Type] = {
+    try Option(sig).map(sigToType(sym, _))
+    catch { case _: SigToTypeFail => None}
   }
 
   private def sigToType(sym: Symbol, sig: String): Type = {
@@ -749,7 +764,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           val n = newTypeName(subName(';'.==))
           index += 1
           if (skiptvs) AnyTpe
-          else tparams(n).typeConstructor
+          else tparams.getOrElse(n, throw new SigToTypeFail(s"unknown type variable: $n")).typeConstructor
       }
     } // sig2type(tparams, skiptvs)
 
@@ -1295,7 +1310,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   private final class ClassTypeCompleter(@unused name: Name, @unused jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
     var permittedSubclasses: List[symbolTable.Symbol] = Nil
     override def complete(sym: symbolTable.Symbol): Unit = {
-      val info = if (sig != null) sigToType(sym, sig) else {
+      val info = sigToTypeOpt(sym, sig).getOrElse {
         val superTpe = if (parent == null) definitions.AnyClass.tpe_* else getClassSymbol(parent.value).tpe_*
         val superTpe1 = if (superTpe == ObjectTpeJava) ObjectTpe else superTpe
         val ifacesTypes = ifaces.filterNot(_ eq null).map(x => getClassSymbol(x.value).tpe_*)
@@ -1335,25 +1350,25 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case _ => false
       })
 
-      val info = if (sig != null) {
-        sigToType(sym, sig)
-      } else if (name == nme.CONSTRUCTOR) {
-        descriptorInfo match {
-          case MethodType(params, _) =>
-            val paramsNoOuter = if (hasOuterParam) params.tail else params
-            val newParams = paramsNoOuter match {
-              case init :+ _ if jflags.isSynthetic =>
-                // scala/bug#7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
-                // are added when an inner class needs to access a private constructor.
-                init
-              case _ =>
-                paramsNoOuter
-            }
-            MethodType(newParams, clazz.tpe)
-          case info => info
+      val info = sigToTypeOpt(sym, sig).getOrElse {
+        if (name == nme.CONSTRUCTOR) {
+          descriptorInfo match {
+            case MethodType(params, _) =>
+              val paramsNoOuter = if (hasOuterParam) params.tail else params
+              val newParams = paramsNoOuter match {
+                case init :+ _ if jflags.isSynthetic =>
+                  // scala/bug#7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
+                  // are added when an inner class needs to access a private constructor.
+                  init
+                case _ =>
+                  paramsNoOuter
+              }
+              MethodType(newParams, clazz.tpe)
+            case info => info
+          }
+        } else {
+          descriptorInfo
         }
-      } else {
-        descriptorInfo
       }
       if (constant != null) {
         val c1 = convertTo(constant, info.resultType)
@@ -1438,13 +1453,24 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     if (flags.isStatic) staticScope else instanceScope
 
   // Append annotation. For Java deprecation, prefer an annotation with values (since, etc).
-  private def addUniqueAnnotation(symbol: Symbol, annot: AnnotationInfo): symbol.type =
-    if (annot.atp.typeSymbol == JavaDeprecatedAttr) {
+  private def addUniqueAnnotation(symbol: Symbol, annot: AnnotationInfo): symbol.type = {
+    // Silently ignore missing annotation classes like javac and Scala 3
+    def skipAnnot =
+      annot.symbol match {
+        case sym: StubSymbol =>
+          if (settings.isDeveloper || (settings.debug.value && !sym.name.startsWith("jdk.internal."))) {
+            val msg = s"Error while parsing annotations in $file: annotation class ${sym.name} not present on classpath"
+            loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
+          }
+          true
+        case _ => false
+      }
+    if (annot.symbol == JavaDeprecatedAttr) {
       def ensureDepr(sym: Symbol): sym.type = {
         if (sym.hasAnnotation(JavaDeprecatedAttr))
           if (List(0, 1).exists(annot.constantAtIndex(_).isDefined))
             sym.setAnnotations {
-              def drop(cur: AnnotationInfo): Boolean = cur.atp.typeSymbol == JavaDeprecatedAttr
+              def drop(cur: AnnotationInfo): Boolean = cur.symbol == JavaDeprecatedAttr
               sym.annotations.foldRight(annot :: Nil)((a, all) => if (drop(a)) all else a :: all)
             }
           else sym
@@ -1454,7 +1480,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         ensureDepr(staticModule)
       ensureDepr(symbol)
     }
-    else symbol.addAnnotation(annot)
+    else if (skipAnnot)
+      symbol
+    else
+      symbol.addAnnotation(annot)
+  }
 }
 object ClassfileParser {
   private implicit class GoodTimes(private val n: Int) extends AnyVal {

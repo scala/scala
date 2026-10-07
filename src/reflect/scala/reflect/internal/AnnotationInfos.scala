@@ -75,7 +75,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  - arrays of constants
    *  - or nested classfile annotations (only for Java annotation)
    *
-   * TODO: rename to `ConstantAnnotationArg`
+   * aka `ConstantAnnotationArg`
    */
   @nowarn("""cat=deprecation&origin=scala\.reflect\.api\.Annotations\.JavaArgumentApi""")
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
@@ -87,7 +87,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
    *  an instance of a Java enumeration value).
    */
-  case class LiteralAnnotArg(const: Constant) extends ClassfileAnnotArg {
+  case class LiteralAnnotArg(const: Constant) extends ClassfileAnnotArg with Attachable {
     override def toString = const.escapedStringValue
   }
 
@@ -120,7 +120,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       Some((info.atp, info.args, info.assocs))
 
     def mkFilter(category: Symbol, defaultRetention: Boolean)(ann: AnnotationInfo) =
-      (ann.metaAnnotations, ann.defaultTargets) match {
+      (ann.targetAnnotations, ann.defaultTargets) match {
         case (Nil, Nil)      => defaultRetention
         case (Nil, defaults) => defaults contains category
         case (metas, _)      => metas exists (_ matches category)
@@ -189,7 +189,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    * If `atp` conforms to `ConstantAnnotation` (which is true for annotations defined in Java), the annotation
    * arguments are compile-time constants represented in `assocs`. Note that default arguments are *not* present
    * in `assocs`. The `assocsWithDefaults` extends `assocs` with the default values from the annotation definition.
-   * Example: `class a(x: Int = 1) extends ConstantAnnotation`.F or `@ann()` without arguments `assocsWithDefaults`
+   * Example: `class a(x: Int = 1) extends ConstantAnnotation`. For `@ann()` without arguments `assocsWithDefaults`
    * contains `x -> 1`.
    *
    * If `atp` is not a `ConstantAnnotation`, the annotation arguments are represented as type trees in `args`.
@@ -338,8 +338,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // Forces LazyAnnotationInfo, no op otherwise
     def completeInfo(): Unit = ()
 
-    /** Annotations annotating annotations are confusing so I drew
-     *  an example.  Given the following code:
+    /** Annotations annotating annotations are confusing. Clarifying example:
      *
      *  class A {
      *    @(deprecated @setter) @(inline @getter)
@@ -348,31 +347,29 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
      *
      *  For the setter `x_=` in A, annotations contains one AnnotationInfo =
      *    List(deprecated @setter)
-     *  The single AnnotationInfo in that list, i.e. `@(deprecated @setter)`, has metaAnnotations =
+     *  The single AnnotationInfo in that list, i.e. `@(deprecated @setter)`, has targetAnnotations =
      *    List(setter)
      *
      *  Similarly, the getter `x` in A has an @inline annotation, which has
-     *  metaAnnotations = List(getter).
+     *  targetAnnotations = List(getter).
      */
     def symbol = atp.typeSymbol
 
-    /** These are meta-annotations attached at the use site; they
-     *  only apply to this annotation usage.  For instance, in
-     *    `@(deprecated @setter @field) val ...`
-     *  metaAnnotations = List(setter, field).
+    /**
+     * These are target annotations attached at the use site; they only apply to this annotation usage.
+     * For instance, in `@(deprecated @setter @field) val ...` we get `targetAnnotations = List(setter, field)`.
      */
-    def metaAnnotations: List[AnnotationInfo] = atp match {
+    def targetAnnotations: List[AnnotationInfo] = atp match {
       case AnnotatedType(metas, _) => metas
       case _                       => Nil
     }
 
     /** The default kind of members to which this annotation is attached.
-      * For instance, for scala.deprecated defaultTargets =
-      * List(getter, setter, beanGetter, beanSetter).
+      * For instance, for scala.deprecated: defaultTargets = List(getter, setter, beanGetter, beanSetter, field)
       *
       * NOTE: have to call symbol.initialize, since we won't get any annotations if the symbol hasn't yet been completed
       */
-    def defaultTargets = symbol.initialize.annotations map (_.symbol) filter isMetaAnnotation
+    def defaultTargets = symbol.initialize.annotations map (_.symbol) filter isTargetAnnotation
 
     // Test whether the typeSymbol of atp conforms to the given class.
     def matches(clazz: Symbol) = !symbol.isInstanceOf[StubSymbol] && (symbol isNonBottomSubClass clazz)

@@ -11,7 +11,7 @@ class X {
   @unused private class D          // no warn
 
   private val Some(y) = Option(answer) // warn
-  @unused private val Some(z) = Option(answer) // no warn
+  private val Some(z @ _) = Option(answer) // no warn
 
   @unused("not updated") private var i = answer       // no warn
   def g = i

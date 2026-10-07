@@ -1,0 +1,5 @@
+Perverting ["Hello, $foo"]
+"Hello, $foo"
+Perverting [s"Hello, $foo")]
+s"Hello, $foo")
+Hello, $foo

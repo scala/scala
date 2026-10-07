@@ -1,0 +1,21 @@
+t13095.scala:12: warning: pattern var z in object Main is never used
+  private val A(w, z) = A(42, 27) // warn
+                   ^
+t13095.scala:13: warning: pattern var r in object Main is never used
+  private[this] val A(q, r) = A(42, 27) // warn
+                         ^
+t13095.scala:42: warning: pattern var s in method spam is never used
+      case email(s, addr) => // warn // warn each, multiple extraction
+                 ^
+t13095.scala:42: warning: pattern var addr in method spam is never used
+      case email(s, addr) => // warn // warn each, multiple extraction
+                    ^
+t13095.scala:52: warning: pattern var v in method scala-dev#902 is never used
+      case (i, v @ (_, _)) => i // warn multiple patvars
+               ^
+t13095.scala:52: warning: a pure expression does nothing in statement position
+      case (i, v @ (_, _)) => i // warn multiple patvars
+                              ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

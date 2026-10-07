@@ -429,7 +429,8 @@ function initInherit() {
 
 /* filter used to take boolean scrollToMember */
 function filter() {
-    var query = $.trim($("#memberfilter input").val()).toLowerCase();
+    var inputVal = $("#memberfilter input").val();
+    var query = (inputVal || "").trim().toLowerCase();
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
 

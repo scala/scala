@@ -24,7 +24,7 @@ trait Equals extends Any {
    *  Chapter 28]] for discussion and design.
    *
    *  @param    that    the value being probed for possible equality
-   *  @return   true if this instance can possibly equal `that`, otherwise false
+   *  @return   `true` if this instance can possibly equal `that`, otherwise `false`
    */
   def canEqual(that: Any): Boolean
 

@@ -977,7 +977,7 @@ trait Types
     def load(sym: Symbol): Unit = {}
 
     private def findDecl(name: Name, excludedFlags: Long): Symbol = {
-      var alts: List[Symbol] = List()
+      var alts: List[Symbol] = Nil
       var sym: Symbol = NoSymbol
       var e: ScopeEntry = decls.lookupEntry(name)
       while (e ne null) {
@@ -991,7 +991,7 @@ trait Types
         e = decls.lookupNextEntry(e)
       }
       if (alts.isEmpty) sym
-      else (baseClasses.head.newOverloaded(this, alts))
+      else baseClasses.head.newOverloaded(this, alts)
     }
 
     /** Find all members meeting the flag requirements.
@@ -2668,8 +2668,8 @@ trait Types
       s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
-      case ByNameParamClass if !args.isEmpty           => "=> " + args.head
+      case RepeatedParamClass | JavaRepeatedParamClass if args.nonEmpty => args.head.toString + "*"
+      case ByNameParamClass if args.nonEmpty           => "=> " + args.head
       case _ if isFunctionTypeDirect(this)             =>
           // Aesthetics: printing Function1 as T => R rather than (T) => R
           // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
@@ -2930,8 +2930,10 @@ trait Types
 
   object MethodType extends MethodTypeExtractor
 
-  // TODO: rename so it's more appropriate for the type that is for a method without argument lists
-  // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
+  /** A method without parameter lists, i.e., parameterless or parameterlistless.
+   *
+   *  Note: a MethodType with paramss that is a ListOfNil is called "nilary", to disambiguate.
+   */
   case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
@@ -2952,7 +2954,6 @@ trait Types
       else NullaryMethodType(result1)
     }
     override def foldOver(folder: TypeFolder): Unit = folder(resultType)
-
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
@@ -5235,7 +5236,7 @@ trait Types
     case _                      => false
   }
   def isBoundedGeneric(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAbstractType => tp <:< AnyRefTpe && !(tp.upperBound eq ObjectTpeJava)
+    case TypeRef(_, sym, _) if sym.isAbstractType => tp <:< AnyRefTpe && (tp.upperBound ne ObjectTpeJava)
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
@@ -5290,6 +5291,12 @@ trait Types
       } finally res = saved
     }
 
+    private def needClearBaseTypeCache(ct: CompoundType) = {
+      // was `ct.baseClasses.exists(changedSymbols)`, but `baseClasses` may force types early (scala/bug#13112)
+      val cache = ct.baseTypeSeqCache
+      cache != null && changedSymbols.exists(cache.baseTypeIndex(_) >= 0)
+    }
+
     def apply(tp: Type): Unit = tp match {
       case _ if seen.containsKey(tp) =>
 
@@ -5303,7 +5310,7 @@ trait Types
         }
         seen.put(tp, res)
 
-      case ct: CompoundType if ct.baseClasses.exists(changedSymbols) =>
+      case ct: CompoundType if needClearBaseTypeCache(ct) =>
         ct.invalidatedCompoundTypeCaches()
         res = true
         seen.put(tp, res)

@@ -9,7 +9,7 @@ package scala.xml {
     def child: Seq[Node]
     override def toString = label + child.mkString
   }
-  class Elem(prefix: String, val label: String, attributes1: MetaData, scope: NamespaceBinding, minimizeEmpty: Boolean, val child: Node*) extends Node
+  class Elem(prefix: String, val label: String, val attributes: MetaData, scope: NamespaceBinding, minimizeEmpty: Boolean, val child: Node*) extends Node
   class NodeBuffer extends Seq[Node] {
     val nodes = scala.collection.mutable.ArrayBuffer.empty[Node]
     def &+(o: Any): NodeBuffer =
@@ -28,4 +28,11 @@ package scala.xml {
     def label = t.text
     def child = Nil
   }
+  case class UnprefixedAttribute(key: String, value: Seq[Node], next: MetaData) extends MetaData
+  case class EntityRef(entityName: String) extends Node {
+    def label = s"&$entityName;"
+    def child = Nil
+  }
+
+  case class Group(nodes: Seq[Node])
 }

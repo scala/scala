@@ -1,5 +1,8 @@
 //> using options -Xfatal-warnings -Xlint:infer-any
 //
+
+import scala.language.implicitConversions
+
 trait Foo[-A <: AnyRef, +B <: AnyRef] {
   def run[U](x: A)(action: B => U): Boolean = ???
 
@@ -70,3 +73,31 @@ warning: !!! HK subtype check on scala.this.Int and [B >: scala.this.Int]B, but 
 [log typer] infer method inst scala.Predef.intWrapper(1).to(5).contains[B], tparams = List(type B), args = List(scala.this.Long(5L)), pt = ?, lobounds = List(scala.this.Int), parambounds = List( >: scala.this.Int)
 [log typer] checkKindBounds0(List(type B), List(scala.this.AnyVal), <noprefix>, <none>, true)
  */
+
+// from scala/scala#11053, which was reverted
+class t12044 extends App {
+  class Bar
+  def f[F[_], A](v: F[A]) = v
+  implicit def barToList(b: Bar): List[Int] = List(42)
+  def t1 = f(new Bar) // warn
+  def t2: Any = f(new Bar) // no warn (because of expected type `Any`, see scala/scala#9452)
+}
+
+// from scala/scala#4401 / scala/scala#11053. note that inference improved, there's no `Any` inferred in either test1/2/3
+class pr4401 {
+  trait Binary[A, B]
+  type Unary[A] = Binary[A, A]
+  def f[F[A], A](f: F[A]): f.type = f
+
+  def test1(u: Unary[Any]) = f(u)
+  def test2(u: Binary[Any, Any]) = f(u)
+  def test3 = {
+    implicit def b2u[A, B](b: Binary[A, B]): List[Int] = ???
+    val b: Binary[Any, Any] = null
+    f(b)
+  }
+
+  def check1: Unary[Any] = test1(???)
+  def check2: Binary[Any,Any] = test2(???)
+  def check3: Binary[Any, Any] = test3
+}

@@ -79,10 +79,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     @inline final def filter(p: T => Boolean): SilentResult[T] = this match {
       case SilentResultValue(value) if !p(value) => SilentTypeError(TypeErrorWrapper(new TypeError(NoPosition, "!p")))
       case _                                     => this
-  }
+    }
     @inline final def orElse[T1 >: T](f: Seq[AbsTypeError] => T1): T1 = this match {
       case SilentResultValue(value) => value
-      case s : SilentTypeError      => f(s.reportableErrors)
+      case s: SilentTypeError       => f(s.reportableErrors)
     }
   }
   class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[ContextWarning]) extends SilentResult[Nothing] {
@@ -665,9 +665,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         settings.language.contains(featureName) || {
           def action(): Boolean = {
             if (!immediate)
-            debuglog(s"deferred check of feature $featureTrait")
-          def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
-           hasImport || {
+              debuglog(s"deferred check of feature $featureTrait")
+            def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
+            hasImport || {
               val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
                 featureTrait.getAnnotation(LanguageFeatureAnnot): @unchecked
               context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
@@ -1331,8 +1331,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case coercion  =>
             if (settings.logImplicitConv.value)
               context.echo(qual.pos, s"applied implicit conversion from ${qual.tpe} to ${searchTemplate} = ${coercion.symbol.defString}")
-            if (currentRun.isScala3 && coercion.symbol == currentRun.runDefinitions.Predef_any2stringaddMethod)
-              if (!currentRun.sourceFeatures.any2StringAdd)
+            val noStringAddFlag = currentRun.sourceFeatures.any2StringAdd
+            if ((currentRun.isScala3 || noStringAddFlag) && coercion.symbol == currentRun.runDefinitions.Predef_any2stringaddMethod)
+              if (!noStringAddFlag)
                 runReporting.warning(qual.pos, s"Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).", Scala3Migration, coercion.symbol)
             if (settings.lintUniversalMethods) {
               def targetsUniversalMember(target: => Type): Option[Symbol] = searchTemplate match {
@@ -2761,22 +2762,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * an alternative TODO: add partial function AST node or equivalent and get rid of this synthesis --> do everything in uncurry (or later)
      * however, note that pattern matching codegen is designed to run *before* uncurry
      */
-    def synthesizePartialFunction(paramName: TermName, paramPos: Position, paramSynthetic: Boolean,
+    def synthesizePartialFunction(paramName: TermName, paramPos: Position, paramType: Type, paramSynthetic: Boolean,
                                   tree: Tree, mode: Mode, pt: Type): Tree = {
       assert(pt.typeSymbol == PartialFunctionClass, s"PartialFunction synthesis for match in $tree requires PartialFunction expected type, but got $pt.")
-      val (argTp, resTp) = partialFunctionArgResTypeFromProto(pt)
+      val (argTp0, resTp) = partialFunctionArgResTypeFromProto(pt)
 
       // if argTp isn't fully defined, we can't translate --> error
       // NOTE: resTp still might not be fully defined
-      if (!isFullyDefined(argTp)) {
+      if (!isFullyDefined(argTp0)) {
         MissingParameterTypeAnonMatchError(tree, pt)
         return setError(tree)
       }
+      val argTp =
+        if (paramType.ne(NoType)) paramType
+        else argTp0
 
       // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
       val targsValidParams = (argTp <:< AnyTpe) && (resTp <:< AnyTpe)
 
-      val anonClass = context.owner newAnonymousFunctionClass tree.pos addAnnotation SerialVersionUIDAnnotation
+      val anonClass = context.owner.newAnonymousFunctionClass(tree.pos).addAnnotation(SerialVersionUIDAnnotation)
 
       import CODE._
 
@@ -2816,7 +2820,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // `def applyOrElse[A1 <: $argTp, B1 >: $matchResTp](x: A1, default: A1 => B1): B1 =
-      //  ${`$selector match { $cases; case default$ => default(x) }`
+      //  ${`$selector match { $cases; case default$ => default(x) }`}
       def applyOrElseMethodDef = {
         val methodSym = anonClass.newMethod(nme.applyOrElse, tree.pos, FINAL | OVERRIDE)
 
@@ -2836,8 +2840,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // First, type without the default case; only the cases provided
         // by the user are typed. The LUB of these becomes `B`, the lower
-        // bound of `B1`, which in turn is the result type of the default
-        // case
+        // bound of `B1`, which in turn is the result type of the default case
         val match0 = methodBodyTyper.typedMatch(selector(x), cases, mode, resTp)
         val matchResTp = match0.tpe
 
@@ -3178,9 +3181,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
             val outerTyper = newTyper(context.outer)
             val p = vparams.head
-            if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
-
-            outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, funBody, mode, pt)
+            if (p.tpt.tpe == null) p.tpt.setType(outerTyper.typedType(p.tpt).tpe)
+            outerTyper.synthesizePartialFunction(p.name, p.pos, p.tpt.tpe, paramSynthetic = false, funBody, mode, pt)
           } else doTypedFunction(fun, resProto)
         }
       }
@@ -3779,7 +3781,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               duplErrorTree(WrongNumberOfArgsError(tree, fun))
             } else if (lencmp > 0) {
               tryTupleApply orElse duplErrorTree {
-                val (_, argPos) = removeNames(Typer.this)(args, params)
+                val (argsNoNames, argPos) = removeNames(Typer.this)(args, params)
+                // typecheck args to get better / helpful messages (scala/scala#11036), but not synthetic ones (scala/bug#13141)
+                argsNoNames.foreach(arg => if (arg.pos.isRange) typed(arg, mode, ErrorType))
                 TooManyArgsNamesDefaultsError(tree, fun, formals, args, argPos)
               }
             } else if (lencmp == 0) {
@@ -3869,7 +3873,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       silent(_.doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgsPlusMissingErrors, mode, pt))
                     }
 
-                    removeNames(Typer.this)(allArgs, params) // report bad names
+                    val (argsNoNames, _) = removeNames(Typer.this)(allArgs, params) // report bad names
+                    // typecheck args to get better / helpful messages (scala/scala#11036), but not synthetic ones (scala/bug#13141)
+                    argsNoNames.foreach(arg => if (arg.pos.isRange) typed(arg, mode, ErrorType))
                     duplErrorTree(NotEnoughArgsError(tree, fun, missing))
                   }
                 }
@@ -4015,7 +4021,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       var unmappable: Boolean = false
-      val pending = ListBuffer[AbsTypeError]()
+      val pending = ListBuffer.empty[AbsTypeError]
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
       def rangeFinder(): (Int, Int) =
@@ -4091,7 +4097,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (typedFun.isErroneous) return finish(ErroneousAnnotation)
 
       val Select(New(annTpt), _) = typedFun: @unchecked
-      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
+      val annType = annTpt.tpe.dealias
+        // for a polymorphic annotation class, annType will have unbound type params (see context.undetparams)
       val annTypeSym = annType.typeSymbol
       val isJava = annTypeSym.isJavaDefined
 
@@ -4129,9 +4136,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (unit.isJava) unmappable = true
           else if (!isDefaultArg(ttree)) reportAnnotationError(AnnotationNotAConstantError(ttree))
           None
-        } else if (const.value == null) {
-          reportAnnotationError(AnnotationArgNullError(tr)); None
-        } else
+        }
+        else if (const.value == null) {
+          reportAnnotationError(AnnotationArgNullError(tr))
+          None
+        }
+        else if (isJava)
+          // for Wunused; not needed for Scala ConstantAnnotation, there we have a valid `annotationInfo.original`
+          Some(LiteralAnnotArg(const).updateAttachment(OriginalTreeAttachment(ttree)))
+        else
           Some(LiteralAnnotArg(const))
       }
 
@@ -4195,25 +4208,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           .map(args => ArrayAnnotArg(args.toArray))
       }
 
-      @inline def constantly = {
-        // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
-        // stored in the `assocs` field of the resulting AnnotationInfo
+      // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
+      // stored in the `assocs` field of the resulting AnnotationInfo
+      def constantly =
         if (argss.lengthIs > 1) {
           reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
         } else {
           val annScopeJava = annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
 
-          val names = mutable.Set[Symbol]()
+          val names = mutable.Set.empty[Symbol]
           names ++= annScopeJava.iterator
 
-          def hasValue = names exists (_.name == nme.value)
+          def hasValue = names.exists(_.name == nme.value)
           val namedArgs = argss match {
-            case List(List(arg)) if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
-            case List(args)                                      => args
-            case x                                               => throw new MatchError(x)
+            case args :: Nil =>
+              args match {
+                case arg :: Nil if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
+                case args => args
+              }
+            case x => throw new MatchError(x)
           }
 
-          val nvPairs = namedArgs map {
+          // name, optional value
+          val nvPairs = namedArgs.map {
             case arg @ NamedArg(Ident(name), rhs) =>
               val sym = annScopeJava.lookup(name)
               if (sym == NoSymbol) {
@@ -4225,7 +4242,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               } else {
                 names -= sym
                 sym.cookJavaRawInfo() // #3429
-                val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
+                val pt = sym.tpe.resultType
+                val annArg = tree2ConstArg(rhs, pt)
                 (sym.name, annArg)
               }
             case arg =>
@@ -4244,11 +4262,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           else {
             if (annTypeSym == JavaDeprecatedAttr && !context.unit.isJava && settings.lintDeprecation)
               context.warning(ann.pos, """Prefer the Scala annotation over Java's `@Deprecated` to provide a message and version: @deprecated("message", since = "MyLib 1.0")""", WarningCategory.LintDeprecation)
-            AnnotationInfo(annType, Nil, nvPairs.map(p => (p._1, p._2.get))).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
+            AnnotationInfo(annType, Nil, nvPairs.map(p => (p._1, p._2.get)))
+              .setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
           }
         }
-      }
-      @inline def statically = {
+      // end constantly
+
+      def statically = {
         val typedAnn: Tree = {
           // local dummy fixes scala/bug#5544
           val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
@@ -4293,6 +4313,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           info
         }
       }
+      // end statically
 
       finish {
         if (isJava)
@@ -4914,7 +4935,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val cases = tree.cases
         if (selector == EmptyTree) {
           if (pt.typeSymbol == PartialFunctionClass)
-            synthesizePartialFunction(newTermName(fresh.newName("x")), tree.pos, paramSynthetic = true, tree, mode, pt)
+            synthesizePartialFunction(newTermName(fresh.newName("x")), tree.pos, paramType = NoType, paramSynthetic = true, tree, mode, pt)
           else {
             val arity = functionArityFromType(pt) match { case -1 => 1 case arity => arity } // scala/bug#8429: consider sam and function type equally in determining function arity
 
@@ -4970,13 +4991,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedNew(tree: New) = {
         val tpt = tree.tpt
         val tpt1 = {
-          // This way typedNew always returns a dealiased type. This used to happen by accident
-          // for instantiations without type arguments due to ad hoc code in typedTypeConstructor,
-          // and annotations depended on it (to the extent that they worked, which they did
-          // not when given a parameterized type alias which dealiased to an annotation.)
-          // typedTypeConstructor dealiases nothing now, but it makes sense for a "new" to always be
-          // given a dealiased type.
-          val tpt0 = typedTypeConstructor(tpt) modifyType (_.dealias)
+          val tpt0 = typedTypeConstructor(tpt)
 
           if (checkStablePrefixClassType(tpt0)) {
             tpt0.tpe.normalize match { // eta-expand
@@ -4984,7 +4999,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 context.undetparams = undet // can reuse these type params, they're fresh
                 notifyUndetparamsAdded(undet)
                 TypeTree().setOriginal(tpt0).setType(appliedToUndet)
-              case _                               => tpt0
+              case _ => tpt0
             }
           }
           else tpt0
@@ -5018,9 +5033,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis
                   || phase.erasedTypes
-                  )) {
+                  ))
           DoesNotConformToSelfTypeError(tree, sym, tp.typeOfThis)
-        } else
+        else
           treeCopy.New(tree, tpt1).setType(tp)
       }
 
@@ -5194,7 +5209,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def reportError(error: SilentTypeError): Tree = {
           error.reportableErrors.foreach(context.issue)
           error.warnings.foreach { case ContextWarning(p, m, c, s, as) => context.warning(p, m, c, s, as) }
-          args.foreach(typed(_, mode, ErrorType))
+          // typecheck args to get better / helpful messages (scala/scala#11036), but not synthetic ones (scala/bug#13141)
+          args.map { case NamedArg(_, rhs) => rhs case arg => arg }
+            .foreach(arg => if (arg.pos.isRange) typed(arg, mode, ErrorType))
           setError(tree)
         }
         def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
@@ -5470,7 +5487,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             wrapErrors(t, _.typed1(t, mode, pt))
           }
           def checkDubiousUnitSelection(result: Tree): Unit =
-            if (!isPastTyper && isUniversalMember(result.symbol))
+            if (!isPastTyper && isUniversalMember(result.symbol) && result.pos.isRange)
               context.warning(tree.pos, s"dubious usage of ${result.symbol} with unit value", WarningCategory.LintUniversalMethods)
 
           val sym = tree.symbol
@@ -5647,15 +5664,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             if (tree.hasAttachment[PostfixAttachment.type])
               checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
-            val sym = tree1.symbol
-            if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
+            checkReflectiveCallsFeature(tree1)
 
             qualTyped.symbol match {
               case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
               case _ => tree1
             }
           }
+      }
+
+      def checkReflectiveCallsFeature(tree: Tree): Unit = {
+        val sym = tree.symbol
+        if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
+          checkFeature(tree.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
       }
 
       /* A symbol qualifies if:
@@ -5783,6 +5804,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference,
                 // to avoid inference errors in pattern matching.
                 stabilize(tree2, pre2, mode, pt).modifyType(dropIllegalStarTypes)
+                  .tap(t => if (tree1 ne tree) checkReflectiveCallsFeature(t))
               }
             onSuccess.setAttachments(tree.attachments)
         }
@@ -6089,29 +6111,34 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Warn about likely interpolated strings which are missing their interpolators
       def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
-        // attempt to avoid warning about trees munged by macros
-        def isMacroExpansion = {
-          // context.tree is not the expandee; it is plain new SC(ps).m(args)
-          //context.tree.exists(t => t.pos.includes(lit.pos) && hasMacroExpansionAttachment(t))
-          // testing pos works and may suffice
-          //openMacros.exists(_.macroApplication.pos.includes(lit.pos))
-          // tests whether the lit belongs to the expandee of an open macro
-          openMacros.exists(_.macroApplication.attachments.get[MacroExpansionAttachment] match {
-            case Some(MacroExpansionAttachment(_, t: Tree)) => t.exists(_ eq lit)
-            case _                                          => false
-          })
-        }
-        val checkMacroExpansion = settings.warnMacros.value match {
-          case "both" | "after" => true
-          case _ => !isMacroExpansion
-        }
-        // An interpolation desugars to `StringContext(parts).m(args)`, so obviously not missing.
+        // Attempt to avoid warning about trees munged by macros, according to `-Wmacros`.
+        // By default, if it looks like a macro expansion, do not warn.
+        // A macro expansion is detected if the literal tree has no position
+        // (such as when a macro `c.typecheck(qq)` explicitly), or if there is an open macro
+        // whose expansion (expandee) contains the literal.
+        // Note context.tree is not the expandee but `new StringContext(parts).s(args)`.
+        def isMacroExpansion =
+          !lit.pos.isDefined ||
+          openMacros.exists { ctx =>
+            ctx.macroApplication.attachments.get[MacroExpansionAttachment] match {
+              case Some(MacroExpansionAttachment(_, t: Tree)) =>
+                ctx.macroApplication.pos.includes(lit.pos) && t.exists(_ eq lit)
+              case _ => false
+            }
+          }
+        // An interpolation desugars to `StringContext(parts).m(args)`, so obviously not missing in that case.
         // `implicitNotFound` annotations have strings with `${A}`, so never warn for that.
         // Also don't warn for macro expansion unless they ask for it.
         def mightBeMissingInterpolation: Boolean = context.enclosingApply.tree match {
           case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => false
           case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _)     => false
-          case _                                                                => checkMacroExpansion
+          case _ =>
+            settings.warnMacros.value match {
+              case "default" | "before" => !isMacroExpansion
+              case "both" => true
+              case "after" => isMacroExpansion
+              case _ => false
+            }
         }
         def maybeWarn(s: String): Unit = {
           def warn(message: String) = context.warning(lit.pos, s"possible missing interpolator: $message", WarningCategory.LintMissingInterpolator)
@@ -6148,8 +6175,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
         lit match {
-          case Literal(Constant(s: String)) if mightBeMissingInterpolation => maybeWarn(s)
-          case _                                                           =>
+          case Literal(Constant(s: String)) if !s.isEmpty =>
+            if (mightBeMissingInterpolation)
+              maybeWarn(s)
+          case _ =>
         }
       }
 

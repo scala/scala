@@ -58,13 +58,13 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
    *
-   *  @return the measurement of the angle x in radians.
+   *  @return the measurement of the angle `x` in radians.
    */
   def toRadians: Double = math.toRadians(self)
 
   /** Converts an angle measured in radians to an approximately equivalent
    *  angle measured in degrees.
-   *  @return the measurement of the angle x in degrees.
+   *  @return the measurement of the angle `x` in degrees.
    */
   def toDegrees: Double = math.toDegrees(self)
 }

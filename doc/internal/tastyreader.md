@@ -1,6 +1,8 @@
 # TASTy Reader For Scala 2
 
-The [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), included in the Scala 2.x Compiler will enable usage in Scala `2.13.x` of dependencies that have been compiled with `dotc`, the reference compiler of Scala `3.0`.
+The [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), included in the Scala 2.13 compiler, enables using dependencies that have been compiled with Scala 3 in Scala 2.13.
+
+Scala 3.7 (TASTy version 28.7) is the final Scala 3 version supported by the TASTy reader; support for newer versions will not be added (see [scala/bug#13152](https://github.com/scala/bug/issues/13152)).
 
 TASTy is an intermediate representation of a Scala program after type checking and term elaboration, such as inference of implicit parameters. When compiling code with Scala 3, a single TASTy document is associated with each pair of root class and companion object. Within a TASTy document, the public API of those roots and any inner classes can be read, in a similar way to pickles in the Scala 2.x series.
 

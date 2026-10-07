@@ -44,7 +44,7 @@ class Codec(val charSet: Charset) {
   private[this] var _decodingReplacement: String      = null
   private[this] var _onCodingException: Handler       = e => throw e
 
-  /** The name of the Codec. */
+  /** The name of the `Codec`. */
   override def toString = name
 
   // these methods can be chained to configure the variables above
@@ -77,7 +77,7 @@ class Codec(val charSet: Charset) {
 trait LowPriorityCodecImplicits {
   self: Codec.type =>
 
-  /** The Codec of Last Resort. */
+  /** The `Codec` of Last Resort. */
   implicit lazy val fallbackSystemCodec: Codec = defaultCharsetCodec
 }
 

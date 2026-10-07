@@ -146,7 +146,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   /** Checks if this set contains element `elem`.
     *
     *  @param  elem    the element to check for membership.
-    *  @return true, iff `elem` is contained in this set.
+    *  @return `true`, iff `elem` is contained in this set.
     */
   def contains(elem: A): Boolean = RB.contains(tree, elem)
 

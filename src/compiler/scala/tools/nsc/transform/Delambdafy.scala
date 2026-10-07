@@ -141,12 +141,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case _ => tp
     }
 
-    // exclude primitives and value classes, which need special boxing
-    private def isReferenceType(tp: Type) = !tp.isInstanceOf[ErasedValueType] && {
-      val sym = tp.typeSymbol
-      !(isPrimitiveValueClass(sym) || sym.isDerivedValueClass)
-    }
-
     // determine which lambda target to use with java's LMF -- create a new one if scala-specific boxing is required
     def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, @unused functionalInterface: Symbol, sam: Symbol): Symbol = {
       val oldClass = fun.symbol.enclClass
@@ -159,27 +153,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val samParamTypes = exitingErasure(sam.info.paramTypes)
       val samResultType = exitingErasure(sam.info.resultType)
 
-      /* How to satisfy the linking invariants of https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
-       *
-       * Given samMethodType: (U1..Un)Ru and function type T1,..., Tn => Rt (the target method created by uncurry)
-       *
-       * Do we need a bridge, or can we use the original lambda target for implMethod: (<captured args> A1..An)Ra
-       * (We can ignore capture here.)
-       *
-       * If, for i=1..N:
-       *  Ai =:= Ui || (Ai <:< Ui <:< AnyRef)
-       *  Ru =:= void || (Ra =:= Ru || (Ra <:< AnyRef, Ru <:< AnyRef))
-       *
-       * We can use the target method as-is -- if not, we create a bridging one that uses the types closest
-       * to the target method that still meet the above requirements.
-       */
-      val resTpOk = (
-           samResultType =:= UnitTpe
-        || functionResultType =:= samResultType
-        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // per spec, no further correspondence required
-      def paramTpsOk = samParamTypes.corresponds(functionParamTypes)((samParamTp, funParamTp) =>
-          funParamTp =:= samParamTp ||
-          (isReferenceType(funParamTp) && isReferenceType(samParamTp) && funParamTp <:< samParamTp))
+      val (paramTpsOk, resTpOk) =
+        erasure.lmfAdaptationOk(functionParamTypes, functionResultType, samParamTypes, samResultType)
       if (resTpOk && paramTpsOk) target
       else {
         // We have to construct a new lambda target that bridges to the one created by uncurry.
@@ -196,12 +171,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // boxed on the generic call to the sam method.
 
         val bridgeParamTypes = map2(samParamTypes, functionParamTypes) { (samParamTp, funParamTp) =>
-          if (isReferenceType(samParamTp) && funParamTp <:< samParamTp) funParamTp
+          if (erasure.isReferenceType(samParamTp) && funParamTp <:< samParamTp) funParamTp
           else postErasure.elimErasedValueType(samParamTp)
         }
 
         val bridgeResultType =
-          if (resTpOk && isReferenceType(samResultType) && functionResultType <:< samResultType) functionResultType
+          if (resTpOk && erasure.isReferenceType(samResultType) && functionResultType <:< samResultType) functionResultType
           else postErasure.elimErasedValueType(samResultType)
 
         val typeAdapter = new TypeAdapter { def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree) }

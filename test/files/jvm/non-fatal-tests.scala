@@ -42,6 +42,4 @@ trait NonFatalTests {
 
 object Test
 extends App
-with NonFatalTests {
-  System.exit(0)
-}
+with NonFatalTests

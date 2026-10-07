@@ -1,0 +1,47 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(5,2)
+================================================================================
+[response] askScopeCompletion at (5,2)
+retrieved 16 members
+abstract trait T extends AnyRef
+case class C1 extends Product with Serializable
+class C2 extends AnyRef
+def <init>(x: Int): test.C1
+def canEqual(x$1: Any): Boolean
+def copy(x: Int): test.C1
+def productArity: Int
+def productElement(x$1: Int): Any
+object C1
+override def equals(x$1: Any): Boolean
+override def hashCode(): Int
+override def productElementName(x$1: Int): String
+override def productIterator: Iterator[Any]
+override def productPrefix: String
+override def toString(): String
+private[this] val x: Int
+================================================================================
+
+askScopeCompletion at Completions.scala(12,2)
+================================================================================
+[response] askScopeCompletion at (12,2)
+retrieved 4 members
+abstract trait T extends AnyRef
+case class C1 extends Product with Serializable
+class C2 extends AnyRef
+object C1
+================================================================================
+
+askScopeCompletion at Completions.scala(21,2)
+================================================================================
+[response] askScopeCompletion at (21,2)
+retrieved 8 members
+abstract trait T extends AnyRef
+case class C1 extends Product with Serializable
+class C2 extends AnyRef
+def $: Int
+def $var: Int
+def <init>(): test.C2
+def dollar$: Int
+object C1
+================================================================================

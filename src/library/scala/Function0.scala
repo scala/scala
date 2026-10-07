@@ -11,7 +11,7 @@
  */
 
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: 2024-11-11T11:11:11.910758899Z
+// genprod generated these sources at: 2026-05-04T05:46:26.593Z
 
 package scala
 
@@ -36,7 +36,7 @@ package scala
  *  }}}
  */
 trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self =>
-  /** Apply the body of this function to the arguments.
+  /** Applies the body of this function to the arguments.
    *  @return   the result of function application.
    */
   def apply(): R

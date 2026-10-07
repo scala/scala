@@ -35,15 +35,20 @@
 import scala.build._, VersionUtil._
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                          % "junit"                            % "4.13.2"
-val junitInterfaceDep = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.18.1"                          % Test
-val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
-val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
-val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")     classifier "jdk8"
-val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
-val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.15"
-val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.8"
+val junitDep             = "junit"                          % "junit"                            % "4.13.2"
+val junitInterfaceDep    = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
+val scalacheckDep        = "org.scalacheck"                %% "scalacheck"                       % "1.18.1"                          % Test
+val jolDep               = "org.openjdk.jol"                % "jol-core"                         % "0.16"
+val asmDep               = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
+val jlineVersion         = versionProps("jline.version")
+val jlineTerminalDep     = "org.jline"                      % "jline-terminal"                   % jlineVersion
+val jlineTerminalJniDep  = "org.jline"                      % "jline-terminal-jni"               % jlineVersion
+val jlineReaderDep       = "org.jline"                      % "jline-reader"                     % jlineVersion
+val jlineBuiltinsDep     = "org.jline"                      % "jline-builtins"                   % jlineVersion // for InputRC
+val jlineDeps            = Seq(jlineTerminalDep, jlineTerminalJniDep, jlineReaderDep, jlineBuiltinsDep)
+val testInterfaceDep     = "org.scala-sbt"                  % "test-interface"                   % "1.0"
+val diffUtilsDep         = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.16"
+val compilerInterfaceDep = "org.scala-sbt"                  % "compiler-interface"               % "1.10.8"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
@@ -56,9 +61,9 @@ val fatalWarnings = settingKey[Boolean]("whether or not warnings should be fatal
 Global / fatalWarnings := insideCI.value
 
 Global / credentials ++= {
-  val file = Path.userHome / ".credentials"
-  if (file.exists && !file.isDirectory) List(Credentials(file))
-  else Nil
+  val gpgKey = Credentials("GPG Key", "gpg", "2A5E8B338438CAC7033F9D8FB8A045C0A6EC398E", "ignored")
+  val file = List(Path.userHome / ".credentials").filter(f => f.exists && !f.isDirectory).map(Credentials.apply)
+  gpgKey :: file
 }
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
@@ -72,7 +77,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-Global / baseVersion       := "2.13.17"
+Global / baseVersion       := "2.13.19"
 Global / baseVersionSuffix := "SNAPSHOT"
 ThisBuild / organization   := "org.scala-lang"
 ThisBuild / homepage       := Some(url("https://www.scala-lang.org"))
@@ -101,44 +106,6 @@ Global / scalaVersion      := {
     versionProps("starr.version")
 }
 
-// Run `sbt -Dscala.build.publishDevelocity` to publish build scans to develocity.scala-lang.org
-// In Jenkins, the `...publishDevelocity=stage` value is used to set the `JENKINS_STAGE` value of the scan
-ThisBuild / develocityConfiguration := {
-  def pubDev = Option(System.getProperty("scala.build.publishDevelocity"))
-  val isInsideCI = sys.env.get("JENKINS_URL").exists(_.contains("scala-ci.typesafe.com"))
-  val config = develocityConfiguration.value
-  val buildScan = config.buildScan
-  val buildCache = config.buildCache
-  config
-    .withProjectId(ProjectId("scala2"))
-    .withServer(config.server.withUrl(Some(url("https://develocity.scala-lang.org"))))
-    .withBuildScan(
-      buildScan
-        .withPublishing(Publishing.onlyIf(ctx => pubDev.nonEmpty && ctx.authenticated))
-        .withBackgroundUpload(false)
-        .withTag(if (isInsideCI) "CI" else "Local")
-        .withTag("2.13")
-        .withLinks(buildScan.links ++
-          sys.env.get("BUILD_URL").map(u => "Jenkins Build" -> url(u)) ++
-          sys.env.get("repo_ref").map(sha => "GitHub Commit" -> url(s"https://github.com/scala/scala/commit/$sha")) ++
-          sys.env.get("_scabot_pr").map(pr => "GitHub PR " -> url(s"https://github.com/scala/scala/pull/$pr")))
-        .withValues(buildScan.values +
-          ("GITHUB_REPOSITORY" -> "scala/scala") +
-          ("GITHUB_BRANCH" -> "2.13.x") ++
-          pubDev.filterNot(_.isEmpty).map("JENKINS_STAGE" -> _) ++
-          sys.env.get("JOB_NAME").map("JENKINS_JOB_NAME" -> _) ++
-          sys.env.get("repo_ref").map("GITHUB_SHA" -> _) ++
-          sys.env.get("_scabot_pr").map("GITHUB_PR" -> _) ++
-          sys.env.get("NODE_NAME").map("JENKINS_NODE" -> _))
-        .withObfuscation(buildScan.obfuscation.withIpAddresses(_.map(_ => "0.0.0.0")))
-    )
-    .withBuildCache(
-      buildCache
-        .withLocal(buildCache.local.withEnabled(false))
-        .withRemote(buildCache.remote.withEnabled(false))
-    )
-}
-
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
   crossPaths := false,
@@ -157,6 +124,7 @@ lazy val instanceSettings = Seq[Setting[_]](
       s2
     }
   },
+  Compile / doc / scalaInstance := scalaInstance.value,
   // sbt endeavours to align both scalaOrganization and scalaVersion
   // in the Scala artefacts, for example scala-library and scala-compiler.
   // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
@@ -197,6 +165,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   run / fork := true,
   run / connectInput := true,
   Compile / scalacOptions ++= Seq("-feature", "-Xlint",
+    //"-Wunused:patvars",
+    //"-Wunused:params",
     //"-Vprint",
     //"-Xmaxerrs", "5", "-Xmaxwarns", "5", // uncomment for ease of development while breaking things
     // work around https://github.com/scala/bug/issues/11534
@@ -206,6 +176,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-Wconf:cat=optimizer:is",
     // we use @nowarn for methods that are deprecated in JDK > 8, but CI/release is under JDK 8
     "-Wconf:cat=unused-nowarn:s",
+    "-Wconf:cat=deprecation&msg=in class Thread :s",
     "-Wunnamed-boolean-literal-strict",
     ),
   Compile / doc / scalacOptions ++= Seq(
@@ -438,8 +409,17 @@ def setForkedWorkingDirectory: Seq[Setting[_]] = {
   setting ++ inTask(run)(setting)
 }
 
+lazy val skipProjectInIDEs: Seq[Setting[_]] = Seq(
+  // The current project is not considered a bsp project.
+  // BSP clients will not see the current project and will not offer any IDE support.
+  bspEnabled := false,
+  // Additionally, the current project should not be imported in IntelliJ IDEA.
+  // The setting is defined in https://github.com/JetBrains/sbt-ide-settings?tab=readme-ov-file#using-the-settings-without-plugin
+  SettingKey[Boolean]("ide-skip-project").withRank(KeyRanks.Invisible) := !bspEnabled.value
+)
+
 // This project provides the STARR scalaInstance for bootstrapping
-lazy val bootstrap = project.in(file("target/bootstrap")).settings(bspEnabled := false)
+lazy val bootstrap = project.in(file("target/bootstrap")).settings(skipProjectInIDEs)
 
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
@@ -450,6 +430,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
+    Compile / scalacOptions ++= Seq("-Wconf:msg=method box|method anyValClass:s"), // unused params in patched src
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -502,9 +483,12 @@ lazy val reflect = configureAsSubproject(project)
     Osgi.bundleName := "Scala Reflect",
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Xlint",
+      "-feature",
     ),
     Compile / doc / scalacOptions ++= Seq(
-      "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
+      "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io",
+      "-Xlint:-doc-detached,_",
     ),
     Osgi.headers +=
       "Import-Package" -> (raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
@@ -533,7 +517,7 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies += diffUtilsDep,
     // This is only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     buildCharacterPropertiesFile := (Compile / resourceManaged).value / "scala-buildcharacter.properties",
     Compile / resourceGenerators += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -581,9 +565,7 @@ lazy val compiler = configureAsSubproject(project)
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
     ),
     Osgi.headers ++= Seq(
-      "Import-Package" -> raw"""org.jline.keymap.*;resolution:=optional
-                            |org.jline.reader.*;resolution:=optional
-                            |org.jline.style.*;resolution:=optional
+      "Import-Package" -> raw"""org.jline.reader.*;resolution:=optional
                             |org.jline.terminal;resolution:=optional
                             |org.jline.terminal.impl;resolution:=optional
                             |org.jline.terminal.spi;resolution:=optional
@@ -630,7 +612,7 @@ lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-front
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
   )
   .settings(
@@ -650,6 +632,8 @@ lazy val scaladoc = configureAsSubproject(project)
     libraryDependencies ++= ScaladocSettings.webjarResources,
     Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
     Compile / scalacOptions ++= Seq(
+      "-Xlint:-doc-detached,_",
+      "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s",
     ),
   )
@@ -765,7 +749,6 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .settings(fatalWarningsSettings)
   .settings(
     publish / skip := true,
-    bspEnabled := false,
     Compile / sourceGenerators += Def.task {
       import scala.collection.JavaConverters._
       val srcBase = (library / Compile / sourceDirectories).value.head / "scala/runtime"
@@ -787,6 +770,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
       )
     }.taskValue,
   )
+  .settings(skipProjectInIDEs)
 
 // The scala version used by the benchmark suites, leave undefined to use the ambient version.")
 def benchmarkScalaVersion = System.getProperty("benchmark.scala.version", "")
@@ -809,10 +793,13 @@ lazy val bench = project.in(file("test") / "benchmarks")
     },
     //scalacOptions ++= Seq("-feature", "-opt:inline:scala/**", "-Wopt"),
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
+  )
+  .settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
+  .settings(
     // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
     // should not be needed once sbt-jmh 0.4.3 is out (https://github.com/sbt/sbt-jmh/pull/207)
-    Jmh / bspEnabled := false
-  ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
+    inConfig(Jmh)(skipProjectInIDEs)
+  )
 
 
 lazy val testkit = configureAsSubproject(project)
@@ -836,7 +823,8 @@ lazy val testkit = configureAsSubproject(project)
 // This is enforced by error (not just by warning) since JDK 16. In our tests we use reflective access
 // from the unnamed package (the classpath) to JDK modules in testing utilities like `assertNotReachable`.
 // `add-exports=jdk.jdeps/com.sun.tools.javap` is tests that use `:javap` in the REPL, see scala/bug#12378
-val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jdk.jdeps/com.sun.tools.javap=ALL-UNNAMED" +:
+// Also --enable-native-access is needed for jvm/natives.scala
+val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jdk.jdeps/com.sun.tools.javap=ALL-UNNAMED" +: "--enable-native-access=ALL-UNNAMED" +:
   Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
 
 lazy val junit = project.in(file("test") / "junit")
@@ -944,7 +932,6 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   .settings(disableDocs)
   .settings(
     publish / skip := true,
-    bspEnabled := false,
     Test / fork := true,
     Test / parallelExecution := false,
     libraryDependencies ++= {
@@ -981,6 +968,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     },
     cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
+  .settings(skipProjectInIDEs)
 
 lazy val verifyScriptedBoilerplate = taskKey[Unit]("Ensure scripted tests have the necessary boilerplate.")
 
@@ -996,7 +984,6 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
   .settings(
     scalaVersion := appConfiguration.value.provider.scalaProvider.version,
     publish / skip := true,
-    bspEnabled := false,
     target := (ThisBuild / target).value / thisProject.value.id,
 
     sbtTestDirectory := baseDirectory.value,
@@ -1046,6 +1033,7 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
       sbtBridge / publishLocal,
     ).evaluated
   )
+  .settings(skipProjectInIDEs)
 
 lazy val partestJavaAgent = configureAsSubproject(project, srcdir = Some("partest-javaagent"))
   .settings(fatalWarningsSettings)
@@ -1082,7 +1070,6 @@ lazy val test = project
     IntegrationTest / fork := true,
     Compile / scalacOptions += "-Yvalidate-pos:parser,typer",
     IntegrationTest / javaOptions ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US") ++ addOpensForTesting,
-    IntegrationTest / javaOptions ++= { if (scala.util.Properties.isJavaAtLeast("18")) List("-Djava.security.manager=allow") else Nil },
     IntegrationTest / testOptions += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     IntegrationTest / testOptions += Tests.Argument(s"-Dpartest.java_opts=-Xmx1024M -Xms64M ${addOpensForTesting.mkString(" ")}"),
@@ -1133,7 +1120,6 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(
-    bspEnabled := false,
     name := "scala-dist",
     Compile / packageBin / mappings ++= {
       val binBaseDir = buildDirectory.value / "pack"
@@ -1166,7 +1152,7 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
     }.taskValue,
     Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     apiURL := None,
     fixPom(
       "/project/name" -> <name>Scala Distribution Artifacts</name>,
@@ -1175,6 +1161,7 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
     ),
     Compile / packageSrc / publishArtifact := false
   )
+  .settings(skipProjectInIDEs)
   .dependsOn(library, reflect, compiler, scalap)
 
 def partestOnly(in: String): Def.Initialize[Task[Unit]] =
@@ -1187,6 +1174,7 @@ lazy val scala2: Project = (project in file("."))
   .settings(disableDocs)
   .settings(generateBuildCharacterFileSettings)
   .settings(
+    name := "Scala 2.13", // project name in IntelliJ
     publish / skip := true,
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
@@ -1327,8 +1315,7 @@ lazy val distDependencies = Seq(replFrontend, compiler, library, reflect, scalap
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
-    bspEnabled := false,
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
       val cp = (testP / IntegrationTest / fullClasspath).value
@@ -1342,8 +1329,9 @@ lazy val dist = (project in file("dist"))
     target := (ThisBuild / target).value / projectFolder.value,
     Compile / packageBin := {
       val targetDir = (ThisBuild / buildDirectory).value / "pack" / "lib"
-      val jlineJAR = findJar((Compile / dependencyClasspath).value, jlineDep).get.data
-      val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
+      val mappings = (Compile / dependencyClasspath).value.flatMap { entry =>
+        entry.get(moduleID.key).filter(_.organization == "org.jline").map(m => (entry.data, targetDir / s"${m.name}.jar"))
+      }
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },
@@ -1354,6 +1342,7 @@ lazy val dist = (project in file("dist"))
         .dependsOn(distDependencies.map(_ / Compile / packageBin / packagedArtifact): _*)
         .value
   )
+  .settings(skipProjectInIDEs)
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
 /**
@@ -1467,169 +1456,8 @@ commands ++= {
 
 addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
 
-lazy val intellij = taskKey[Unit]("Update the library classpaths in the IntelliJ project files.")
-
-def moduleDeps(p: Project, config: Configuration = Compile) = (p / config / externalDependencyClasspath).map(a => (p.id, a.map(_.data)))
-
 // aliases to projects to prevent name clashes
-def compilerP = compiler
 def testP = test
-
-intellij := {
-  import xml._
-  import xml.transform._
-
-  val s = streams.value
-  val compilerScalaInstance = (LocalProject("compiler") / scalaInstance).value
-
-  val modules: List[(String, Seq[File])] = {
-    // for the sbt build module, the dependencies are fetched from the project's build using sbt-buildinfo
-    val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(java.io.File.pathSeparator).toSeq.map(new File(_)))
-    // `sbt projects` lists all modules in the build
-    buildModule :: List(
-      moduleDeps(bench).value,
-      moduleDeps(compilerP).value,
-      moduleDeps(interactive).value,
-      moduleDeps(junit).value,
-      moduleDeps(library).value,
-      moduleDeps(manual).value,
-      moduleDeps(partest).value,
-      moduleDeps(partestJavaAgent).value,
-      moduleDeps(reflect).value,
-      moduleDeps(repl).value,
-      moduleDeps(replFrontend).value,
-      moduleDeps(scalacheck, config = Test).value.copy(_1 = "scalacheck-test"),
-      moduleDeps(scaladoc).value,
-      moduleDeps(scalap).value,
-      moduleDeps(tastytest).value,
-      moduleDeps(testP).value,
-      moduleDeps(testkit).value,
-    )
-  }
-
-  def moduleDep(name: String, jars: Seq[File]) = {
-    val entries = jars.map(f => s"""        <root url="jar://${f.toURI.getPath}!/" />""").mkString("\n")
-    s"""|    <library name="$name-deps">
-        |      <CLASSES>
-        |$entries
-        |      </CLASSES>
-        |      <JAVADOC />
-        |      <SOURCES />
-        |    </library>""".stripMargin
-  }
-
-  def starrDep(jars: Seq[File]) = {
-    val entries = jars.map(f => s"""          <root url="file://${f.toURI.getPath}" />""").mkString("\n")
-    s"""|    <library name="starr" type="Scala">
-        |      <properties>
-        |        <option name="languageLevel" value="Scala_2_12" />
-        |        <compiler-classpath>
-        |$entries
-        |        </compiler-classpath>
-        |      </properties>
-        |      <CLASSES />
-        |      <JAVADOC />
-        |      <SOURCES />
-        |    </library>""".stripMargin
-  }
-
-  def replaceLibrary(data: Node, libName: String, libType: Option[String], newContent: String) = {
-    object rule extends RewriteRule {
-      var transformed = false
-      def checkAttrs(attrs: MetaData) = {
-        def check(key: String, expected: String) = {
-          val a = attrs(key)
-          a != null && a.text == expected
-        }
-        check("name", libName) && libType.forall(tp => check("type", tp))
-      }
-
-      override def transform(n: Node): Seq[Node] = n match {
-        case e @ Elem(_, "library", attrs, _, _*) if checkAttrs(attrs) =>
-          transformed = true
-          XML.loadString(newContent)
-        case other =>
-          other
-      }
-    }
-    object trans extends RuleTransformer(rule)
-    val r = trans(data)
-    if (!rule.transformed) sys.error(s"Replacing library classpath for $libName failed, no existing library found.")
-    r
-  }
-
-  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
-  val ipr = intellijDir / "scala.ipr"
-  backupIdea(intellijDir)
-  if (!ipr.exists) {
-    intellijCreateFromSample((ThisBuild / baseDirectory).value)
-  }
-  s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
-  val content = XML.loadFile(ipr)
-
-  val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep(compilerScalaInstance.allJars))
-  val newModules = modules.foldLeft(newStarr)({
-    case (res, (modName, jars)) =>
-      if (jars.isEmpty) res // modules without dependencies
-      else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
-  })
-
-  // I can't figure out how to keep the entity escapes for \n in the attribute values after this use of XML transform.
-  // Patching the original version back in with more brutish parsing.
-  val R = """(?ims)(.*)(<copyright>.*</copyright>)(.*)""".r
-  val oldContents = IO.read(ipr)
-  XML.save(ipr.getAbsolutePath, newModules)
-  oldContents match {
-    case R(_, withEscapes, _) =>
-      val newContents = IO.read(ipr)
-      val R(pre, toReplace, post) = newContents
-      IO.write(ipr, pre + withEscapes + post)
-    case _ =>
-      // .ipr file hasn't been updated from `intellijFromSample` yet
-  }
-}
-
-lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files from src/intellij/*.SAMPLE.")
-
-def backupIdea(ideaDir: File): Unit = {
-  val temp = IO.createTemporaryDirectory
-  IO.copyDirectory(ideaDir, temp)
-  println(s"Backed up existing src/intellij to $temp")
-}
-
-intellijFromSample := {
-  val s = streams.value
-  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
-  val ipr = intellijDir / "scala.ipr"
-  backupIdea(intellijDir)
-  intellijCreateFromSample((ThisBuild / baseDirectory).value)
-}
-
-def intellijCreateFromSample(basedir: File): Unit = {
-  val files = basedir / "src/intellij" * "*.SAMPLE"
-  val copies = files.get.map(f => (f, new File(f.getAbsolutePath.stripSuffix(".SAMPLE"))))
-  IO.copy(copies, CopyOptions() withOverwrite true)
-}
-
-lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using the current IntelliJ project files.")
-
-intellijToSample := {
-  val s = streams.value
-  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
-  val ipr = intellijDir / "scala.ipr"
-  backupIdea(intellijDir)
-  val existing =intellijDir * "*.SAMPLE"
-  IO.delete(existing.get)
-  val current = intellijDir * ("*.iml" || "*.ipr")
-  val copies = current.get.map(f => (f, new File(f.getAbsolutePath + ".SAMPLE")))
-  IO.copy(copies)
-}
-
-/** Find a specific module's JAR in a classpath, comparing only organization and name */
-def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File]] = {
-  def extract(m: ModuleID) = (m.organization, m.name)
-  files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
-}
 
 {
   scala.build.TravisOutput.installIfOnTravis()

@@ -1007,9 +1007,16 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       (!implicitlyAdded || m.implicitlyAdded)
 
     def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M): Unit = {
+      // cannot exclude `isSynthetic` because, eg, synthetic case class members
+      def exclude =
+        sym.isError || !sym.hasRawInfo ||
+          sym.isArtifact || sym.isDefaultGetter || sym.isMixinConstructor ||
+          // Exclude top-level class symbols with a `$`. The compiler creates a symbol for every `.class` file, but there
+          // are many that we don't want in completions (inner / module / specialized classes). See scala/scala-dev#905.
+          sym.isTopLevel && !sym.rawInfo.isComplete && sym.name.decodedName.containsChar('$')
       if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
         add(sym.accessed, pre, implicitlyAdded)(toMember)
-      } else if (!sym.name.decodedName.containsName("$") && !sym.isError && !sym.isArtifact && sym.hasRawInfo) {
+      } else if (!exclude) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this(sym.name)) match {
           case Some(m) =>
@@ -1199,7 +1206,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         def aliasTypeOk: Boolean = {
           matcher(member.aliasInfo.map(_.sym.name).getOrElse(NoSymbol.name)) && !forImport && symbol.name.isTermName == name.isTermName
         }
-        
+
         !isJunk && member.accessible && (name.isEmpty || (matcher(member.sym.name) || aliasTypeOk)
           && nameTypeOk)
 

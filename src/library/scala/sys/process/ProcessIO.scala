@@ -32,7 +32,7 @@ import processInternal._
   * explicitly closed.
   *
   * `ProcessBuilder` will call `writeInput`, `processOutput` and `processError`
-  * in separate threads, and if daemonizeThreads is true, they will all be
+  * in separate threads, and if `daemonizeThreads` is `true`, they will all be
   * marked as daemon threads.
   *
   * @param writeInput Function that will be called with the `OutputStream` to
@@ -58,15 +58,15 @@ final class ProcessIO(
 ) {
   def this(in: OutputStream => Unit, out: InputStream => Unit, err: InputStream => Unit) = this(in, out, err, daemonizeThreads = false)
 
-  /** Creates a new `ProcessIO` with a different handler for the process input. */
+  /** Returns a new `ProcessIO` with a different handler for the process input. */
   def withInput(write: OutputStream => Unit): ProcessIO   = new ProcessIO(write, processOutput, processError, daemonizeThreads)
 
-  /** Creates a new `ProcessIO` with a different handler for the normal output. */
+  /** Returns a new `ProcessIO` with a different handler for the normal output. */
   def withOutput(process: InputStream => Unit): ProcessIO = new ProcessIO(writeInput, process, processError, daemonizeThreads)
 
-  /** Creates a new `ProcessIO` with a different handler for the error output. */
+  /** Returns a new `ProcessIO` with a different handler for the error output. */
   def withError(process: InputStream => Unit): ProcessIO  = new ProcessIO(writeInput, processOutput, process, daemonizeThreads)
 
-  /** Creates a new `ProcessIO`, with `daemonizeThreads` true. */
+  /** Returns a new `ProcessIO`, with `daemonizeThreads` `true`. */
   def daemonized(): ProcessIO = new ProcessIO(writeInput, processOutput, processError, daemonizeThreads = true)
 }

@@ -63,19 +63,22 @@ InputKey[Unit]("checkIterations") := {
 }
 
 InputKey[Unit]("checkMainClasses") := {
-  val source :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
-  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
-  val c = fileConverter.value
+  val javaV :: source :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val is25 = scala.util.Properties.isJavaAtLeast("25")
+    if (is25 == (javaV == "25")) {
+    val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+    val c = fileConverter.value
 
-  def mainClasses(src: String): Set[String] =
-    analysis.infos.get(c.toVirtualFile(baseDirectory.value.toPath / src)).getMainClasses.toSet
+    def mainClasses(src: String): Set[String] =
+      analysis.infos.get(c.toVirtualFile(baseDirectory.value.toPath / src)).getMainClasses.toSet
 
-  def assertClasses(expected: Set[String], actual: Set[String]) = {
-    def msg = s"Expected $expected classes, got $actual\n\n" + analysis.infos.allInfos
-    assert(expected == actual, msg)
+    def assertClasses(expected: Set[String], actual: Set[String]) = {
+      def msg = s"Expected $expected classes, got $actual\n\n" + analysis.infos.allInfos
+      assert(expected == actual, msg)
+    }
+
+    assertClasses(expected.toSet, mainClasses(source.stripSuffix(":")))
   }
-
-  assertClasses(expected.toSet, mainClasses(source.stripSuffix(":")))
 }
 
 InputKey[Unit]("checkClasses") := {

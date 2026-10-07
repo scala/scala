@@ -86,16 +86,19 @@ trait Implicits extends splain.SplainData {
    *                                 If it's set to NoPosition, then position-based services will use `tree.pos`
    *  @return                        A search result
    */
-  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
+  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult =
+    inferImplicitInnerImpl(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, pos, Set.empty)
+
+  private def inferImplicitInnerImpl(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position, ignoredSymbols: Set[Symbol]): SearchResult = {
     currentRun.profiler.beforeImplicitSearch(pt)
     try {
-      inferImplicit1(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, pos)
+      inferImplicitInnerImpl1(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, pos, ignoredSymbols)
     } finally {
       currentRun.profiler.afterImplicitSearch(pt)
     }
   }
 
-  private def inferImplicit1(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
+  private def inferImplicitInnerImpl1(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position, ignoredSymbols: Set[Symbol]): SearchResult = {
     // Note that the isInvalidConversionTarget seems to make a lot more sense right here, before all the
     // work is performed, than at the point where it presently exists.
     val shouldPrint     = printTypings && !context.undetparams.isEmpty
@@ -109,6 +112,7 @@ trait Implicits extends splain.SplainData {
     val dpt = if (isView) pt else dropByName(pt)
     val isByName = dpt ne pt
     val search = new ImplicitSearch(tree, dpt, isView, implicitSearchContext, pos, isByName)
+    search.ignoreSymbols(ignoredSymbols)
     pluginsNotifyImplicitSearch(search)
     val result = search.bestImplicit
     pluginsNotifyImplicitSearchResult(result)
@@ -128,12 +132,10 @@ trait Implicits extends splain.SplainData {
     if (settings.areStatisticsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
     if (result.isSuccess) {
-      val rts = {
-        val infoSym = if (result.implicitInfo != null) result.implicitInfo.sym else NoSymbol
-        infoSym.orElse {
-          val rts0 = result.tree.symbol
-          if (rts0 != null) rts0 else NoSymbol
-        }
+      val infoSym = if (result.implicitInfo != null) result.implicitInfo.sym else NoSymbol
+      val rts = infoSym.orElse {
+        val rts0 = result.tree.symbol
+        if (rts0 != null) rts0 else NoSymbol
       }
       if (settings.lintImplicitRecursion) {
         val target =
@@ -183,6 +185,11 @@ trait Implicits extends splain.SplainData {
               context.warning(result.tree.pos, s"Implicit resolves to enclosing $encl$help", WFlagSelfImplicit)
           }
       }
+      if (infoSym.exists && infoSym.owner.isModuleClass) {
+        val companion = companionSymbolOf(infoSym.owner, context)
+        if (companion.exists && !context.isAccessible(companion, result.implicitInfo.pre.prefix))
+          context.deprecationWarning(result.tree.pos, infoSym, s"Usage of implicit $infoSym defined in $companion, which is not accessible here. In Scala 2.13.20, this implicit will no longer be found.", "2.13.19")
+      }
       if (result.inPackagePrefix && currentRun.isScala3) {
         val msg =
           s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3 (or with -Xsource-features:package-prefix-implicits).
@@ -192,12 +199,22 @@ trait Implicits extends splain.SplainData {
     }
     implicitSearchContext.emitImplicitDictionary(result)
   }
-
-  /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
+  
+  /** Intended for use in macro contexts and toolboxes.
    */
-  def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
+  def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree =
+    inferImplicitForMacros(tree, pt, isView, context, silent, withMacrosDisabled, pos, onError, Set.empty)
+
+  /** Intended for use in macro contexts.
+   */
+  def inferImplicitIgnoring(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit, ignoredSymbols: Set[Symbol]): Tree =
+    inferImplicitForMacros(tree, pt, isView, context, silent, withMacrosDisabled, pos, onError, ignoredSymbols)
+
+  /** A friendly wrapper over inferImplicitInnerImpl to be used in macro contexts and toolboxes.
+   */
+  private def inferImplicitForMacros(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit, ignoredSymbols: Set[Symbol]): Tree = {
     val result = context.withMacros(enabled = !withMacrosDisabled) {
-      inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
+      inferImplicitInnerImpl(tree, pt, reportAmbiguous = true, isView, context, saveAmbiguousDivergent = !silent, pos, ignoredSymbols)
     }
 
     if (result.isFailure && !silent) {
@@ -469,6 +486,12 @@ trait Implicits extends splain.SplainData {
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
   class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition, val isByNamePt: Boolean = false) extends Typer(context0) with ImplicitsContextErrors {
+    /** Symbols that should be ignored during the search. Used in macro contexts.
+     *  We use mutation instead of a constructor parameter to avoid breaking backward compatibility.
+     */
+    private var ignoredSymbols: Set[Symbol] = Set.empty[Symbol]
+    def ignoreSymbols(symbols: Set[Symbol]): Unit = if (symbols.nonEmpty) ignoredSymbols ++= symbols
+    
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
@@ -1083,7 +1106,8 @@ trait Implicits extends splain.SplainData {
       private var best: SearchResult = SearchFailure
 
       private def isIneligible(info: ImplicitInfo) = (
-           info.isCyclicOrErroneous
+           ignoredSymbols(info.sym)
+        || info.isCyclicOrErroneous
         || isView && ((info.sym eq Predef_conforms) || (info.sym eq SubType_refl)) // as implicit conversions, Predef.$conforms and <:<.refl are no-op, so exclude them
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )

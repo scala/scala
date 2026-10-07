@@ -264,7 +264,7 @@ package <empty> {
       ()
     };
     def t(): Object = {
-      case <synthetic> val x1: Int(2) = 2;
+      case <synthetic> val x1: Int = 2;
       case16(){
         <synthetic> val o18: scala.collection.SeqOps = A.unapplySeq(x1);
         if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o18).unary_!())

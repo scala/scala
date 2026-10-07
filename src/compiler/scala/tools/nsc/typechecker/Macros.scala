@@ -758,19 +758,21 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     expander(expandee)
   }
 
-  sealed abstract class MacroStatus(val result: Tree)
-  case class Success(expanded: Tree) extends MacroStatus(expanded)
-  case class Fallback(fallback: Tree) extends MacroStatus(fallback) { runReporting.seenMacroExpansionsFallingBack = true }
-  case class Delayed(delayed: Tree) extends MacroStatus(delayed)
-  case class Skipped(skipped: Tree) extends MacroStatus(skipped)
-  case class Failure(failure: Tree) extends MacroStatus(failure)
-  def Delay(expanded: Tree) = Delayed(expanded)
-  def Skip(expanded: Tree) = Skipped(expanded)
+  private sealed abstract class MacroStatus(val result: Tree)
+  private case class Success(expanded: Tree) extends MacroStatus(expanded)
+  private case class Fallback(fallback: Tree) extends MacroStatus(fallback) {
+    runReporting.seenMacroExpansionsFallingBack = true
+  }
+  private case class Delayed(delayed: Tree) extends MacroStatus(delayed)
+  private case class Skipped(skipped: Tree) extends MacroStatus(skipped)
+  private case class Failure(failure: Tree) extends MacroStatus(failure)
+  private def Delay(expanded: Tree) = Delayed(expanded)
+  private def Skip(expanded: Tree) = Skipped(expanded)
 
   /** Expands a macro when a runtime (i.e. the macro implementation) can be successfully loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
+  private def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
     val wasDelayed  = isDelayed(expandee)
     val undetparams = calculateUndetparams(expandee)
     val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
@@ -830,7 +832,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   /** Expands a macro when a runtime (i.e. the macro implementation) cannot be loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroStatus = {
+  private def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroStatus = {
     import typer.TyperErrorGen._
     val fallbackSym = expandee.symbol.nextOverriddenSymbol orElse MacroImplementationNotFoundError(expandee)
     macroLogLite(s"falling back to: $fallbackSym")

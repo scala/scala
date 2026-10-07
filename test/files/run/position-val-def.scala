@@ -33,6 +33,16 @@ object Test extends CompilerTest {
         println(f"${tshow(t.namePos)}%-8s${tshow(t.pos)}%-8s${tshow(t.rhs.pos)}%-14s -> ${tshow(t).clipped}")
       case t: Assign =>
         println(f"${tshow(t.pos)}%-8s${tshow(t.rhs.pos)}%-22s -> ${tshow(t).clipped}")
+      case t @ treeInfo.Application(fun, _, argss)
+      if !t.pos.isZeroExtent
+      && argss.exists(_.nonEmpty)
+      && !fun.symbol.isLabel
+      && fun.symbol.owner != definitions.MatchErrorClass
+      && !treeInfo.isSuperConstrCall(t)
+      =>
+        println(f"${tshow(t.pos)}%-30s -> ${tshow(t).clipped}")
+        for (args <- argss; arg <- args)
+          println(f"  ${tshow(arg.pos)}%-28s -> ${tshow(arg).clipped}")
       case _ =>
     }
     println("--")
@@ -43,5 +53,9 @@ object Test extends CompilerTest {
       val t = it.next()
       if (it.hasNext) s"$t..." else t
     }
+  }
+  implicit class Positional(val pos: Position) extends AnyVal {
+    def isZeroExtent =
+      !pos.isRange || pos.start == pos.end
   }
 }

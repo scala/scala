@@ -25,7 +25,7 @@ class SyncVar[A] {
   private[this] var value: A = _
 
   /**
-   * Wait for this SyncVar to become defined and then get
+   * Wait for this `SyncVar` to become defined and then get
    * the stored value without modifying it.
    *
    * @return value that is held in this container
@@ -67,7 +67,7 @@ class SyncVar[A] {
   }
 
   /**
-   * Wait for this SyncVar to become defined and then get
+   * Wait for this `SyncVar` to become defined and then get
    * the stored value, unsetting it as a side effect.
    *
    * @return value that was held in this container
@@ -90,14 +90,14 @@ class SyncVar[A] {
     finally unsetVal()
   }
 
-  /** Place a value in the SyncVar. If the SyncVar already has a stored value,
+  /** Place a value in the `SyncVar`. If the `SyncVar` already has a stored value,
    * wait until another thread takes it. */
   def put(x: A): Unit = synchronized {
     while (isDefined) wait()
     setVal(x)
   }
 
-  /** Check whether a value is stored in the synchronized variable. */
+  /** Checks whether a value is stored in the synchronized variable. */
   def isSet: Boolean = synchronized {
     isDefined
   }

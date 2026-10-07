@@ -60,15 +60,21 @@ trait DocComments { self: Global =>
   private def allInheritedOverriddenSymbols(sym: Symbol): List[Symbol] = {
     val getter: Symbol = sym.getter
     val symOrGetter = getter.orElse(sym)
-    if (!symOrGetter.owner.isClass) Nil
-    else symOrGetter.owner.ancestors map (symOrGetter overriddenSymbol _) filter (_ != NoSymbol)
+    if (symOrGetter.owner.isClass)
+      symOrGetter.owner.ancestors
+        .flatMap { ancestor =>
+          symOrGetter.overriddenSymbol(ancestor) match {
+            case NoSymbol => Nil
+            case matching => List(matching)
+          }
+        }
+    else Nil
   }
 
   def fillDocComment(sym: Symbol, comment: DocComment): Unit = {
     docComments(sym) = comment
     comment.defineVariables(sym)
   }
-
 
   def replaceInheritDocToInheritdoc(docStr: String):String  = {
     docStr.replaceAll("""\{@inheritDoc\p{Zs}*\}""", "@inheritdoc")
@@ -292,30 +298,44 @@ trait DocComments { self: Global =>
       out.toString
     }
 
-  /** Maps symbols to the variable -> replacement maps that are defined
-   *  in their doc comments
+  /** Maps symbols to the `variable -> replacement` maps that are defined
+   *  in their doc comments.
    */
-  private val defs = mutable.HashMap[Symbol, Map[String, String]]() withDefaultValue Map()
+  private val defs = mutable.HashMap.empty[Symbol, Map[String, String]].withDefaultValue(Map())
 
-  /** Lookup definition of variable.
+  /** Look up definition of variable.
+   *
+   *  - For a module, try the companion class first.
+   *  - For classes with a self type, search on that basis.
+   *  - Search for definitions on base classes, then on enclosing elements.
    *
    *  @param vble  The variable for which a definition is searched
    *  @param site  The class for which doc comments are generated
    */
   @tailrec
-  final def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
-    case NoSymbol => None
-    case _        =>
-      val searchList =
-        if (site.isModule) site :: site.info.baseClasses
-        else site.info.baseClasses
-
-      searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
-        case Some(str) if str startsWith "$" => lookupVariable(str.tail, site)
-        case s @ Some(_)                     => s
-        case None                            => lookupVariable(vble, site.owner)
+  final def lookupVariable(vble: String, site: Symbol): Option[String] = 
+    if (site == NoSymbol) None
+    else {
+      val searchList = {
+        var bases = List.empty[Symbol]
+        def include(k: Symbol): Unit = bases ::= k
+        def examine(k: Symbol): Unit = if (k.exists) {
+          val bs = if (k.hasSelfType) k.typeOfThis.baseClasses else k.baseClasses
+          bs.foreach(include)
+        }
+        if (site.isModule) {
+          include(site)
+          examine(site.companionClass)
+        }
+        examine(site)
+        bases.reverse.distinct
       }
-  }
+      searchList.collectFirst { case x if defs(x).contains(vble) => defs(x)(vble) } match {
+        case Some(str) if str.startsWith("$") => lookupVariable(str.tail, site)
+        case s @ Some(str)                    => defs(site) += vble -> str; s
+        case None                             => lookupVariable(vble, site.owner)
+      }
+    }
 
   /** Expand variable occurrences in string `str`, until a fix point is reached or
    *  an expandLimit is exceeded.
@@ -369,7 +389,7 @@ trait DocComments { self: Global =>
             }
         }
       }
-      if (out.length == 0) str
+      if (out.isEmpty) str
       else {
         out append str.substring(copied)
         expandInternal(out.toString, depth + 1)
@@ -381,7 +401,6 @@ trait DocComments { self: Global =>
     expandInternal(initialStr, 0).replace("""\$""", "$")
   }
 
-  // !!! todo: inherit from Comment?
   case class DocComment(raw: String, pos: Position = NoPosition, codePos: Position = NoPosition) {
 
     /** Returns:
@@ -424,20 +443,17 @@ trait DocComments { self: Global =>
         pos.copyRange(start1, start1, end1)
       }
 
-    def defineVariables(sym: Symbol) = {
-      val Trim = "(?s)^[\\s&&[^\n\r]]*(.*?)\\s*$".r
-
-      defs(sym) ++= defines.map {
-        str => {
-          val start = skipWhitespace(str, "@define".length)
-          val (key, value) = str.splitAt(skipVariable(str, start))
-          key.drop(start) -> value
+    def defineVariables(sym: Symbol) =
+      defs(sym) ++= defines.map { str =>
+        val start = skipWhitespace(str, "@define".length)
+        str.splitAt(skipVariable(str, start)) match {
+          case (key, DocComment.Trim(value)) => variableName(key.drop(start)) -> value.replaceAll("\\s+\\*+$", "")
+          case x => throw new MatchError(x)
         }
-      } map {
-        case (key, Trim(value)) => variableName(key) -> value.replaceAll("\\s+\\*+$", "")
-        case x                  => throw new MatchError(x)
       }
-    }
+  }
+  object DocComment {
+    private val Trim = "(?s)^[\\s&&[^\n\r]]*(.*?)\\s*$".r
   }
 
   case class UseCase(comment: DocComment, body: String, pos: Position) {

@@ -661,6 +661,7 @@ object Reporting {
         LintIntDivToFloat,
         LintUniversalMethods,
         LintCloneable,
+        LintOverload,
         LintNumericMethods
       = lint()
 
@@ -773,7 +774,10 @@ object Reporting {
       private[this] val cache = mutable.Map.empty[SourceFile, Boolean]
 
       def check(pos: Position) = cache.getOrElseUpdate(pos.source, {
-        val sourcePath = pos.source.file.canonicalPath.replace("\\", "/")
+        val sourcePath = Option(pos.source.file.absolute.file)
+          .map(_.toPath.normalize.toString)
+          .getOrElse(pos.source.path)
+          .replace("\\", "/")
         pattern.findFirstIn(sourcePath).nonEmpty
       })
       def matches(message: Message): Boolean = check(message.pos)

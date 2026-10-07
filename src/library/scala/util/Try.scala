@@ -59,7 +59,7 @@ import scala.util.control.NonFatal
  * ''Note'': only non-fatal exceptions are caught by the combinators on `Try` (see [[scala.util.control.NonFatal]]).
  * Serious system errors, on the other hand, will be thrown.
  *
- * ''Note:'': all Try combinators will catch exceptions and return failure unless otherwise specified in the documentation.
+ * ''Note:'': all `Try` combinators will catch exceptions and return failure unless otherwise specified in the documentation.
  */
 sealed abstract class Try[+T] extends Product with Serializable {
 
@@ -115,22 +115,22 @@ sealed abstract class Try[+T] extends Product with Serializable {
   /** Creates a non-strict filter, which eventually converts this to a `Failure`
    *  if the predicate is not satisfied.
    *
-   *  Note: unlike filter, withFilter does not create a new Try.
+   *  Note: unlike `filter`, `withFilter` does not create a new `Try`.
    *        Instead, it restricts the domain of subsequent
    *        `map`, `flatMap`, `foreach`, and `withFilter` operations.
    *
-   * As Try is a one-element collection, this may be a bit overkill,
-   * but it's consistent with withFilter on Option and the other collections.
+   * As `Try` is a one-element collection, this may be a bit overkill,
+   * but it's consistent with `withFilter` on `Option` and the other collections.
    *
    *  @param p   the predicate used to test elements.
    *  @return    an object of class `WithFilter`, which supports
    *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
-   *             All these operations apply to those elements of this Try
+   *             All these operations apply to those elements of this `Try`
    *             which satisfy the predicate `p`.
    */
   @inline final def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
 
-  /** We need a whole WithFilter class to honor the "doesn't create a new
+  /** We need a whole `WithFilter` class to honor the "doesn't create a new
    *  collection" contract even though it seems unlikely to matter much in a
    *  collection with max size 1.
    */
@@ -149,7 +149,7 @@ sealed abstract class Try[+T] extends Product with Serializable {
 
   /**
    * Applies the given function `f` if this is a `Failure`, otherwise returns this if this is a `Success`.
-   * This is like map for the exception.
+   * This is like `map` for the exception.
    */
   def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U]
 

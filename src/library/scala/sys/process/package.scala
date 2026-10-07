@@ -205,7 +205,6 @@ package process
     *   - `destroy()`: this will kill the external process and close the streams
     *   associated with it.
     */
-  @annotation.nowarn("msg=package object inheritance")
   object `package` extends ProcessImplicits {
     /** The input stream of this process */
     def stdin  = java.lang.System.in

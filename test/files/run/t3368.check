@@ -23,7 +23,7 @@ package <empty> {
       $buf.$amp$plus(new _root_.scala.xml.Text("world"));
       $buf.$amp$plus(new _root_.scala.xml.Elem(null, "d", _root_.scala.xml.Null, $scope, true));
       $buf.$amp$plus(new _root_.scala.xml.Text("stuffred & black"));
-      $buf
+      $buf.toVector
     }: _*))
   };
   abstract trait Z extends scala.AnyRef {
@@ -40,17 +40,17 @@ package <empty> {
     def f = new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
       val $buf = new _root_.scala.xml.NodeBuffer();
       $buf.$amp$plus(new _root_.scala.xml.Text("xhello, world"));
-      $buf
+      $buf.toVector
     }: _*));
     def g = new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
       val $buf = new _root_.scala.xml.NodeBuffer();
       $buf.$amp$plus(new _root_.scala.xml.Text("hello, world"));
-      $buf
+      $buf.toVector
     }: _*));
     def h = new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
       val $buf = new _root_.scala.xml.NodeBuffer();
       $buf.$amp$plus(new _root_.scala.xml.Text("hello, worldhello, world"));
-      $buf
+      $buf.toVector
     }: _*))
   }
 }

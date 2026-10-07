@@ -21,23 +21,22 @@ import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.runtime.PStatics.VM_MaxArraySize
 
 /** An implementation of the `Buffer` class using an array to
-  *  represent the assembled sequence internally. Append, update and random
-  *  access take constant time (amortized time). Prepends and removes are
-  *  linear in the buffer size.
-  *
-  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
-  *  section on `Array Buffers` for more information.
-
-  *
-  *  @tparam A    the type of this arraybuffer's elements.
-  *
-  *  @define Coll `mutable.ArrayBuffer`
-  *  @define coll array buffer
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  */
+ *  represent the assembled sequence internally. Append, update and random
+ *  access take constant time (amortized time). Prepends and removes are
+ *  linear in the buffer size.
+ *
+ *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
+ *  section on `Array Buffers` for more information.
+ *
+ *  @tparam A    the type of this arraybuffer's elements.
+ *
+ *  @define Coll `mutable.ArrayBuffer`
+ *  @define coll array buffer
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 @SerialVersionUID(-1582447879429021880L)
 class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   extends AbstractBuffer[A]
@@ -64,7 +63,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def knownSize: Int = super[IndexedSeqOps].knownSize
 
-  /** Ensure that the internal array has at least `n` cells. */
+  /** Ensures that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit = {
     array = ArrayBuffer.ensureSize(array, size0, n)
   }
@@ -76,7 +75,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   def sizeHint(size: Int): Unit =
     if(size > length && size >= 1) ensureSize(size)
 
-  /** Reduce length to `n`, nulling out all dropped elements */
+  /** Reduces length to `n`, nulling out all dropped elements */
   private def reduceToSize(n: Int): Unit = {
     mutationCount += 1
     Arrays.fill(array, n, size0, null)
@@ -128,7 +127,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   /**
     * Clears this buffer and shrinks to @param size (rounding up to the next
-    * natural size)
+    * natural size).
     * @param size
     */
   def clearAndShrink(size: Int = ArrayBuffer.DefaultInitialSize): this.type = {
@@ -243,7 +242,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     copied
   }
 
-  /** Sorts this $coll in place according to an Ordering.
+  /** Sorts this $coll in place according to an `Ordering`.
     *
     * @see [[scala.collection.mutable.IndexedSeqOps.sortInPlace]]
     * @param  ord the ordering to be used to compare elements.
@@ -269,9 +268,16 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def foldRight[B](z: B)(op: (A, B) => B): B = foldr(0, length, z, op)
 
-  override def reduceLeft[B >: A](op: (B, A) => B): B = if (length > 0) foldl(1, length, array(0).asInstanceOf[B], op) else super.reduceLeft(op)
+  override def reduceLeft[B >: A](op: (B, A) => B): B =
+    if (length > 0) foldl(1, length, array(0).asInstanceOf[B], op)
+    else super.reduceLeft(op)
 
-  override def reduceRight[B >: A](op: (A, B) => B): B = if (length > 0) foldr(0, length - 1, array(length - 1).asInstanceOf[B], op) else super.reduceRight(op)
+  override def reduceRight[B >: A](op: (A, B) => B): B =
+    if (length > 0) foldr(0, length - 1, array(length - 1).asInstanceOf[B], op)
+    else super.reduceRight(op)
+
+  override def sliding(size: Int, step: Int): Iterator[ArrayBuffer[A]] =
+    new MutationTracker.CheckedIterator(super.sliding(size = size, step = step), mutationCount)
 }
 
 /**

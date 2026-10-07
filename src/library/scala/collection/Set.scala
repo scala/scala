@@ -210,9 +210,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
   def - (elem1: A, elem2: A, elems: A*): C = diff(elems.toSet + elem1 + elem2)
 
-  /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
-    *
-    * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
+  /** Creates a new $ccoll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *
     * Example:
     *  {{{

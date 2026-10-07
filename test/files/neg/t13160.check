@@ -1,0 +1,9 @@
+t13160.scala:33: warning: Usage of implicit method d2i defined in object D, which is not accessible here. In Scala 2.13.20, this implicit will no longer be found.
+    d // not
+    ^
+t13160.scala:42: warning: Usage of implicit method e2i defined in object E, which is not accessible here. In Scala 2.13.20, this implicit will no longer be found.
+    e // not
+    ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

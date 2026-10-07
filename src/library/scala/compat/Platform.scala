@@ -59,7 +59,7 @@ object Platform {
 
   /** Creates a new array of the specified type and given length.
    *
-   *  Note that if `elemClass` is a subclass of [[scala.AnyVal]] then the returned value is an Array of the corresponding java primitive type.
+   *  Note that if `elemClass` is a subclass of [[scala.AnyVal]] then the returned value is an `Array` of the corresponding java primitive type.
    *  For example, the following code `scala.compat.Platform.createArray(classOf[Int], 4)` returns an array of the java primitive type `int`.
    *
    *  For a [[scala.AnyVal]] array, the values of the array are set to 0 for ''numeric value types'' ([[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]],
@@ -77,8 +77,8 @@ object Platform {
    *  @param length    the length of the new array.
    *  @return          an array of the given component type as an `AnyRef`.
    *  @throws java.lang.NullPointerException If `elemClass` is `null`.
-   *  @throws java.lang.IllegalArgumentException if componentType is [[scala.Unit]] or `java.lang.Void.TYPE`
-   *  @throws java.lang.NegativeArraySizeException if the specified length is negative
+   *  @throws java.lang.IllegalArgumentException if `componentType` is [[scala.Unit]] or `java.lang.Void.TYPE`
+   *  @throws java.lang.NegativeArraySizeException if the specified `length` is negative
    */
   @inline
   @deprecated("Use `java.lang.reflect.Array#newInstance` instead.", since = "2.13.0")
@@ -86,7 +86,7 @@ object Platform {
     java.lang.reflect.Array.newInstance(elemClass, length)
 
   /** Assigns the value of 0 to each element in the array.
-    * @param arr     A non-null Array[Int].
+    * @param arr     A non-null `Array[Int]`.
     * @throws java.lang.NullPointerException If `arr` is `null`.
     */
   @inline

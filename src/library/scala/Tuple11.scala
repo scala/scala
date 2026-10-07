@@ -18,6 +18,17 @@ package scala
 /** A tuple of 11 elements; the canonical representation of a [[scala.Product11]].
  *
  *  @constructor  Create a new tuple with 11 elements. Note that it is more idiomatic to create a Tuple11 via `(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)`
+ *  @tparam T1 the type of the 1st element
+ *  @tparam T2 the type of the 2nd element
+ *  @tparam T3 the type of the 3rd element
+ *  @tparam T4 the type of the 4th element
+ *  @tparam T5 the type of the 5th element
+ *  @tparam T6 the type of the 6th element
+ *  @tparam T7 the type of the 7th element
+ *  @tparam T8 the type of the 8th element
+ *  @tparam T9 the type of the 9th element
+ *  @tparam T10 the type of the 10th element
+ *  @tparam T11 the type of the 11th element
  *  @param  _1   Element 1 of this Tuple11
  *  @param  _2   Element 2 of this Tuple11
  *  @param  _3   Element 3 of this Tuple11

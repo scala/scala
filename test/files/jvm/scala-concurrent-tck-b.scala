@@ -111,8 +111,6 @@ class ReportingExecutionContext extends TestBase {
 
 object Test extends App {
   new ReportingExecutionContext
-
-  System.exit(0)
 }
 
 package scala.concurrent {

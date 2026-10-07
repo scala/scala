@@ -98,6 +98,12 @@ trait Typers {
    */
   def inferImplicitValue(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
+  /** A sibling to [[inferImplicitValue]] that allows to ignore certain symbols during the implicit search.
+   *
+   *  @throws scala.reflect.macros.TypecheckException
+   */
+  def inferImplicitValueIgnoring(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition)(ignoredSymbols: Symbol*): Tree
+
   /** Infers an implicit view from the provided tree `tree` of the type `from` to the type `to` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
    *

@@ -64,7 +64,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def newBuilder[A]: ReusableBuilder[A, Vector[A]] = new VectorBuilder[A]
 
-  /** Create a Vector with the same element at each index.
+  /** Creates a `Vector` with the same element at each index.
     *
     * Unlike `fill`, which takes a by-name argument for the value and can thereby
     * compute different values for each index, this method guarantees that all

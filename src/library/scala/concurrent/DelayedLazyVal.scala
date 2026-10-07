@@ -35,7 +35,7 @@ class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionConte
    */
   def isDone: Boolean = _isDone
 
-  /** The current result of f(), or the final result if complete.
+  /** The current result of `f()`, or the final result if complete.
    *
    *  @return the current value
    */

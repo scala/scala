@@ -229,6 +229,7 @@ trait Warnings {
     val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
     val PatternShadow          = LintWarning("pattern-shadow",            "Pattern variable id is also a term in scope.")
     val CloneableObject        = LintWarning("cloneable",                 "Modules (objects) should not be Cloneable.")
+    val DubiousOverload        = LintWarning("overload",                  "Overload differs only in an implicit parameter.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -267,6 +268,7 @@ trait Warnings {
   def lintIntDivToFloat          = lint.contains(IntDivToFloat)
   def warnPatternShadow          = lint.contains(PatternShadow)
   def warnCloneableObject        = lint.contains(CloneableObject)
+  def warnDubiousOverload        = lint.contains(DubiousOverload)
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

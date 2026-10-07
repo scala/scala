@@ -14,12 +14,13 @@ package scala.reflect.macros
 package compiler
 
 import scala.tools.nsc.Global
+import scala.util.{Failure, Success, Try}
 
 abstract class DefaultMacroCompiler extends Resolvers
                                        with Validators
                                        with Errors {
   val global: Global
-  import global._
+  import global.{Try => _, _}
   import analyzer._
   import treeInfo._
   import definitions._
@@ -51,10 +52,10 @@ abstract class DefaultMacroCompiler extends Resolvers
    *  or be a dummy instance of a macro bundle (e.g. new MyMacro(???).expand).
    */
   def resolveMacroImpl: Tree = {
-    def tryCompile(compiler: MacroImplRefCompiler): scala.util.Try[Tree] = {
-      try { compiler.validateMacroImplRef(); scala.util.Success(compiler.macroImplRef) }
-      catch { case ex: MacroImplResolutionException => scala.util.Failure(ex) }
-    }
+    def tryCompile(compiler: MacroImplRefCompiler): Try[Tree] =
+      try { compiler.validateMacroImplRef(); Success(compiler.macroImplRef) }
+      catch { case ex: MacroImplResolutionException => Failure(ex) }
+    def wrong() = Try(MacroBundleWrongShapeError())
     val vanillaImplRef = MacroImplRefCompiler(macroDdef.rhs.duplicate, isImplBundle = false)
     val (maybeBundleRef, methName, targs) = macroDdef.rhs.duplicate match {
       case Applied(Select(Applied(RefTree(qual, bundleName), _, Nil), methName), targs, Nil) =>
@@ -69,7 +70,14 @@ abstract class DefaultMacroCompiler extends Resolvers
       isImplBundle = true
     )
     val vanillaResult = tryCompile(vanillaImplRef)
-    val bundleResult = tryCompile(bundleImplRef)
+    val bundleResult =
+      typer.silent(_.typedTypeConstructor(maybeBundleRef)) match {
+        case SilentResultValue(result) if looksLikeMacroBundleType(result.tpe) =>
+          val bundle = result.tpe.typeSymbol
+          if (isMacroBundleType(bundle.tpe)) tryCompile(bundleImplRef)
+          else wrong()
+        case _ => wrong()
+      }
 
     def ensureUnambiguousSuccess(): Unit = {
       // we now face a hard choice of whether to report ambiguity:

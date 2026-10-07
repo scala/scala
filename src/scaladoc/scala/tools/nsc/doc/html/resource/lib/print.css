@@ -1,7 +1,7 @@
 @media print {
   * {
     text-decoration: none;
-    font-family: "Lato", Arial, sans-serif;
+    font-family: system-ui, 'Segoe UI', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
     border-width: 0px;
     margin: 0px;
   }

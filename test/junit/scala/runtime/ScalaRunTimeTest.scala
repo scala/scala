@@ -62,4 +62,9 @@ class ScalaRunTimeTest {
     assertEquals(null, stringOf(tpolecat))
     assertEquals("null toString", replStringOf(tpolecat, 100))
   }
+
+  @Test def scala3ticket24204(): Unit = {
+    assertEquals(null, ScalaRunTime.wrapRefArray(null: Array[String]))
+    assertEquals(null, ScalaRunTime.genericWrapArray(null: Array[String]))
+  }
 }

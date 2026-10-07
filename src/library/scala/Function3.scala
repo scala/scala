@@ -17,9 +17,17 @@ package scala
 
 /** A function of 3 parameters.
  *
+ *  @tparam T1 the type of the 1st argument
+ *  @tparam T2 the type of the 2nd argument
+ *  @tparam T3 the type of the 3rd argument
+ *  @tparam R the return type of this function
  */
 trait Function3[-T1, -T2, -T3, +R] extends AnyRef { self =>
-  /** Apply the body of this function to the arguments.
+  /** Applies the body of this function to the arguments.
+   *
+   *  @param v1 the value of the 1st argument
+   *  @param v2 the value of the 2nd argument
+   *  @param v3 the value of the 3rd argument
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2, v3: T3): R
@@ -41,7 +49,7 @@ trait Function3[-T1, -T2, -T3, +R] extends AnyRef { self =>
    */
 
   @annotation.unspecialized def tupled: ((T1, T2, T3)) => R = {
-    case ((x1, x2, x3)) => apply(x1, x2, x3)
+    ({ case ((x1, x2, x3)) => apply(x1, x2, x3) }: ((T1, T2, T3)) => R)
   }
   override def toString(): String = "<function3>"
 }

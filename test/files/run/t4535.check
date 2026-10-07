@@ -1,3 +1,6 @@
+t4535.scala:8: warning: type ArrayStack in package mutable is deprecated (since 2.13.0): Use Stack instead of ArrayStack; it now uses an array-based implementation
+    val as = new mutable.ArrayStack[Int]
+                         ^
 Stack(1, 2, 3)
 Stack(1, 2, 3, 4, 5, 6)
 Stack(6, 5, 4, 3, 2, 1)

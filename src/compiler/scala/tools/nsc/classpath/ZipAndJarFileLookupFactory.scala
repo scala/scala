@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
@@ -212,10 +213,9 @@ final class FileBasedCache[K, T] {
     e.cancelTimer()
 
     new Closeable {
-      var closed = false
+      val closed = new AtomicBoolean(false)
       override def close(): Unit = {
-        if (!closed) {
-          closed = true
+        if (closed.compareAndSet(false, true)) {
           val count = e.referenceCount.decrementAndGet()
           if (count == 0) {
             e.t match {

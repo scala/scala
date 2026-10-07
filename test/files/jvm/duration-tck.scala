@@ -101,7 +101,8 @@ object Test extends App {
 
   undef.isFinite mustBe false
   -undef mustBe undef
-  assert(undef != undef)
+  assert(!undef.equals(undef)) // violates reflexivity *shrug*
+  assert(undef == undef)       // `==` is implemented using `java.util.Objects.equals`, which tests eq first
   assert(undef eq undef)
 
   inputs foreach (_ + undef mustBe undef)

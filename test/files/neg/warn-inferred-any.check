@@ -1,21 +1,24 @@
-warn-inferred-any.scala:10: warning: a type was inferred to be `Any`; this may indicate a programming error.
+warn-inferred-any.scala:13: warning: a type was inferred to be `Any`; this may indicate a programming error.
   { List(1, 2, 3) contains "a" }  // only this warns
                   ^
-warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+warn-inferred-any.scala:20: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
   { 1 to 5 contains 5L }          // should warn: scala.Predef.intWrapper(1).to(5).contains[AnyVal](5L)
            ^
-warn-inferred-any.scala:18: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+warn-inferred-any.scala:21: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
   { 1L to 5L contains 5 }         // warn
              ^
-warn-inferred-any.scala:19: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+warn-inferred-any.scala:22: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
   { 1L to 5L contains 5d }        // warn
              ^
-warn-inferred-any.scala:27: warning: a type was inferred to be `Any`; this may indicate a programming error.
+warn-inferred-any.scala:30: warning: a type was inferred to be `Any`; this may indicate a programming error.
   def za = f(1, "one")
            ^
-warn-inferred-any.scala:37: warning: a type was inferred to be `Object`; this may indicate a programming error.
+warn-inferred-any.scala:40: warning: a type was inferred to be `Object`; this may indicate a programming error.
   cs.contains(new C2)             // warns
      ^
+warn-inferred-any.scala:82: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def t1 = f(new Bar) // warn
+           ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+7 warnings
 1 error

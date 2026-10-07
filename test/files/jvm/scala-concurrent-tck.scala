@@ -1058,6 +1058,4 @@ extends App {
   new GlobalExecutionContext
   new CustomExecutionContext
   new ExecutionContextPrepare
-
-  System.exit(0)
 }

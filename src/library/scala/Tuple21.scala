@@ -18,6 +18,27 @@ package scala
 /** A tuple of 21 elements; the canonical representation of a [[scala.Product21]].
  *
  *  @constructor  Create a new tuple with 21 elements. Note that it is more idiomatic to create a Tuple21 via `(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21)`
+ *  @tparam T1 the type of the 1st element
+ *  @tparam T2 the type of the 2nd element
+ *  @tparam T3 the type of the 3rd element
+ *  @tparam T4 the type of the 4th element
+ *  @tparam T5 the type of the 5th element
+ *  @tparam T6 the type of the 6th element
+ *  @tparam T7 the type of the 7th element
+ *  @tparam T8 the type of the 8th element
+ *  @tparam T9 the type of the 9th element
+ *  @tparam T10 the type of the 10th element
+ *  @tparam T11 the type of the 11th element
+ *  @tparam T12 the type of the 12th element
+ *  @tparam T13 the type of the 13th element
+ *  @tparam T14 the type of the 14th element
+ *  @tparam T15 the type of the 15th element
+ *  @tparam T16 the type of the 16th element
+ *  @tparam T17 the type of the 17th element
+ *  @tparam T18 the type of the 18th element
+ *  @tparam T19 the type of the 19th element
+ *  @tparam T20 the type of the 20th element
+ *  @tparam T21 the type of the 21st element
  *  @param  _1   Element 1 of this Tuple21
  *  @param  _2   Element 2 of this Tuple21
  *  @param  _3   Element 3 of this Tuple21

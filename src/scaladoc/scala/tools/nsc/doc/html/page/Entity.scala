@@ -165,8 +165,8 @@ trait EntityPage extends HtmlPage {
         Div(id="textfilter", elems=
           Span(`class`= "input", elems=
             Input(autocapitalize="none", placeholder="Search", id="index-input", `type`="text", accesskey="/") ::
-            I(`class`= "clear material-icons", elems=Txt("\uE14C")) ::
-            I(id="search-icon", `class`= "material-icons", elems=Txt("\uE8B6"))
+            I(`class`= "clear svg-icon", elems=Raw(Icons.clear)) ::
+            I(id="search-icon", `class`= "svg-icon", elems=Raw(Icons.search))
           )
          ) :: NoElems
        )
@@ -234,11 +234,11 @@ trait EntityPage extends HtmlPage {
       else List(Div(id="mbrsel", elems=
         Div(`class`="toggle") ::
         Div(id="memberfilter", elems=
-          I(`class`="material-icons arrow", elems= Txt("\uE037")) ::
+          I(`class`="svg-icon arrow", elems= Raw(Icons.arrow)) ::
           Span(`class`="input", elems=
             Input(id="mbrsel-input", placeholder="Filter all members", `type`="text", accesskey="/")
           ) ::
-          I(`class`="clear material-icons", elems=Txt("\uE14C"))
+          I(`class`="clear svg-icon", elems=Raw(Icons.clear))
         ) ::
         Div(id="filterby", elems=
           Div(id="order", elems=
@@ -341,7 +341,7 @@ trait EntityPage extends HtmlPage {
     val postamble =
       List(Div(id = "tooltip"),
            if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2025 ") :: A(href = "https://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "https://akka.io", target = "_top", elems = Txt("Akka")) :: Txt("."))
+             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2026 ") :: A(href = "https://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "https://akka.io", target = "_top", elems = Txt("Akka")) :: Txt("."))
            else
              Div(id = "footer", elems = Txt(tpl.universe.settings.docfooter.value)))
 
@@ -580,7 +580,7 @@ trait EntityPage extends HtmlPage {
         case nte: NonTemplateMemberEntity if nte.isUseCase =>
           Div(`class`= "full-signature-block toggleContainer", elems=
             Span(`class`= "toggle", elems=
-              I(`class`= "material-icons", elems=Txt("\uE037")) ::
+              I(`class`= "svg-icon", elems=Raw(Icons.arrow)) ::
               Txt("Full Signature") :: NoElems
             ) ::
             Div(`class`= "hiddenContent full-signature-usecase", elems= signature(nte.useCaseOf.get,isSelf = true))
@@ -687,10 +687,10 @@ trait EntityPage extends HtmlPage {
         val exceptions: Elems =
           orEmpty(comment.throws) {
             dt("Exceptions thrown") ::
-            Dd(elems= {
+            Dd(elems = {
               val exceptionsXml: List[Elems] =
-                for((name, body) <- comment.throws.toList.sortBy(_._1) ) yield
-                  Span(`class`= "cmt", elems= bodyToHtml(body)) :: NoElems
+                for ((name@_, body) <- comment.throws.toList.sortBy(_._1))
+                yield Span(`class` = "cmt", elems = bodyToHtml(body)) :: NoElems
               exceptionsXml.reduceLeft(_ ++ Txt("") ++ _)
             })
           }
@@ -698,8 +698,10 @@ trait EntityPage extends HtmlPage {
         val todo: Elems =
           orEmpty(comment.todo) {
             dt("To do") ::
-            Dd(elems= {
-              val todoXml: List[Elems] = for(todo <- comment.todo ) yield Span(`class`= "cmt", elems= bodyToHtml(todo)) :: NoElems
+            Dd(elems = {
+              val todoXml: List[Elems] =
+                for (todo <- comment.todo)
+                yield Span(`class` = "cmt", elems = bodyToHtml(todo)) :: NoElems
               todoXml.reduceLeft(_ ++ _)
             })
           }
@@ -758,8 +760,8 @@ trait EntityPage extends HtmlPage {
     }
 
     def diagramDiv(description: String, diagId: String)(diagramSvg: Elems): Elems =
-      Div(`class`= "toggleContainer block diagram-container", id=diagId+"-container", elems= List(
-        Span(`class`= "toggle diagram-link", elems= Txt(description)),
+      Div(`class`= "toggleContainer diagram-container", id=diagId+"-container", elems= List(
+        Div(`class`= "toggle block diagram-link", elems= Span(elems= Txt(description))),
         Div(`class`= "diagram hiddenContent", id= diagId, elems= diagramSvg))) :: NoElems
 
     def ifDiags(genDiag: DocTemplateEntity => Option[Diagram])(embedDiagSvg: Elems => Elems): Elems =

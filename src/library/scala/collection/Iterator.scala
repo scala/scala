@@ -73,7 +73,7 @@ import scala.runtime.Statics
   */
 trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
 
-  /** Check if there is a next element available.
+  /** Checks if there is a next element available.
     *
     * @return `true` if there is a next element, `false` otherwise
     * @note   Reuse: $preservesIterator
@@ -83,7 +83,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
   @`inline` override final def hasDefiniteSize = isEmpty
 
-  /** Return the next element and advance the iterator.
+  /** Returns the next element and advances the iterator.
     *
     * @throws NoSuchElementException if there is no next element.
     * @return the next element.
@@ -155,7 +155,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    */
   class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends AbstractIterator[immutable.Seq[B]] {
 
-    require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
+    require(size >= 1 && step >= 1, s"size=$size and step=$step, but both must be positive")
 
     private[this] var buffer: Array[B] = null                 // current result
     private[this] var prev: Array[B] = null                   // if sliding, overlap from previous result
@@ -844,17 +844,14 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *  @param that  the collection to compare
    *  @tparam B    the type of the elements of collection `that`.
    *  @return `true` if both collections contain equal elements in the same order, `false` otherwise.
-   *
-   *    @inheritdoc
    */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val those = that.iterator
-    while (hasNext && those.hasNext)
-      if (next() != those.next())
-        return false
-    // At that point we know that *at least one* iterator has no next element
-    // If *both* of them have no elements then the collections are the same
-    hasNext == those.hasNext
+    while (hasNext) {
+      if (!those.hasNext) return false
+      if (next() != those.next()) return false
+    }
+    !those.hasNext
   }
 
   /** Creates two new iterators that both iterate over the same elements
@@ -1122,7 +1119,7 @@ object Iterator extends IterableFactory[Iterator] {
     }
   }
 
-  /** Creates an Iterator that uses a function `f` to produce elements of type `A`
+  /** Creates an `Iterator` that uses a function `f` to produce elements of type `A`
     * and update an internal state of type `S`.
     *
     * @param init State initial value
@@ -1130,7 +1127,7 @@ object Iterator extends IterableFactory[Iterator] {
     *             the end of the collection)
     * @tparam A   Type of the elements
     * @tparam S   Type of the internal state
-    * @return an Iterator that produces elements using `f` until `f` returns `None`
+    * @return an `Iterator` that produces elements using `f` until `f` returns `None`
     */
   override def unfold[A, S](init: S)(f: S => Option[(A, S)]): Iterator[A] = new UnfoldIterator(init)(f)
 

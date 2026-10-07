@@ -18,7 +18,7 @@ class D {
   }
 }
 
-// the following do not warn under -Wunused:patvars in Scala 2 (but Scala 3 does)
+// previously, the following do not warn under -Wunused:patvars in Scala 2 (but Scala 3 does)
 object `pat vardef are patvars` {
   private var (i, j) = (42, 27) // warn // warn
 }

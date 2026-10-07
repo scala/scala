@@ -34,6 +34,18 @@ object genprod {
 
     def typeArgsString(xs: Seq[String]) = xs.mkString("[", ", ", "]")
     def typeArgsToTupleSyntacticSugarString(xs: Seq[String]) = xs.mkString("(", ", ", ")")
+    def ordinal(n: Int) = {
+      val mod100 = n % 100
+      val suffix =
+        if (mod100 >= 11 && mod100 <= 13) "th"
+        else (n % 10) match {
+          case 1 => "st"
+          case 2 => "nd"
+          case 3 => "rd"
+          case _ => "th"
+        }
+      s"$n$suffix"
+    }
 
     def to              = (1 to i).toList
     def s               = if (i == 1) "" else "s"
@@ -140,21 +152,21 @@ object FunctionOne extends Function(1) {
    */
   @annotation.unspecialized def applyToContext(implicit v1: T1): R = apply(v1)
 
-  /** Composes two instances of Function1 in a new Function1, with this function applied last.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied last.
    *
    *  @tparam   A   the type to which function `g` can be applied
    *  @param    g   a function A => T1
    *  @return       a new function `f` such that `f(x) == apply(g(x))`
    */
-  @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
+  @annotation.unspecialized def compose[A](g: A => T1): A => R = { (x: A) => apply(g(x)) }
 
-  /** Composes two instances of Function1 in a new Function1, with this function applied first.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied first.
    *
    *  @tparam   A   the result type of function `g`
    *  @param    g   a function R => A
    *  @return       a new function `f` such that `f(x) == g(apply(x))`
    */
-  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
+  @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { (x: T1) => g(apply(x)) }
 """
   override def companionObject =
 """
@@ -180,6 +192,8 @@ object Function1 {
       *              println("Not matched")
       *          }
       *          }}}
+      *
+      *  @return a `PartialFunction` that is defined where `f` returns `Some` and undefined where `f` returns `None`
       */
     def unlift: PartialFunction[A, B] = Function.unlift(f)
   }
@@ -215,6 +229,29 @@ object Function {
 
 class Function(val i: Int) extends Group("Function") with Arity {
   def descriptiveComment  = ""
+  private def typeParamComment =
+    if (i <= 2) ""
+    else {
+      val lines = (targs.zipWithIndex.map { case (targ, idx) =>
+        s" *  @tparam $targ the type of the ${ordinal(idx + 1)} argument"
+      }) :+ " *  @tparam R the return type of this function"
+      "\n" + lines.mkString("\n")
+    }
+
+  private def applyParamComment =
+    if (i == 0) ""
+    else {
+      val lines = vdefs.zip(targs).zipWithIndex.map { case ((vdef, targ), idx) =>
+        if (i == 1)
+          s"   *  @param $vdef the function argument"
+        else if (i == 2)
+          s"   *  @param $vdef the ${ordinal(idx + 1)} argument of type `$targ`"
+        else
+          s"   *  @param $vdef the value of the ${ordinal(idx + 1)} argument"
+      }
+      "\n   *\n" + lines.mkString("\n")
+    }
+
   def functionNTemplate =
 """
  *  In the following example, the definition of `%s` is
@@ -231,10 +268,10 @@ class Function(val i: Int) extends Group("Function") with Arity {
 <file name={fileName}>{header}
 {companionObject}
 /** A function of {i} parameter{s}.
- *{descriptiveComment}
+ *{descriptiveComment}{typeParamComment}
  */
 {classAnnotation}trait {className}{contraCoArgs} extends AnyRef {{ self =>
-  /** Apply the body of this function to the argument{s}.
+  /** Applies the body of this function to the argument{s}.{applyParamComment}
    *  @return   the result of function application.
    */
   def apply({funArgs}): R
@@ -285,7 +322,11 @@ class Function(val i: Int) extends Group("Function") with Arity {
    *  @return   a function `f` such that `f(%s) == f(Tuple%d%s) == apply%s`
    */
 """.format(i, i, commaXs, i, commaXs, commaXs)
-    def body = "case (%s) => apply%s".format(commaXs, commaXs)
+    def body = "({ case (%s) => apply%s }: (%s) => R)".format(
+      commaXs,
+      commaXs,
+      typeArgsToTupleSyntacticSugarString(targs)
+    )
 
     comment + "\n  @annotation.unspecialized def tupled: (%s) => R = {\n    %s\n  }".format(
       typeArgsToTupleSyntacticSugarString(targs), body)
@@ -347,8 +388,23 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
     if (i < 2) ""
     else " Note that it is more idiomatic to create a %s via `(%s)`".format(className, constructorArgs)
 
+  private def tparams =
+    if (i < 3) ""
+    else "\n" + (1 to i).map { x =>
+      " *  @tparam T%d the type of the %s element".format(x, ordinal(x))
+    }.mkString("\n")
+
   private def params = (
-    1 to i map (x => " *  @param  _%d   Element %d of this Tuple%d".format(x, x, i))
+    1 to i map { x =>
+      i match {
+        case 4 | 10 | 14 | 17 | 18 =>
+          " *  @param  _%d   element %d of this Tuple%d".format(x, x, i)
+        case 5 | 6 | 7 | 20 | 22 =>
+          " *  @param  _%d   the %s element of this Tuple%d".format(x, ordinal(x), i)
+        case _ =>
+          " *  @param  _%d   Element %d of this Tuple%d".format(x, x, i)
+      }
+    }
   ) mkString "\n"
 
   // prettifies it a little if it's overlong
@@ -367,7 +423,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
 
 /** A tuple of {i} elements; the canonical representation of a [[scala.{Product.className(i)}]].
  *
- *  @constructor  Create a new tuple with {i} elements.{idiomatic}
+ *  @constructor  Create a new tuple with {i} elements.{idiomatic}{tparams}
 {params}
  */
 final case class {className}{covariantArgs}({fields})
@@ -405,12 +461,21 @@ object ProductTwo extends Product(2)
 }
 
 class Product(val i: Int) extends Group("Product") with Arity {
+  private def tparams =
+    if (i < 3) ""
+    else {
+      val lines = (1 to i).map { x =>
+        " *  @tparam T%d the type of the %s element".format(x, ordinal(x))
+      }
+      "\n *\n" + lines.mkString("\n")
+    }
+
   val productElementComment = s"""
   /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
-   *  @param n number of the projection to be returned
-   *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
+   *  @param n ${if (i < 3) "number of the projection to be returned" else "the zero-based index of the projection to be returned"}
+   *  @return  ${if (i < 3) "same as `._(n+1)`, for example `productElement(0)` is the same as `._1`." else "the element at the given zero-based index, equivalent to `._(n+1)` (e.g., `productElement(0)` returns `._1`)"}
    *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= $i).
    */
 """
@@ -437,7 +502,7 @@ object {className} {{
     Some(x)
 }}
 
-/** {className} is a Cartesian product of {i} component{s}.
+/** {className} is a Cartesian product of {i} component{s}.{tparams}
  */
 trait {className}{covariantArgs} extends Any with Product {{
   /** The arity of this product.

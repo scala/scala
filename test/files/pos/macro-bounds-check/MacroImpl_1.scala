@@ -28,6 +28,7 @@ class DerivationMacros(val c: whitebox.Context) {
       q"""
         {
           def e(a: $R): Object = a
+          println("encode hlist")
           Predef.???
         }
         """
@@ -39,7 +40,7 @@ class DerivationMacros(val c: whitebox.Context) {
       q"""
         {
           def e(a: $R): Object = a
-
+          println("encode coproduct")
           Predef.???
         }
         """

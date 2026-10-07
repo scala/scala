@@ -299,6 +299,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.PredefModule
     definitions.SpecializableModule
     definitions.ScalaRunTimeModule
+    definitions.MurmurHash3Module
     definitions.SymbolModule
     definitions.ScalaNumberClass
     definitions.DelayedInitClass
@@ -427,6 +428,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.Object_asInstanceOf
     definitions.Object_synchronized
     definitions.String_$plus
+    definitions.ObjectsClass
     definitions.ObjectRefClass
     definitions.VolatileObjectRefClass
     definitions.RuntimeStaticsModule
@@ -460,6 +462,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.NowarnClass
     definitions.uncheckedStableClass
     definitions.uncheckedVarianceClass
+    definitions.uncheckedOverrideClass
     definitions.ChildAnnotationClass
     definitions.RepeatedAnnotationClass
     definitions.TargetNameAnnotationClass
@@ -506,7 +509,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.InheritedAttr
     definitions.JUnitAnnotations
     definitions.languageFeatureModule
-    definitions.metaAnnotations
+    definitions.targetAnnotations
     definitions.AnnotationDefaultAttr
     definitions.isPhantomClass
     definitions.syntheticCoreClasses

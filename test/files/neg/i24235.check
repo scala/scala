@@ -1,0 +1,6 @@
+i24235.scala:4: warning: private class Unused in object Test is never used
+  private case class Unused(i: Int = 42)
+                     ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

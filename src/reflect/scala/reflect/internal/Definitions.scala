@@ -401,6 +401,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SpecializableModule  = requiredModule[Specializable]
 
     lazy val ScalaRunTimeModule = requiredModule[scala.runtime.ScalaRunTime.type]
+    lazy val MurmurHash3Module  = requiredModule[scala.util.hashing.MurmurHash3.type]
     lazy val SymbolModule       = requiredModule[scala.Symbol.type]
          def Symbol_apply       = getMemberMethod(SymbolModule, nme.apply)
 
@@ -1285,6 +1286,10 @@ trait Definitions extends api.StandardDefinitions {
     def Object_hashCode  = getMemberMethod(ObjectClass, nme.hashCode_)
     def Object_toString  = getMemberMethod(ObjectClass, nme.toString_)
 
+    lazy val ObjectsClass = getRequiredModule("java.util.Objects").moduleClass
+    def Objects_hashCode = getMemberMethod(ObjectsClass, nme.hashCode_)
+    def Objects_equals   = getMemberMethod(ObjectsClass, nme.equals_)
+
     // boxed classes
     lazy val ObjectRefClass         = requiredClass[scala.runtime.ObjectRef[_]]
     lazy val VolatileObjectRefClass = requiredClass[scala.runtime.VolatileObjectRef[_]]
@@ -1328,6 +1333,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NowarnClass                = getClassIfDefined("scala.annotation.nowarn")
     lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
+    lazy val uncheckedOverrideClass     = getClassIfDefined("scala.annotation.unchecked.uncheckedOverride")
 
     // Tasty Unpickling Helpers - only access when Scala 3 library is expected to be available
     lazy val ChildAnnotationClass        = getClassIfDefined("scala.annotation.internal.Child")
@@ -1386,11 +1392,20 @@ trait Definitions extends api.StandardDefinitions {
     lazy val languageFeatureModule      = getRequiredModule("scala.languageFeature")
 
     @tailrec
-    final def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
+    final def isTargetAnnotation(sym: Symbol): Boolean = targetAnnotations(sym) || (
       // Trying to allow for deprecated locations
-      sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
+      sym.isAliasType && isTargetAnnotation(sym.info.typeSymbol)
     )
-    lazy val metaAnnotations: Set[Symbol] = getPackage("scala.annotation.meta").info.members.filter(_ isSubClass StaticAnnotationClass).toSet
+    lazy val targetAnnotations: Set[Symbol] = Set(
+      BeanGetterTargetClass,
+      BeanSetterTargetClass,
+      FieldTargetClass,
+      GetterTargetClass,
+      ParamTargetClass,
+      SetterTargetClass,
+      ObjectTargetClass,
+      ClassTargetClass,
+      MethodTargetClass)
 
     // According to the scala.annotation.meta package object:
     // * By default, annotations on (`val`-, `var`- or plain) constructor parameters

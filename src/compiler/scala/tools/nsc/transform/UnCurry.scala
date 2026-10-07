@@ -90,7 +90,7 @@ abstract class UnCurry extends InfoTransform
       val canUseLambdaMetaFactory = (fun.attachments.get[SAMFunction] match {
         case Some(SAMFunction(userDefinedSamTp, sam, _)) =>
           // LambdaMetaFactory cannot mix in trait members for us, or instantiate classes -- only pure interfaces need apply
-          erasure.compilesToPureInterface(erasure.javaErasure(userDefinedSamTp).typeSymbol) &&
+          erasure.compilesToPureInterface(erasure.javaErasure(userDefinedSamTp).typeSymbol, sam) &&
           // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
           // specialization and LMF are at odds, since LMF implements the single abstract method,
           // but that's the one that specialization leaves generic, whereas we need to implement the specialized one to avoid boxing

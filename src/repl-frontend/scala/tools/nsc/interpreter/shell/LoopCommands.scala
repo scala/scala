@@ -89,9 +89,21 @@ trait LoopCommands {
     val formatStr  = s"%-${usageWidth}s %s"
 
     echo("All commands can be abbreviated, e.g., :he instead of :help.")
-
-    for (cmd <- commands) echo(formatStr.format(cmd.usageMsg, cmd.help))
     echo("")
+    echo("Core commands:")
+
+    val implementedInScala3 =
+      Set("help", "load", "quit", "type", "doc", "imports",
+        "reset", "settings", "silent")
+    val (main, more) = commands.partition(cmd => implementedInScala3(cmd.name))
+
+    for (cmd <- main) echo(formatStr.format(cmd.usageMsg, cmd.help))
+    echo("")
+
+    echo("Additional commands, not implemented in Scala 3:")
+    for (cmd <- more) echo(formatStr.format(cmd.usageMsg, cmd.help))
+    echo("")
+
     echo("Useful default key bindings:")
     echo("  TAB           code completion")
     echo("  CTRL-ALT-T    show type at cursor, hit again to show code with types/implicits inferred.")

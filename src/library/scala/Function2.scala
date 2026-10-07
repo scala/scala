@@ -34,7 +34,10 @@ package scala
  *  }}}
  */
 trait Function2[@specialized(Specializable.Args) -T1, @specialized(Specializable.Args) -T2, @specialized(Specializable.Return) +R] extends AnyRef { self =>
-  /** Apply the body of this function to the arguments.
+  /** Applies the body of this function to the arguments.
+   *
+   *  @param v1 the 1st argument of type `T1`
+   *  @param v2 the 2nd argument of type `T2`
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2): R
@@ -56,7 +59,7 @@ trait Function2[@specialized(Specializable.Args) -T1, @specialized(Specializable
    */
 
   @annotation.unspecialized def tupled: ((T1, T2)) => R = {
-    case ((x1, x2)) => apply(x1, x2)
+    ({ case ((x1, x2)) => apply(x1, x2) }: ((T1, T2)) => R)
   }
   override def toString(): String = "<function2>"
 }

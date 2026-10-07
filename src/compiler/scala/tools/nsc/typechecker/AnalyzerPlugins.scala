@@ -13,15 +13,12 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.annotation._
-
 /**
  *  @author Lukas Rytz
  */
 trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
   import global._
 
-  @nowarn
   trait AnalyzerPlugin {
     /**
      * Selectively activate this analyzer plugin, e.g. according to the compiler phase.
@@ -200,7 +197,6 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
    * or something else if the plugin knows better that the implementation provided in scala-compiler.jar.
    * If multiple plugins return a non-empty result, it's going to be a compilation error.
    */
-  @nowarn
   trait MacroPlugin {
     /**
      * Selectively activate this analyzer plugin, e.g. according to the compiler phase.

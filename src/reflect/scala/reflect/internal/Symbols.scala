@@ -1316,13 +1316,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def fullName(separator: Char): String = fullName(separator, "")
 
     private def fullName(separator: Char, suffix: CharSequence): String = {
-      var b: java.lang.StringBuffer = null
+      var b: StringBuilder = null
       def loop(size: Int, sym: Symbol): Unit = {
         val symName = sym.name
         val nSize = symName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
         if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
           val capacity = size + nSize
-          b = new java.lang.StringBuffer(capacity)
+          b = new StringBuilder(capacity)
           symName.appendTo(b, 0, nSize)
         } else {
           loop(size + nSize + 1, sym.effectiveOwner.enclClass)
@@ -1330,7 +1330,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           symName.appendTo(b, 0, nSize)
         }
       }
-      loop(suffix.length(), this)
+      loop(suffix.length, this)
       b.append(suffix)
       b.toString
     }
@@ -2469,12 +2469,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *  @param ofclazz is a subclass of this symbol's owner
      */
-    final def overridingSymbol(ofclazz: Symbol): Symbol = (
-      if (canMatchInheritedSymbols)
-        matchingSymbol(ofclazz, ofclazz.thisType)
-      else
-        NoSymbol
-    )
+    final def overridingSymbol(ofclazz: Symbol): Symbol =
+      if (canMatchInheritedSymbols) matchingSymbol(ofclazz, ofclazz.thisType) else NoSymbol
 
     /** If false, this symbol cannot possibly participate in an override,
      *  either as overrider or overridee. For internal use; you should consult

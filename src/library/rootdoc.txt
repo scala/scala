@@ -31,7 +31,7 @@ Other packages exist.  See the complete list on the right.
 
 Additional parts of the standard library are shipped as separate libraries. These include:
 
-  - [[https://www.scala-lang.org/api/current/scala-reflect/scala/reflect/index.html `scala.reflect`]] - Scala's reflection API (scala-reflect.jar)
+  - [[https://www.scala-lang.org/api/2.x/scala-reflect/scala/reflect/index.html `scala.reflect`]] - Scala's reflection API (scala-reflect.jar)
   - [[https://github.com/scala/scala-xml `scala.xml`]] - XML parsing, manipulation, and serialization (scala-xml.jar)
   - [[https://github.com/scala/scala-parallel-collections `scala.collection.parallel`]] - Parallel collections (scala-parallel-collections.jar)
   - [[https://github.com/scala/scala-parser-combinators `scala.util.parsing`]] - Parser combinators (scala-parser-combinators.jar)

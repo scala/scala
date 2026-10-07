@@ -10,16 +10,18 @@ import scala.util.chaining._
 
 import java.lang.ref.SoftReference
 
+import mutable.ListBuffer
+
 @RunWith(classOf[JUnit4])
 class IteratorTest {
 
   private def from0 = Iterator.from(0)
 
   private class Counted(limit: Int) extends Iterator[Int] {
-    val max = limit - 1
+    val Max = limit - 1
     var probed, last, i = -1
-    def hasNext = (i < max).tap(_ => probed = i)
-    def next() = { if (i >= max) Iterator.empty.next() else { i += 1 ; i } }.tap(last = _)
+    def hasNext = (i < Max).tap(_ => probed = i)
+    def next() = { if (i >= Max) Iterator.empty.next() else { i += 1 ; i } }.tap(last = _)
   }
   private def counted = new Counted(Int.MaxValue)
   private def limited(n: Int) = new Counted(n)
@@ -397,7 +399,7 @@ class IteratorTest {
   }
 
   @Test def lazyListIsLazy(): Unit = {
-    val results = mutable.ListBuffer.empty[Int]
+    val results = ListBuffer.empty[Int]
     def mkIterator = Range.inclusive(1, 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
@@ -411,7 +413,7 @@ class IteratorTest {
   // scala/bug#3516
   @deprecated("Tests deprecated Stream", since="2.13")
   @Test def toStreamIsSufficientlyLazy(): Unit = {
-    val results = collection.mutable.ListBuffer.empty[Int]
+    val results = ListBuffer.empty[Int]
     def mkIterator = (1 to 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
@@ -456,7 +458,7 @@ class IteratorTest {
       def hasNext: Boolean = { counter += 1; parent.hasNext }
     }
     // Iterate separately
-    val res = new mutable.ArrayBuffer[Int]
+    val res = mutable.ArrayBuffer.empty[Int]
     it.foreach(res += _)
     it.foreach(res += _)
     assertSameElements(exp, res)
@@ -780,13 +782,13 @@ class IteratorTest {
 
   // scala/bug#10709
   @Test def `scan is lazy enough`(): Unit = {
-    val results = collection.mutable.ListBuffer.empty[Int]
+    val results = ListBuffer.empty[Int]
     val it = new AbstractIterator[Int] {
       var cur = 1
-      val max = 3
+      val Max = 3
       override def hasNext = {
         results += -cur
-        cur < max
+        cur < Max
       }
       override def next() = {
         val res = cur
@@ -799,7 +801,7 @@ class IteratorTest {
       results += -(sum + x)
       sum + x
     })
-    val scan = collection.mutable.ListBuffer.empty[Int]
+    val scan = ListBuffer.empty[Int]
     for (i <- xy) {
       scan += i
       results += i

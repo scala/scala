@@ -3,7 +3,11 @@ reload: CrashOnLoad.scala, TestIterable.java
 askTypeCompletion at CrashOnLoad.scala(9,11)
 ================================================================================
 [response] askTypeCompletion at (9,11)
-retrieved 30 members
+retrieved 34 members
+[inaccessible] private[this] val self: other.TestIterator[Nothing]
+[inaccessible] private[this] val self: other.TestIterator[Nothing]
+[inaccessible] private[this] val self: other.TestIterator[Nothing]
+[inaccessible] private[this] val self: other.TestIterator[Nothing]
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String

@@ -14,9 +14,8 @@ package scala
 package collection
 package mutable
 
-/**
-  * Base type for mutable sorted set collections
-  */
+/** Base type for mutable sorted set collections
+ */
 trait SortedSet[A]
   extends Set[A]
     with collection.SortedSet[A]
@@ -30,7 +29,7 @@ trait SortedSet[A]
 
 /**
   * @define coll mutable sorted set
-  * @define Coll `mutable.Sortedset`
+  * @define Coll `mutable.SortedSet`
   */
 trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
@@ -40,9 +39,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 }
 
 /**
-  * $factoryInfo
-  * @define coll mutable sorted set
-  * @define Coll `mutable.Sortedset`
-  */
+ *  $factoryInfo
+ */
 @SerialVersionUID(3L)
 object SortedSet extends SortedIterableFactory.Delegate[SortedSet](TreeSet)

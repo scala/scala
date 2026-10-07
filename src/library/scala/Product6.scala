@@ -20,6 +20,13 @@ object Product6 {
 }
 
 /** Product6 is a Cartesian product of 6 components.
+ *
+ *  @tparam T1 the type of the 1st element
+ *  @tparam T2 the type of the 2nd element
+ *  @tparam T3 the type of the 3rd element
+ *  @tparam T4 the type of the 4th element
+ *  @tparam T5 the type of the 5th element
+ *  @tparam T6 the type of the 6th element
  */
 trait Product6[+T1, +T2, +T3, +T4, +T5, +T6] extends Any with Product {
   /** The arity of this product.
@@ -31,8 +38,8 @@ trait Product6[+T1, +T2, +T3, +T4, +T5, +T6] extends Any with Product {
   /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
-   *  @param n number of the projection to be returned
-   *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
+   *  @param n the zero-based index of the projection to be returned
+   *  @return  the element at the given zero-based index, equivalent to `._(n+1)` (e.g., `productElement(0)` returns `._1`)
    *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= 6).
    */
 

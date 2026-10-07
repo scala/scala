@@ -64,12 +64,12 @@ class ArraySeqTest {
   def safeToArray(): Unit = {
     val a = ArraySeq(1,2,3)
     a.toArray.update(0, 100)
-    assertEquals(a, List(1,2,3))
+    assertEquals(List(1,2,3), a)
   }
   @Test
   def copyToArrayReturnsNonNegative(): Unit = {
     val a = ArraySeq(1,2,3)
-    assertEquals(a.copyToArray(Array(1,1,2), 0, -1), 0)
+    assertEquals(0, a.copyToArray(Array(1,1,2), 0, -1))
   }
 
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]): Unit = {
@@ -98,8 +98,8 @@ class ArraySeqTest {
   }
 
   private def assertArraySeqAndType[A](actual: ArraySeq[A], expect: ArraySeq[A], expectedArrayType: Class[_]): Unit = {
-    assertEquals(actual, expect)
-    assertEquals(actual.unsafeArray.getClass(), expectedArrayType)
+    assertEquals(expect, actual)
+    assertEquals(expectedArrayType, actual.unsafeArray.getClass())
   }
 
   @Test
@@ -208,5 +208,26 @@ class ArraySeqTest {
       assertEquals(a ++ b, expect)
       assertEquals(a ++: b, expect)
     }
+  }
+
+  @Test
+  def t13108(): Unit = {
+    def checkBoth[A: ClassTag](check: (ArraySeq[A], ArraySeq[A]) => Unit, a: ArraySeq[A], b: ArraySeq[A]): Unit = {
+      check(a, b)
+      check(a.map(identity), b)
+      check(a, b.map(identity))
+      check(a.map(identity), b.map(identity))
+    }
+    def checkEquals[A: ClassTag](a: ArraySeq[A], b: ArraySeq[A]): Unit = checkBoth(assertEquals, a, b)
+    def checkNotEquals[A: ClassTag](a: ArraySeq[A], b: ArraySeq[A]): Unit = checkBoth(assertNotEquals, a, b)
+
+    checkEquals(ArraySeq(1, 2, 3), ArraySeq(1, 2, 3))
+    checkNotEquals(ArraySeq(1, 2, 3), ArraySeq(1, 2))
+    checkNotEquals(ArraySeq(1, 2, 3), ArraySeq(1, 2, 4))
+    checkNotEquals(ArraySeq(1, 2, 3), ArraySeq(1, 2, 3, 4))
+    checkEquals(ArraySeq(-0.0f), ArraySeq(0.0f))
+    checkEquals(ArraySeq(-0.0), ArraySeq(0.0))
+    checkNotEquals(ArraySeq(Double.NaN), ArraySeq(Double.NaN))
+    checkNotEquals(ArraySeq(Float.NaN), ArraySeq(Float.NaN))
   }
 }

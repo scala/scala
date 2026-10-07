@@ -92,7 +92,7 @@ private[scala] trait PropertiesTrait {
   /** A verbose alternative to [[versionNumberString]].
    */
   val versionString         = s"version ${scalaPropOrElse("version.number", "(unknown)")}"
-  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2025, LAMP/EPFL and Lightbend, Inc. dba Akka")
+  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2026, LAMP/EPFL and Lightbend, Inc. dba Akka")
 
   /** This is the encoding to use reading in source files, overridden with -encoding.
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
@@ -146,7 +146,7 @@ private[scala] trait PropertiesTrait {
     case s      => "" == s || "true".equalsIgnoreCase(s)
   }
 
-  /** System.console.isTerminal, or just check for null console on JDK < 22 */
+  /** `System.console.isTerminal`, or just check for `null` console on JDK < 22 */
   private[scala] lazy val consoleIsTerminal: Boolean = {
     import language.reflectiveCalls
     val console = System.console

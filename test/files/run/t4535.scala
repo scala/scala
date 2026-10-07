@@ -1,3 +1,4 @@
+//> using options -deprecation
 import collection._
 
 // #4535

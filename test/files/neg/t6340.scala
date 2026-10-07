@@ -8,7 +8,7 @@ object Foo {
 }
 
 object Test {
-  import Foo.{ A, B, C, D, E, X, Y, Z }
+  import Foo.{ A, B, C, D, E, F => G, X, Y, Z }
 
   val a = new A
   val b = new B

@@ -30,12 +30,28 @@ possible cause: maybe a wrong Dynamic method signature?
 caseclass_private_constructor.scala:28: error: method copy in class D cannot be accessed as a member of qualified_private.D from object QPrivTest
   def d2: D = d1.copy(2) // error: copy is private
                  ^
+caseclass_private_constructor.scala:33: error: method apply in object E cannot be accessed as a member of object E from object ETest
+ Access to protected method apply not permitted because
+ enclosing object ETest is not a subclass of
+ object E where target is defined
+error after rewriting to E.<apply: error>
+possible cause: maybe a wrong Dynamic method signature?
+  def e1: E = E(1) // error: apply is protected
+              ^
 caseclass_private_constructor.scala:34: error: method copy in class E cannot be accessed as a member of E from object ETest
  Access to protected method copy not permitted because
  enclosing object ETest is not a subclass of
  class E where target is defined
   def e2: E = e2.copy(2) // error: copy is protected
                  ^
+caseclass_private_constructor.scala:42: error: method apply in object F cannot be accessed as a member of object qualified_protected.F from object QProtTest
+ Access to protected method apply not permitted because
+ enclosing object QProtTest is not a subclass of
+ object F in object qualified_protected where target is defined
+error after rewriting to qualified_protected.F.<apply: error>
+possible cause: maybe a wrong Dynamic method signature?
+  def f1: F = F(1) // error: apply is protected
+              ^
 caseclass_private_constructor.scala:43: error: method copy in class F cannot be accessed as a member of qualified_protected.F from object QProtTest
  Access to protected method copy not permitted because
  enclosing object QProtTest is not a subclass of
@@ -50,4 +66,4 @@ error after rewriting to OverrideCopy.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def oc = OverrideCopy(42) // error: apply is still private
            ^
-12 errors
+14 errors

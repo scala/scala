@@ -587,4 +587,9 @@ class VectorBenchmark2 {
     var coll = nv
     bh.consume(coll.filter(x => false))
   }
+
+  @Benchmark def nvSliding(bh: Blackhole): Any = {
+    var coll = nv
+    coll.sliding(2).foreach(bh.consume)
+  }
 }

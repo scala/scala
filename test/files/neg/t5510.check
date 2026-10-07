@@ -16,4 +16,10 @@ t5510.scala:6: error: unclosed multi-line string literal
 t5510.scala:7: error: unclosed multi-line string literal
 }
  ^
-6 errors
+t5510.scala:5: error: ';' expected but string literal found.
+  val s4 = ""s"
+             ^
+t5510.scala:6: error: ';' expected but string literal found.
+  val s5 = ""s""" $s1 $s2 s"
+             ^
+8 errors

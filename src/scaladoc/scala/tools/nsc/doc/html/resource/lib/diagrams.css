@@ -1,32 +1,16 @@
-@font-face {
-  font-family: 'Material Icons';
-  font-style: normal;
-  font-weight: 400;
-  src: url(MaterialIcons-Regular.eot);
-  src: local('Material Icons'),
-  local('MaterialIcons-Regular'),
-  url(MaterialIcons-Regular.woff) format('woff'),
-  url(MaterialIcons-Regular.ttf) format('truetype');
+.svg-icon {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+  outline: none;
 }
 
-.material-icons {
-  font-family: 'Material Icons';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
+.svg-icon svg {
   display: inline-block;
+  vertical-align: middle;
   width: 1em;
   height: 1em;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'liga';
+  outline: none;
 }
 
 .diagram-container {
@@ -49,6 +33,8 @@
   visibility: visible;
   z-index: auto;
   margin: auto;
+  border: 1px solid #999;
+  overflow: hidden;
 }
 
 .diagram-help {
@@ -65,7 +51,7 @@
 #close-link {
   position: absolute;
   z-index: 100;
-  font-family: Arial, sans-serif;
+  font-family: system-ui, 'Segoe UI', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
   font-size: 10pt;
   text-decoration: underline;
   color: #315479;
@@ -131,8 +117,8 @@
   background-color: #e2e2e2;
 }
 
-#diagram-controls > button.diagram-btn > i.material-icons {
-  font-size: 1.5em;
+#diagram-controls > button.diagram-btn > i.svg-icon {
+  font-size: 36px;
 }
 
 svg a {
@@ -143,11 +129,6 @@ svg text {
   font-size: 8.5px;
 }
 
-
-svg {
-  border: 1px solid #999;
-  overflow: hidden;
-}
 
 svg .node {
   white-space: nowrap;

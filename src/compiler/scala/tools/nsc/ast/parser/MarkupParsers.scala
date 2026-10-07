@@ -391,7 +391,7 @@ trait MarkupParsers {
             nextch()
             content_LT(ts)
           } while (charComingAfter(xSpaceOpt()) == '<')
-          handle.makeXMLseq(r2p(start, start, curOffset), ts)
+          handle.makeXMLseq(r2p(start, start, curOffset), ts, toVector = false)
         }
         else {
           assert(ts.length == 1, "Require one tree")

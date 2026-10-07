@@ -17,7 +17,7 @@ Unspecified value parameter i.
 t7187.scala:29: error: _ must follow method; cannot follow String
   val t3d: Any       = baz() _ // error: _ must follow method
                           ^
-t7187.scala:38: error: missing argument list for method zup in class EtaExpandZeroArg
+t7187.scala:38: error: missing argument list for method zup in class EtaExpandZeroArg of type (x: Int): Int
 Unapplied methods are only converted to functions when a function type is expected.
 You can make this conversion explicit by writing `zup _` or `zup(_)` instead of `zup`.
   val t5a = zup // error in 2.13, eta-expansion in 3.0

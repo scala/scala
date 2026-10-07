@@ -1,0 +1,7 @@
+t13190.scala:16: error: Illegal literal type (), use Unit instead [quickfixable]
+  TC[Int :: () + Int :: HNil]
+            ^
+t13190.scala:16: error: ']' expected but identifier found.
+  TC[Int :: () + Int :: HNil]
+               ^
+2 errors

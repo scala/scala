@@ -99,11 +99,10 @@ trait UnCurry {
           // while processing one of its superclasses (such as java.lang.Object). Since we
           // don't need the more precise `matches` semantics, we only check the symbol, which
           // is anyway faster and safer
-          for (decl <- decls if decl.annotations.exists(_.symbol == VarargsClass)) {
-            if (mexists(decl.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))) {
-              varargOverloads += varargForwarderSym(clazz, decl, exitingPhase(phase)(decl.info))
-            }
-          }
+          for (decl <- decls)
+            if (decl.annotations.exists(_.symbol == VarargsClass)
+                && mexists(decl.paramss)(sym => definitions.isRepeatedParamType(sym.tpe)))
+              varargOverloads += varargForwarderSym(clazz, decl)
           if ((parents1 eq parents) && varargOverloads.isEmpty) tp
           else {
             val newDecls = decls.cloneScope
@@ -120,11 +119,9 @@ trait UnCurry {
     }
   }
 
-  private def varargForwarderSym(currentClass: Symbol, origSym: Symbol, newInfo: Type): Symbol = {
+  private def varargForwarderSym(currentClass: Symbol, origSym: Symbol): Symbol = {
     val forwSym = origSym.cloneSymbol(currentClass, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED, origSym.name.toTermName).withoutAnnotations
 
-    // we are using `origSym.info`, which contains the type *before* the transformation
-    // so we still see repeated parameter types (uncurry replaces them with Seq)
     def toArrayType(tp: Type, newParam: Symbol): Type = {
       val arg = elementType(SeqClass, tp)
       val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
@@ -146,6 +143,8 @@ trait UnCurry {
       arrayType(elem)
     }
 
+    // we are using `origSym.info`, which contains the type *before* the transformation
+    // so we still see repeated parameter types (uncurry replaces them with Seq)
     foreach2(forwSym.paramss, origSym.info.paramss){ (fsps, origPs) =>
       foreach2(fsps, origPs){ (p, sym) =>
         if (definitions.isRepeatedParamType(sym.tpe))

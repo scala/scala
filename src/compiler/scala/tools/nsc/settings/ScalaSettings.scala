@@ -122,6 +122,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val resident           = BooleanSetting      ("-Xresident", "Compiler stays resident: read source filenames from standard input.")
   val script             = StringSetting       ("-Xscript", "object", "Treat the source file as a script and wrap it in a main method.", "Main")
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
+    .withDeprecationMessage(
+      """the Scala compiler will stop emitting the Main-Class manifest entry, since it is only supported by the legacy `scala` runner.
+        |scala-cli disregards the entry, instead it finds main classes when running a jar.""".stripMargin)
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   private val XsourceHelp =
@@ -145,13 +148,11 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
          |  * import p.*
          |  * import p.m as n
          |  * import p.{given, *}
-         |  * Eta-expansion `x.m` of methods without trailing `_`
          |
          |The following constructs emit a migration warning under -Xsource:3. To adopt
          |Scala 3 semantics, see `-Xsource-features:help`.
          |${sourceFeatures.values.toList.collect { case c: sourceFeatures.Choice if c.expandsTo.isEmpty => c.help }.map(h => s"  * $h").mkString("\n")}
          |"""
-  @nowarn("cat=deprecation")
   val source = ScalaVersionSetting ("-Xsource", "version", "Enable warnings and features for a future version.", initial = ScalaVersion("2.13"), helpText = Some(XsourceHelp)).withPostSetHook { s =>
     if (s.value.unparse == "3.0.0-cross")
       XsourceFeatures.tryToSet(List("_"))
@@ -344,7 +345,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
   val YmacroAnnotations = BooleanSetting  ("-Ymacro-annotations", "Enable support for macro annotations, formerly in macro paradise.")
   val YtastyNoAnnotations = BooleanSetting("-Ytasty-no-annotations", "Disable support for reading annotations from TASTy, this will prevent safety features such as pattern match exhaustivity and reachability analysis.")
-  val YtastyReader        = BooleanSetting("-Ytasty-reader", "Enable support for reading Scala 3's TASTy files, allowing consumption of libraries compiled with Scala 3 (provided they don't use any Scala 3 only features).")
+  val YtastyReader        = BooleanSetting("-Ytasty-reader", "Enable support for reading Scala 3's TASTy files, allowing consumption of libraries compiled with Scala 3.7 or earlier (provided they don't use any Scala 3 only features).")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects", default = true)
   val YreplMagicImport = BooleanSetting   ("-Yrepl-use-magic-imports", "In the code that wraps REPL snippets, use magic imports rather than nesting wrapper object/classes", default = true)
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
@@ -688,11 +689,13 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def conflictWarning: Option[String] = {
     @nowarn("cat=deprecation")
     def sourceFeatures: Option[String] =
-      Option.when(XsourceFeatures.value.nonEmpty && !isScala3)(s"${XsourceFeatures.name} requires -Xsource:3")
+      Option.when(XsourceFeatures.value.nonEmpty && !isScala3)(s"${XsourceFeatures.name} is used without -Xsource:3, which is not recommended.")
 
     List(sourceFeatures).flatten match {
       case Nil => None
-      case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
+      case warnings => Some(
+        s"""conflicting compiler settings detected, some settings might be ignored.
+           |${warnings.mkString("\n")}""".stripMargin)
     }
   }
 }

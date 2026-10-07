@@ -151,3 +151,9 @@ object END
 class Nested {
   @annotation.unused private def actuallyNotUsed(fresh: Int, stale: Int) = fresh
 }
+
+class Annie(value: String) extends annotation.StaticAnnotation // no warn for annotation
+
+class Selfie {
+  def f(i: Int, j: Int) = this // no warn this is trivial
+}

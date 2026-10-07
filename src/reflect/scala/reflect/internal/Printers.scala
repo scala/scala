@@ -850,7 +850,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           if (name.startsWith(nme.WHILE_PREFIX)) {
             val If(cond, thenp, _) = rhs: @unchecked
             print("while (", cond, ") ")
-            val Block(list, wh) = thenp: @unchecked
+            val Block(list, _) = thenp: @unchecked
             printColumn(list, "", ";", "")
           } else if (name.startsWith(nme.DO_WHILE_PREFIX)) {
             val Block(bodyList, If(cond, _, _)) = rhs: @unchecked

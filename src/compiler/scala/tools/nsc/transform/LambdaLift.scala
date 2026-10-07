@@ -264,7 +264,7 @@ abstract class LambdaLift extends InfoTransform {
 
         val join = nme.NAME_JOIN_STRING
         if (sym.isAnonymousFunction && sym.owner.isMethod) {
-          freshen("" + sym.name + join + nme.ensureNonAnon(sym.owner.name.toString) + join)
+          freshen(s"${sym.name}${nme.ensureNonAnon(join + sym.owner.name.toString)}$join")
         } else {
           val name = freshen(s"${sym.name}${join}")
           // scala/bug#5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)

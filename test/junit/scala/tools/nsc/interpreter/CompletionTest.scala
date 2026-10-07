@@ -127,6 +127,9 @@ class CompletionTest {
     checkExact(completer, "object X { def `Foo Bar` = 0; this.`Foo ", after = "` }")("Foo Bar")
     checkExact(completer, "val `Foo Bar` = 0; `Foo ", after = "`")("Foo Bar")
     checkExact(completer, "def foo(`Foo Bar`: Int) { `Foo ", after = "` }")("Foo Bar")
+    checkExact(completer, "def foo(`Foo Bar!`: Int) { `Foo ", after = "` }")("Foo Bar!")
+    checkExact(completer, "def foo(`Foo Bar$`: Int) { `Foo ", after = "` }")("Foo Bar$")
+    checkExact(completer, "def foo(`$Foo$Bar$`: Int) { `$Foo ", after = "` }")("$Foo$Bar$")
   }
 
   @Test
@@ -143,6 +146,13 @@ class CompletionTest {
     val completer = setup()
     checkExact(completer, """val x_y_z = 1; s"${x_""", "}\"")("x_y_z")
     checkExact(completer, """val x_y_z = 1; s"${x_""", "\"")("x_y_z")
+  }
+
+  @Test
+  def completionsAfterBrokenInterpolation(): Unit = {
+    val completer = setup()
+    checkExact(completer, "val x_y_z = 1; val a = s\"$\"\nval b = x_y")("x_y_z")
+    checkExact(completer, "val x_y_z = 1; val a = \"\nval b = x_y")("x_y_z")
   }
 
   @Test

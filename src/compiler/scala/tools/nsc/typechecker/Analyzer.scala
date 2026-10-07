@@ -13,7 +13,9 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayDeque
+import scala.reflect.internal.util.JavaClearable
 
 /** Defines the sub-components for the namer, packageobjects, and typer phases.
  */
@@ -55,7 +57,13 @@ trait Analyzer extends AnyRef
   object packageObjects extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
   } with SubComponent {
-    val deferredOpen = perRunCaches.newSet[Symbol]()
+    val deferredOpen: mutable.Set[Symbol] = {
+      import scala.jdk.CollectionConverters._
+      // This will throw a ConcurrentModificationException if we mutate during iteration
+      val javaSet = new java.util.LinkedHashSet[Symbol]()
+      perRunCaches.recordCache(JavaClearable.forCollection(javaSet))
+      javaSet.asScala
+    }
     val phaseName = "packageobjects"
     val runsAfter = List[String]()
     val runsRightAfter= Some("namer")
@@ -67,11 +75,11 @@ trait Analyzer extends AnyRef
       val openPackageObjectsTraverser = new InternalTraverser {
         override def traverse(tree: Tree): Unit = tree match {
           case ModuleDef(_, _, _) =>
-            if (tree.symbol.name == nme.PACKAGEkw) {
-              // we've actually got a source file
-              deferredOpen.subtractOne(tree.symbol.owner)
-
-              openPackageModule(tree.symbol, tree.symbol.owner)
+            val sym = tree.symbol
+            if (sym.name == nme.PACKAGEkw) {
+              val owner = sym.owner
+              deferredOpen.subtractOne(owner) // we've actually got a source file
+              openPackageModule(sym, owner)
             }
           case ClassDef(_, _, _, _) => () // make it fast
           case _ => tree.traverse(this)
@@ -80,8 +88,17 @@ trait Analyzer extends AnyRef
 
       def apply(unit: CompilationUnit): Unit = {
         openPackageObjectsTraverser(unit.body)
-        deferredOpen.foreach(openPackageModule(_))
-        deferredOpen.clear()
+      }
+
+      override def run(): Unit = {
+        super.run()
+
+        // openPackageModule can remove entries from `deferredOpen`, so make a defensive copy first,
+        // and then check whether `remove` says the sym is still deferred.
+        // `force` the open because we might be called earlier if the run is bailing on an early error.
+        for (sym <- deferredOpen.toVector)
+          if (deferredOpen.remove(sym))
+            openPackageModule(sym, force = true)
       }
     }
   }

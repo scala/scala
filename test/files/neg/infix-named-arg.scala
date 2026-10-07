@@ -1,5 +1,4 @@
-
-//> using options -Werror -Xlint -Xsource:3
+//> using options -Xsource:3
 
 class C {
   def f = 42 + (x = 1)

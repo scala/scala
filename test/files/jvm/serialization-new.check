@@ -145,14 +145,6 @@ x = ArrayBuffer(one, two)
 y = ArrayBuffer(one, two)
 x equals y: true, y equals x: true
 
-x = ArrayBuilder.ofLong
-y = ArrayBuilder.ofLong
-x equals y: true, y equals x: true
-
-x = ArrayBuilder.ofFloat
-y = ArrayBuilder.ofFloat
-x equals y: true, y equals x: true
-
 x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true

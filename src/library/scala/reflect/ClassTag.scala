@@ -61,11 +61,11 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   /** Produces a `ClassTag` that knows how to instantiate an `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
-  /** Produces a new array with element type `T` and length `len` */
+  /** Produces a new array with element type `T` and length `len`. */
   def newArray(len: Int): Array[T] =
     java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
 
-  /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
+  /** A `ClassTag[T]` can serve as an extractor that matches only objects of type `T`.
    *
    * The compiler tries to turn unchecked type tests in pattern matches into checked ones
    * by wrapping a `(_: T)` type pattern as `ct(_: T)`, where `ct` is the `ClassTag[T]` instance.
@@ -90,7 +90,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 }
 
 /**
- * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+ * `ClassTag`s corresponding to primitive types and constructor/extractor for `ClassTag`s.
  */
 object ClassTag {
   private[this] val ObjectTYPE = classOf[java.lang.Object]

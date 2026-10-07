@@ -1,0 +1,7 @@
+Test.scala:3: error: not found: type H
+  new H()
+      ^
+Test.scala:4: error: not found: value T
+  new T.H()
+      ^
+2 errors

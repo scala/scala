@@ -1,0 +1,34 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> @annotation.meta.languageFeature("", false) class ann(x: Int) extends annotation.StaticAnnotation
+class ann
+
+scala> class C { @ann(21) val x = 1 }
+class C
+
+scala> typeOf[C].member(TermName("x ")).annotations.head
+val res0: $r.intp.global.AnnotationInfo = ann(21)
+
+scala> object defs {
+  import scala.annotation.StaticAnnotation
+  sealed trait InputAnnotation extends StaticAnnotation
+  class body(val s: String) extends InputAnnotation
+  class jsonbody extends body("x")
+  case class Cls(@jsonbody id: String)
+}
+object defs
+
+scala> import defs._
+import defs._
+
+scala> val a = typeOf[Cls].typeSymbol.primaryConstructor.paramss.head.head.annotations.head
+val a: $r.intp.global.AnnotationInfo = defs.jsonbody
+
+scala> a.argsForSuper(typeOf[body].typeSymbol)
+val res1: List[$r.intp.global.Tree] = List("x")
+
+scala> :quit

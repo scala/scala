@@ -56,6 +56,11 @@ trait Typers {
     universe.analyzer.inferImplicit(universe.EmptyTree, pt, isView = false, callsiteTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw TypecheckException(pos, msg))
   }
 
+  def inferImplicitValueIgnoring(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition)(ignoredSymbols: Symbol*): Tree = {
+    macroLogVerbose(s"inferring implicit value of type $pt, macros = ${!withMacrosDisabled}, ignored symbols = ${ignoredSymbols.mkString(", ")}")
+    universe.analyzer.inferImplicitIgnoring(universe.EmptyTree, pt, isView = false, callsiteTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw TypecheckException(pos, msg), ignoredSymbols.toSet)
+  }
+
   def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree = {
     macroLogVerbose(s"inferring implicit view from $from to $to for $tree, macros = ${!withMacrosDisabled}")
     val viewTpe = universe.appliedType(universe.definitions.FunctionClass(1).toTypeConstructor, List(from, to))

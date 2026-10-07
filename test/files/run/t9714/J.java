@@ -9,6 +9,9 @@ public class J {
 	public static p.Module$ module() {
 		return p.Module$.MODULE$;
 	}
+	public static p.Module.Target$ target() {
+		return p.Module.Target$.MODULE$;
+	}
 
 	public String toString() { return "J"; }
 }

@@ -5,6 +5,8 @@ import org.junit.Assert._
 import org.junit.Test
 
 import java.io.NotSerializableException
+import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch}
+import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.unused
 import scala.collection.immutable.LazyListTest.sd
 import scala.collection.mutable.{Builder, ListBuffer}
@@ -58,7 +60,50 @@ class LazyListTest {
     val ll = 1 #:: { Thread.sleep(500); 2} #:: LazyList.empty
     new Thread(() => println(ll.toList)).start()
     Thread.sleep(200)
-    AssertUtil.assertThrows[NotSerializableException](serialize(ll), _.contains("MidEvaluation"))
+    AssertUtil.assertThrows[NotSerializableException](serialize(ll), msg => msg.contains("java.lang.Thread") || msg.contains("InRace"))
+  }
+
+  @Test def forceSameCellManyThreads(): Unit = {
+    val N = 8
+    val trials = 5
+    for (trial <- 1 to trials) {
+      val counts = Array.fill(20)(new AtomicInteger(0))
+      val ll = LazyList.tabulate(20) { i =>
+        counts(i).incrementAndGet()
+        i * 10
+      }
+      val go = new CountDownLatch(1)
+      val done = new CountDownLatch(N)
+      val results = new ConcurrentLinkedQueue[List[Int]]
+      for (_ <- 1 to N)
+        new Thread(() => {
+          go.await()
+          results.add(ll.toList)
+          done.countDown()
+        }).start()
+      go.countDown()
+      done.await()
+
+      val expected = (0 until 20).map(_ * 10).toList
+      val it = results.iterator
+      var seen = 0
+      while (it.hasNext) { assertEquals(s"trial $trial", expected, it.next()); seen += 1 }
+      assertEquals(s"trial $trial: result count", N, seen)
+      for (i <- 0 until 20)
+        assertEquals(s"trial $trial: element $i evaluated multiple times", 1, counts(i).get())
+    }
+  }
+
+  @Test def initStateExceptionRecovery(): Unit = {
+    var n = 0
+    val ll = 1 #:: {
+      n += 1
+      if (n == 1) throw new RuntimeException("first attempt throws") else 2
+    } #:: LazyList.empty
+
+    AssertUtil.assertThrows[RuntimeException](ll.toList, _.contains("first attempt throws"))
+    assertEquals(List(1, 2), ll.toList)
+    assertEquals(2, n)
   }
 
   @Test def storeNull(): Unit = {

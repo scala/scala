@@ -291,7 +291,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
         ans
       }
       else {
-        val ans = if ((extraKeys&2) == 1) Some(minValue.asInstanceOf[V]) else None
+        val ans = if ((extraKeys&2) == 2) Some(minValue.asInstanceOf[V]) else None
         minValue = value.asInstanceOf[AnyRef]
         extraKeys |= 2
         ans

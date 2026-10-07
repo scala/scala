@@ -5,6 +5,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testkit.AssertUtil.assertThrows
+
 @RunWith(classOf[JUnit4])
 class ArrayOpsTest {
 
@@ -121,6 +123,31 @@ class ArrayOpsTest {
   def t11499(): Unit = {
     val a: Array[Byte] = new Array[Byte](1000).sortWith { _ < _ }
     assertEquals(0, a(0))
+  }
+
+  @Test
+  def `transpose still incorrectly throws class cast exception`(): Unit = {
+    // If ArrayOps.transpose is fixed, this test should be updated to be positive
+    // and the method's Scaladoc should be updated to reflect the state of the method.
+    // See scala/bug#13178
+    assertThrows[ClassCastException] {
+      val _: Array[Array[Int]] = Array().transpose((_: Object) => Array(1))
+    }
+  }
+
+  @Test
+  def transpose(): Unit = {
+    assertArrayEquals(Array[Object](), Array(Array[Object]()).transpose.asInstanceOf[Array[Object]])
+
+    assertArrayEquals(
+      Array(Array(1, 3), Array(2, 4)).asInstanceOf[Array[Object]],
+      Array(Array(1, 2), Array(3, 4)).transpose.asInstanceOf[Array[Object]]
+    )
+
+    assertArrayEquals(
+      Array(Array(1, 1), Array(2, 2)).asInstanceOf[Array[Object]],
+      Array(new Object(), new Object()).transpose(_ => Array(1, 2)).asInstanceOf[Array[Object]]
+    )
   }
 
   @Test

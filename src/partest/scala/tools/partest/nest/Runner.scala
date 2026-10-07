@@ -18,7 +18,6 @@ import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
 import java.nio.file.{Files, Path, StandardOpenOption}, StandardOpenOption.{APPEND, CREATE}
 
-import scala.annotation.nowarn
 import scala.collection.mutable, mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
@@ -262,16 +261,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       }
 
       pushTranscript(s"<in process execution of $testIdent> > ${logFile.getName}")
-
-      @nowarn("cat=deprecation")  // JDK 17 deprecates SecurityManager, so TrapExit is deprecated too
-      val trapExit = TrapExit
-
-      trapExit(() => run()) match {
-        case Left((status, throwable)) if status != 0 =>
-          genFail("non-zero exit code")
-        case _ =>
-          genPass()
-      }
+      run()
+      genPass()
     }
   }
 

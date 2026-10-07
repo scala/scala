@@ -3,7 +3,11 @@ reload: ImplicitMember.scala
 askTypeCompletion at ImplicitMember.scala(7,7)
 ================================================================================
 [response] askTypeCompletion at (7,7)
-retrieved 32 members
+retrieved 36 members
+[inaccessible] private[this] val self: Implicit.type
+[inaccessible] private[this] val self: Implicit.type
+[inaccessible] private[this] val self: Implicit.type
+[inaccessible] private[this] val self: Implicit.type
 def +(other: String): String
 def ->[B](y: B): (Implicit.type, B)
 def ensuring(cond: Boolean): Implicit.type

@@ -25,3 +25,38 @@ final class UnusedTest {
 
   def u: Unit = f: Unit       // nowarn
 }
+
+class UnitAscription {
+  import scala.concurrent._, ExecutionContext.Implicits._
+
+  case class C(c: Int) {
+    def f(i: Int, j: Int = c) = i + j
+  }
+
+  def f(i: Int, j: Int = 27) = i + j
+
+  def g[A]: List[A] = Nil
+
+  def i: Int = 42
+
+  def `default arg is inline`: Unit =
+    f(i = 42): Unit // nowarn
+
+  def `default arg requires block`: Unit =
+    C(27).f(i = 42): Unit // nowarn
+
+  def `application requires implicit arg`: Unit =
+    Future(42): Unit // nowarn
+
+  def `application requires inferred type arg`: Unit =
+    g: Unit // nowarn
+
+  def `implicit selection from this`: Unit =
+    i: Unit // nowarn
+}
+
+object UnitAscription {
+  def g[A]: List[A] = Nil
+  def `application requires inferred type arg`: Unit =
+    g: Unit // nowarn UnitAscription.g
+}

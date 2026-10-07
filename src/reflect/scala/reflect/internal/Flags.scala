@@ -373,7 +373,7 @@ class Flags extends ModifierFlags {
   private final val MODULE_PKL     = (1L << 10)
   private final val INTERFACE_PKL  = (1L << 11)
 
-  private final val PKL_MASK       = 0x00000FFF
+  //private final val PKL_MASK     = 0x00000FFF
 
   /** Pickler correspondence, ordered roughly by frequency of occurrence */
   private def rawPickledCorrespondence = Array[(Long, Long)](

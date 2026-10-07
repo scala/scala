@@ -513,6 +513,9 @@ abstract class TreeBrowsers {
       case Star(t) =>
         List(t)
 
+      case NamedArg(lhs, rhs) =>
+        List(lhs, rhs)
+
       case x => throw new MatchError(x)
     }
 

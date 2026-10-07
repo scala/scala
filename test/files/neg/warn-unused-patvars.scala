@@ -1,14 +1,13 @@
-//> using options -Ywarn-unused:-patvars,_ -Xfatal-warnings
-//
+//> using options -Wunused:-patvars,_ -Werror
 
-// verify no warning when -Ywarn-unused:-patvars
+// verify NO warning when -Wunused:-patvars
 
 case class C(a: Int, b: String, c: Option[String])
 case class D(a: Int)
 
 trait Boundings {
 
-  private val x = 42                      // warn, sanity check
+  private val x = 42                      // warn, to ensure that warnings are enabled
 
   def c = C(42, "hello", Some("world"))
   def d = D(42)

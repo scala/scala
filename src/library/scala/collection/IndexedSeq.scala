@@ -91,6 +91,11 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def slice(from: Int, until: Int): C = fromSpecific(new IndexedSeqView.Slice(this, from, until))
 
+  override def sliding(size: Int, step: Int): Iterator[C] = {
+    require(size >= 1 && step >= 1, s"size=$size and step=$step, but both must be positive")
+    new IndexedSeqSlidingIterator[A, CC, C](this, size, step)
+  }
+
   override def head: A =
     if (!isEmpty) apply(0)
     else throw new NoSuchElementException(s"head of empty ${
@@ -143,5 +148,28 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
         case  _ => Found(idx)
       }
     }
+  }
+}
+
+/** A fast sliding iterator for IndexedSeqs which uses the underlying `slice` operation. */
+private final class IndexedSeqSlidingIterator[A, CC[_], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int)
+  extends AbstractIterator[C] {
+
+  private[this] val len = s.length
+  private[this] var pos = 0
+  private def chklen: Boolean = len == s.length || {
+    throw new java.util.ConcurrentModificationException("collection size changed during iteration")
+    false
+  }
+
+  def hasNext: Boolean = chklen && pos < len
+
+  def next(): C = if (!chklen || !hasNext) Iterator.empty.next() else {
+    val end = { val x = pos + size; if (x < 0 || x > len) len else x } // (pos.toLong + size).min(len).toInt
+    val slice = s.slice(pos, end)
+    pos =
+      if (end >= len) len
+      else { val x = pos + step; if (x < 0 || x > len) len else x } // (pos.toLong + step).min(len).toInt
+    slice
   }
 }

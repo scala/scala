@@ -7,7 +7,7 @@ object ScaladocSettings {
 
   // when this changes, the integrity check in HtmlFactory.scala also needs updating
   val webjarResources = Seq(
-    "org.webjars" % "jquery" % "3.7.1"
+    "org.webjars" % "jquery" % "4.0.0"
   )
 
   def extractResourcesFromWebjar = Def.task {

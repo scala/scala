@@ -1,0 +1,31 @@
+abstract-vars-trait.scala:5: error: class Fail1 needs to be abstract.
+Missing implementation:
+  def x: Int = ??? // variables need to be initialized to be defined
+
+class Fail1 extends A {
+      ^
+abstract-vars-trait.scala:9: error: class Fail2 needs to be abstract.
+Missing implementation for member of trait A:
+  def x: Int = ??? // variables need to be initialized to be defined
+
+class Fail2 extends A { }
+      ^
+abstract-vars-trait.scala:11: error: class Fail3 needs to be abstract.
+Missing implementation for member of trait A:
+  def x_=(x$1: Int): Unit = ??? // an abstract var requires a setter in addition to the getter
+
+class Fail3 extends A {
+      ^
+abstract-vars-trait.scala:14: error: class Fail4 needs to be abstract.
+Missing implementation for member of trait A:
+  def x_=(x$1: Int): Unit = ??? // an abstract var requires a setter in addition to the getter
+
+class Fail4 extends A {
+      ^
+abstract-vars-trait.scala:18: error: class Fail5 needs to be abstract.
+Missing implementation for member of trait A:
+  def x: Int = ??? // an abstract var requires a getter in addition to the setter
+
+class Fail5 extends A {
+      ^
+5 errors

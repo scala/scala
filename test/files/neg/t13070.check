@@ -7,6 +7,12 @@ t13070.scala:7: warning: pattern var j in value $anonfun is never used
 t13070.scala:16: warning: pattern var j in value $anonfun is never used
       (i, j) = ns // warn
           ^
+t13070.scala:23: warning: pattern var i in object pat vardef are patvars is never used
+  private var (i, j) = (42, 27) // warn // warn
+               ^
+t13070.scala:23: warning: pattern var j in object pat vardef are patvars is never used
+  private var (i, j) = (42, 27) // warn // warn
+                  ^
 error: No warnings can be incurred under -Werror.
-3 warnings
+5 warnings
 1 error

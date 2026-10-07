@@ -35,8 +35,10 @@ object TastyFormat {
    *  a series declared by the `MajorVersion`, breaks forward
    *  compatibility, but remains backwards compatible, with all
    *  preceding `MinorVersion`.
+   *
+   *  28.7 (Scala 3.7) is the final supported version.
    */
-  final val MinorVersion: Int = 6
+  final val MinorVersion: Int = 7
 
   /** Natural Number. The `ExperimentalVersion` allows for
    *  experimentation with changes to TASTy without committing

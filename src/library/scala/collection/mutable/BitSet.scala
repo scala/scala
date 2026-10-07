@@ -278,7 +278,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
         * Array Shrinking:
         * If `this` is not longer than `bs`, then since we must iterate through the full array of words,
         * we can track the new highest index word which is non-zero, at little additional cost. At the end, the new
-        * Array[Long] allocated for the returned BitSet will only be of size `maxNonZeroIndex + 1`
+        * `Array[Long]` allocated for the returned `BitSet` will only be of size `maxNonZeroIndex + 1`
         */
 
       val bsnwords = bs.nwords

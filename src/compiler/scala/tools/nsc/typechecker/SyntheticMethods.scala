@@ -15,6 +15,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.runtime.Statics
 import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
@@ -90,11 +91,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       else templ
     }
 
+    def Lit(c: Any) = LIT.typed(c)
+
     def accessors = clazz.caseFieldAccessors
     val arity = accessors.size
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_")))(mkThis :: _)
+      forwardMethod(method, getMember(ScalaRunTimeModule, method.name.prepend("_")))(mkThis :: _)
 
     def callStaticsMethodName(name: TermName)(args: Tree*): Tree = {
       val method = RuntimeStaticsModule.info.member(name)
@@ -238,11 +241,18 @@ trait SyntheticMethods extends ast.TreeDSL {
       equalsCore(m, List(clazz.derivedValueClassUnbox))
     }
 
-    /* The hashcode method for value classes
-     * def hashCode(): Int = this.underlying.hashCode
+    /* The hashcode method for value classes. If the value is primitive:
+     *  def hashCode(): Int = this.underlying.hashCode
+     * otherwise, the null-safe variant:
+     *   def hashCode(): Int = java.util.Objects.hashCode(this.underlying)
      */
-    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { _ =>
-      Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+      val acc = clazz.derivedValueClassUnbox
+      val tp = acc.info.resultType
+      if (isPrimitiveValueType(tp))
+        Select(mkThisSelect(acc), nme.hashCode_)
+      else
+        gen.mkMethodCall(Objects_hashCode, List(mkThisSelect(acc)))
     }
 
     /* The _1, _2, etc. methods to implement ProductN, disabled
@@ -285,8 +295,8 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def hashcodeImplementation(sym: Symbol): Tree = {
       sym.tpe.finalResultType.typeSymbol match {
-        case UnitClass | NullClass              => Literal(Constant(0))
-        case BooleanClass                       => If(Ident(sym), Literal(Constant(1231)), Literal(Constant(1237)))
+        case UnitClass | NullClass              => Lit(0)
+        case BooleanClass                       => If(Ident(sym), Lit(1231), Lit(1237))
         case IntClass                           => Ident(sym)
         case ShortClass | ByteClass | CharClass => Select(Ident(sym), nme.toInt)
         case LongClass                          => callStaticsMethodName(nme.longHash)(Ident(sym))
@@ -299,29 +309,51 @@ trait SyntheticMethods extends ast.TreeDSL {
     def specializedHashcode = {
       createMethod(nme.hashCode_, Nil, IntTpe) { m =>
         val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntTpe
-        val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
+        val valdef      = ValDef(accumulator, Lit(0xcafebabe))
         val mixPrefix   =
           Assign(
             Ident(accumulator),
-            callStaticsMethod("mix")(Ident(accumulator),
-              Apply(gen.mkAttributedSelect(gen.mkAttributedSelect(mkThis, Product_productPrefix), Object_hashCode), Nil)))
+            callStaticsMethod("mix")(Ident(accumulator), Lit(clazz.name.decode.hashCode)))
         val mixes       = accessors map (acc =>
           Assign(
             Ident(accumulator),
             callStaticsMethod("mix")(Ident(accumulator), hashcodeImplementation(acc))
           )
         )
-        val finish = callStaticsMethod("finalizeHash")(Ident(accumulator), Literal(Constant(arity)))
+        val finish = callStaticsMethod("finalizeHash")(Ident(accumulator), Lit(arity))
 
         Block(valdef :: mixPrefix :: mixes, finish)
       }
     }
-    def chooseHashcode = {
+
+    def productHashCode: Tree = {
+      // case `hashCode` used to call `ScalaRunTime._hashCode`, but that implementation mixes in the result
+      // of `productPrefix`, which causes scala/bug#13033.
+      // Because case hashCode has two possible implementations (`specializedHashcode` and `productHashCode`) we
+      // need to fix it twice.
+      // 1. `specializedHashcode` above was changed to mix in the case class name statically.
+      // 2. we can achieve the same thing here by calling `MurmurHash3Module.productHash` with a `seed` that mixes
+      // in the case class name already. This is backwards and forwards compatible:
+      //   - the new generated code works with old and new standard libraries
+      //   - the `MurmurHash3Module.productHash` implementation returns the same result as before when called by
+      //     previously compiled case classes
+      // Alternatively, we could decide to always generate the full implementation (like `specializedHashcode`)
+      // at the cost of bytecode size.
+      createMethod(nme.hashCode_, Nil, IntTpe) { _ =>
+        if (arity == 0) Lit(clazz.name.decode.hashCode)
+        else gen.mkMethodCall(MurmurHash3Module, TermName("productHash"), List(
+          mkThis,
+          Lit(Statics.mix(0xcafebabe, clazz.name.decode.hashCode)),
+          Lit(true)
+        ))
+      }
+    }
+
+    def chooseHashcode =
       if (accessors exists (x => isPrimitiveValueType(x.tpe.finalResultType)))
         specializedHashcode
       else
-        forwardToRuntime(Object_hashCode)
-    }
+        productHashCode
 
     def valueClassMethods = List(
       Any_hashCode -> (() => hashCodeDerivedValueClassMethod),

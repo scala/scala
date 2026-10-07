@@ -1,0 +1,15 @@
+t13109.scala:6: warning: reflective access of structural type member method x should be enabled
+by making the implicit value scala.language.reflectiveCalls visible.
+This can be achieved by adding the import clause 'import scala.language.reflectiveCalls'
+or by setting the compiler option -language:reflectiveCalls.
+See the Scaladoc for value scala.language.reflectiveCalls for a discussion
+why the feature should be explicitly enabled.
+  def f1 = b.x // warn
+             ^
+t13109.scala:10: warning: reflective access of structural type member method x should be enabled
+by making the implicit value scala.language.reflectiveCalls visible.
+    x // also expect warn but not report
+    ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

@@ -42,7 +42,7 @@ abstract class Erasure extends InfoTransform
 
 // -------- erasure on types --------------------------------------------------------
 
-  // convert a numeric with a toXXX method
+  // convert a numeric with a toNNN method
   def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
@@ -90,8 +90,13 @@ abstract class Erasure extends InfoTransform
         }
       }
     @tailrec
-    private[this] def untilApply(ts: List[Type]): Unit =
-      if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
+    private def untilApply(ts: List[Type]): Unit =
+      ts match {
+        case t :: ts if !result =>
+          apply(t)
+          untilApply(ts)
+        case _ =>
+      }
   }
 
   override protected def verifyJavaErasure = settings.Xverify.value || settings.isDebug
@@ -795,9 +800,10 @@ abstract class Erasure extends InfoTransform
     /** A replacement for the standard typer's `typed1` method.
      */
     override def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
-      val tree1 = try {
+      val tree1 = try
         tree match {
-          case DefDef(_,_,_,_,_,_) if tree.symbol.isClassConstructor && tree.symbol.isPrimaryConstructor && tree.symbol.owner != ArrayClass =>
+          case tree: DefDef
+          if tree.symbol.isClassConstructor && tree.symbol.isPrimaryConstructor && tree.symbol.owner != ArrayClass =>
             super.typed1(deriveDefDef(tree)(addMixinConstructorCalls(_, tree.symbol.owner)), mode, pt) // (3)
           case Template(parents, self, body) =>
             val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
@@ -820,16 +826,14 @@ abstract class Erasure extends InfoTransform
           case _ =>
             super.typed1(adaptMember(tree), mode, pt)
         }
-      } catch {
+      catch {
         case er: TypeError =>
           Console.println("exception when typing " + tree+"/"+tree.getClass)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
           abort("unrecoverable error")
         case ex: Exception =>
-          //if (settings.debug.value)
-          try Console.println("exception when typing " + tree)
-          finally throw ex
+          try Console.println(s"exception when typing $tree") catch identity: @nowarn
           throw ex
       }
 
@@ -846,7 +850,6 @@ abstract class Erasure extends InfoTransform
             case Some(SAMFunction(samTp, _, _)) => fun setType specialScalaErasure(samTp)
             case _ => fun
           }
-
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
         case Match(selector, cases) =>
@@ -858,7 +861,7 @@ abstract class Erasure extends InfoTransform
             val first = tree1.symbol.alternatives.head
             val firstTpe = first.tpe
             val sym1 = tree1.symbol.filter {
-              alt => alt == first || !(firstTpe looselyMatches alt.tpe)
+              alt => alt == first || !firstTpe.looselyMatches(alt.tpe)
             }
             if (tree.symbol ne sym1) {
               tree1 setSymbol sym1 setType sym1.tpe
@@ -884,13 +887,15 @@ abstract class Erasure extends InfoTransform
           else if (low.owner == base) "name clash between defined and inherited member"
           else "name clash between inherited members"
         )
-        val when = if (exitingRefchecks(lowType matches highType)) "" else " after erasure: " + exitingPostErasure(highType)
+        val when =
+          if (exitingRefchecks(lowType matches highType)) ""
+          else s" after erasure: ${exitingPostErasure(highType)}"
 
         reporter.error(pos,
-          s"""|$what:
-              |${exitingRefchecks(highString)} and
-              |${exitingRefchecks(lowString)}
-              |have same type$when""".trim.stripMargin
+          sm"""|$what:
+               |${exitingRefchecks(highString)} and
+               |${exitingRefchecks(lowString)}
+               |have same type$when"""
         )
       }
       low setInfo ErrorType
@@ -1195,7 +1200,7 @@ abstract class Erasure extends InfoTransform
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
               } else if (primitiveGetClassMethods.contains(fn.symbol)) {
                 // if we got here then we're trying to send a primitive getClass method to either
-                // a) an Any, in which cage Object_getClass works because Any erases to object. Or
+                // a) an Any, in which case Object_getClass works because Any erases to object. Or
                 //
                 // b) a non-primitive, e.g. because the qualifier's type is a refinement type where one parent
                 //    of the refinement is a primitive and another is AnyRef. In that case
@@ -1226,10 +1231,11 @@ abstract class Erasure extends InfoTransform
         case tree: Apply =>
           preEraseApply(tree)
 
-        case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
-                                      fun.symbol != Object_asInstanceOf &&
-                                      fun.symbol != Object_isInstanceOf &&
-                                      fun.symbol != Object_synchronized) =>
+        case TypeApply(fun, args)
+        if fun.symbol.owner != AnyClass
+        && fun.symbol != Object_asInstanceOf
+        && fun.symbol != Object_isInstanceOf
+        && fun.symbol != Object_synchronized =>
           // leave all other type tests/type casts, remove all other type applications
           preErase(fun)
 
@@ -1406,6 +1412,60 @@ abstract class Erasure extends InfoTransform
     bridge.resetFlag(BRIDGE)
   }
 
+  // exclude primitives and value classes, which need special boxing
+  def isReferenceType(tp: Type) = !isErasedValueType(tp) && {
+    val sym = tp.typeSymbol
+    !(isPrimitiveValueClass(sym) || sym.isDerivedValueClass)
+  }
+
+  /**
+   * Check if LMF can adapt between an `impl` and an `intf` signature.
+   *
+   * The constraints are specified here: https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
+   * Note that LMF can bridge between primitive types and their boxed variants. But we cannot use that because
+   * unboxing `null` in Scala needs to return the zero value (LMF would produce an NPE).
+   *
+   * Given `samMethodType: (U1..Un)Ru` and function type T1,..., Tn => Rt (the target method created by uncurry),
+   * we use the original lambda target for `implMethod: (<captured args> A1..An)Ra` if,
+   * for i=1..N:
+   *  Ai =:= Ui || (Ai <:< Ui <:< AnyRef)
+   *  Ru =:= void || (Ra =:= Ru || (Ra <:< AnyRef, Ru <:< AnyRef))
+   *
+   * (We can ignore captured arguments here)
+   *
+   * Then we can use the target method as-is, LMF will generate a correct bridge if needed.
+   *
+   * Otherwise, we create an `anonfun$adapted` method in delambdafy that uses the types closest
+   * to the target method that still meet the above requirements.
+   */
+  final def lmfAdaptationOk(implParamTypes: List[Type], implResultType: Type, intfParamTypes: List[Type], intfResultType: Type): (Boolean, Boolean) = {
+    val paramsOk = implParamTypes.corresponds(intfParamTypes) { (implParamType, samParamType) =>
+      implParamType =:= samParamType ||
+        (isReferenceType(implParamType) && isReferenceType(samParamType) && implParamType <:< samParamType)
+    }
+
+    val resultOk = intfResultType =:= UnitTpe ||
+      implResultType =:= intfResultType ||
+      isReferenceType(implResultType) && isReferenceType(intfResultType)
+
+    (paramsOk, resultOk)
+  }
+
+  /**
+   * If the SAM overrides a parent method, only use LMF if it can to bridge between the two signatures.
+   * Otherwise, the lambda is expanded to an anonymous class.
+   */
+  private def lmfOverridesOk(samSym: Symbol): Boolean = {
+    val samParamTypes = exitingErasure(samSym.info.paramTypes)
+    val samResult = exitingErasure(samSym.info.resultType)
+    samSym.allOverriddenSymbols.forall { overridden =>
+      val overriddenParamTypes = exitingErasure(overridden.info.paramTypes)
+      val overriddenResult = exitingErasure(overridden.info.resultType)
+      val (paramsOk, resultOk) = lmfAdaptationOk(samParamTypes, samResult, overriddenParamTypes, overriddenResult)
+      paramsOk && resultOk
+    }
+  }
+
   /** Does this symbol compile to the underlying platform's notion of an interface,
     * without requiring compiler magic before it can be instantiated?
     *
@@ -1422,7 +1482,7 @@ abstract class Erasure extends InfoTransform
     *
     * TODO: can we speed this up using the INTERFACE flag, or set it correctly by construction?
     */
-  final def compilesToPureInterface(tpSym: Symbol): Boolean = {
+  final def compilesToPureInterface(tpSym: Symbol, samSym: Symbol): Boolean = {
     def ok(sym: Symbol) =
       sym.isJavaInterface ||
       sym.isTrait &&
@@ -1435,11 +1495,14 @@ abstract class Erasure extends InfoTransform
       // HACK: this is to rule out traits with an effectful initializer.
       // The constructor only exists if the trait's template has statements.
       // Sadly, we can't be more precise without access to the tree that defines the SAM's owner.
+      // Note that Scala 2 adds an `$init$` method when a trait has concrete definition (including a method).
+      // `Function1`, for example, has a constructor (one that just returns).
       !sym.primaryConstructor.exists &&
-      (sym.isInterface || sym.info.decls.forall(mem => mem.isMethod || mem.isType)) // TODO OPT: && {sym setFlag INTERFACE; true})
+      (sym.isInterface || sym.info.decls.forall(mem => mem.isMethod || mem.isType))
 
     // we still need to check our ancestors even if the INTERFACE flag is set, as it doesn't take inheritance into account
-    ok(tpSym) && tpSym.ancestors.forall(sym => (sym eq AnyClass) || (sym eq ObjectClass) || ok(sym))
+    ok(tpSym) && tpSym.ancestors.forall(sym => (sym eq AnyClass) || (sym eq ObjectClass) || ok(sym)) &&
+    lmfOverridesOk(samSym)
   }
 
   final def isJvmAccessible(cls: Symbol, context: Context): Boolean = {

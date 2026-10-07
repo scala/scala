@@ -1,0 +1,41 @@
+t7415.scala:10: warning: Calls to parameterless method foo will be easy to mistake for calls to def foo(implicit a: T): Int, which has a single implicit parameter list.
+  def foo = 0 // warn
+      ^
+t7415.scala:14: warning: Usages of value foo will be easy to mistake for calls to def foo(implicit a: T): Int, which has a single implicit parameter list.
+  val foo = 0 // warn
+      ^
+t7415.scala:18: warning: Usages of value foo will be easy to mistake for calls to def foo(implicit a: T): Int, which has a single implicit parameter list.
+  private[this] val foo = 42 // warn
+                    ^
+t7415.scala:33: warning: Calls to parameterless method foo will be easy to mistake for calls to def foo(implicit a: T): Int, which has a single implicit parameter list.
+class Mixed extends Base with T1 // warn here
+      ^
+t7415.scala:36: warning: Calls to parameterless method foo will be easy to mistake for calls to def foo(implicit a: T): Int, which has a single implicit parameter list.
+  def foo(implicit a: T) = 0 // warn although x.foo picks this one
+      ^
+t7415.scala:47: warning: Usages of value foo will be easy to mistake for calls to overloads which have a single implicit parameter list:
+  def foo(implicit e: String): Int
+  def foo(implicit e: Int): Int
+  val foo = 0 // warn
+      ^
+t7415.scala:60: warning: Usages of value x will be easy to mistake for calls to def x(implicit t: T): Int, which has a single implicit parameter list.
+  def x(implicit t: T) = 27 // warn
+      ^
+t7415.scala:71: warning: Usages of value i will be easy to mistake for calls to def i(implicit t: T): Int, which has a single implicit parameter list.
+class R(val i: Int) extends Q // warn
+            ^
+t7415.scala:72: warning: Usages of value i will be easy to mistake for calls to def i(implicit t: T): Int, which has a single implicit parameter list.
+class S(i: Int) extends R(i) { // warn
+      ^
+t7415.scala:72: warning: Usages of value i will be easy to mistake for calls to def i(implicit t: T): Int, which has a single implicit parameter list.
+class S(i: Int) extends R(i) { // warn
+        ^
+t7415.scala:82: warning: Calls to parameterless method f will be easy to mistake for calls to def f[A](implicit t: T): Int, which has a single implicit parameter list.
+  def f[A] = 27 // warn
+      ^
+t7415.scala:88: warning: Usages of value an will be easy to mistake for calls to def an[A](implicit evidence$1: scala.reflect.ClassTag[A]): Unit, which has a single implicit parameter list.
+  val an = new Object // warn
+      ^
+error: No warnings can be incurred under -Werror.
+12 warnings
+1 error

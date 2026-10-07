@@ -1,0 +1,6 @@
+t13130.scala:9: warning: method f in class C is deprecated (since 1.0): nope
+  def g = f
+          ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

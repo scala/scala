@@ -389,7 +389,7 @@ class SetMapConsistencyTest {
     assert { 
       val m2 = lm.mapValuesNow(_+2)
       lm.transformValues(_+2)
-      m2 == lm && !(m2 eq lm) && (for ((_,v) <- lm) yield v).sum == 33L
+      m2 == lm && (m2 ne lm) && (for ((_,v) <- lm) yield v).sum == 33L
     }
 
     assert {
@@ -436,7 +436,7 @@ class SetMapConsistencyTest {
     assert { 
       val m2 = arm.mapValuesNow(_+2)
       arm.transformValues(_+2)
-      m2 == arm && !(m2 eq arm) && (for ((_,v) <- arm) yield v).sum == 33L
+      m2 == arm && (m2 ne arm) && (for ((_,v) <- arm) yield v).sum == 33L
     }
 
     assert {

@@ -1,19 +1,19 @@
-prefix-unary-nilary-removal.scala:4: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_~ : Foo = this` [quickfixable]
-  def unary_~() : Foo = this
+prefix-unary-nilary-removal.scala:4: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_~ : Foo = Foo()` [quickfixable]
+  def unary_~(): Foo = Foo()
       ^
-prefix-unary-nilary-removal.scala:5: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_-(implicit pos: Long) = this` [quickfixable]
-  def unary_-()(implicit pos: Long) = this
+prefix-unary-nilary-removal.scala:5: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_-(implicit pos: Long) = Foo()` [quickfixable]
+  def unary_-()(implicit pos: Long) = Foo()
       ^
-prefix-unary-nilary-removal.scala:12: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method unary_~,
+prefix-unary-nilary-removal.scala:15: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method unary_~,
 or remove the empty argument list from its definition (Java-defined methods are exempt).
 In Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]
   val f2 = ~f
            ^
 prefix-unary-nilary-removal.scala:5: warning: parameter pos in method unary_- is never used
-  def unary_-()(implicit pos: Long) = this
+  def unary_-()(implicit pos: Long) = Foo()
                          ^
 prefix-unary-nilary-removal.scala:8: warning: parameter pos in method unary_+ is never used
-  def unary_+(implicit pos: Long) = this // ok
+  def unary_+(implicit pos: Long) = Foo() // ok
                        ^
 error: No warnings can be incurred under -Werror.
 5 warnings

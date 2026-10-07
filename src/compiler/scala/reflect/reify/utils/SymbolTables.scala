@@ -134,7 +134,6 @@ trait SymbolTables {
       s"""symtab = [$symtabString], aliases = [$aliasesString]${if (original.isDefined) ", has original" else ""}"""
     }
 
-    @nowarn // spurious unused buf.type
     def debugString: String = {
       val buf = new StringBuilder
       buf.append("symbol table = " + (if (syms.length == 0) "<empty>" else "")).append(EOL)

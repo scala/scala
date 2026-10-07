@@ -3,7 +3,11 @@ reload: CompletionOnEmptyArgMethod.scala
 askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
 ================================================================================
 [response] askTypeCompletion at (2,17)
-retrieved 30 members
+retrieved 34 members
+[inaccessible] private[this] val self: Foo
+[inaccessible] private[this] val self: Foo
+[inaccessible] private[this] val self: Foo
+[inaccessible] private[this] val self: Foo
 def +(other: String): String
 def ->[B](y: B): (Foo, B)
 def ensuring(cond: Boolean): Foo

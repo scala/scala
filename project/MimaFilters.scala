@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.16"),
+    mimaReferenceVersion := Some("2.13.18"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -43,29 +43,26 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.generic.CommonErrors"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.generic.CommonErrors$"),
 
-    // scala/scala#10937
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.LazyList#LazyBuilder#DeferredState.eval"),
-    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State"),
-    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$"),
-    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$Cons"),
-    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$Empty$$"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$EmptyMarker$"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.LazyList#LazyBuilder#DeferredState.eval"),
+    // KEEP: new jdk 25 method in CharSequence => mixin forwarders
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.getChars"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#SeqCharSequence.getChars"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.StringBuilder.getChars"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.getChars"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.SeqCharSequence.getChars"),
+
+    // scala/scala#11242
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$MidEvaluation$"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$Uninitialized$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$InRace"),
 
-    // scala/scala#11004
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Annotations#AnnotationApi.argIsDefault"),
-    // A new abstract trait method is not binary compatible in principle, but `AnnotationApi` is only implemented by
-    // `AnnotationInfo`, both of which are in scala-reflect.jar. So this should never leak.
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.api.Annotations#AnnotationApi.argIsDefault"),
+    // scala/scala#11242
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.LazyList"), // superclass change from AbstractSeq to LazyListBase
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyListBase*"), // private[immutable]
 
-    // scala/scala#10976
-    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.defaultArg"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superArg"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superFwdArg"),
+    // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubTermSymbol"),
 
-    // scala/scala/pull/10923
+    // scala/scala#10923
     ProblemFilters.exclude[DirectMissingMethodProblem]("*.applyToContext"),
   )
 

@@ -29,7 +29,7 @@ import scala.concurrent.duration.Duration
 trait Awaitable[+T] {
 
   /**
-   * Await the "completed" state of this `Awaitable`.
+   * Awaits the "completed" state of this `Awaitable`.
    *
    * '''''This method should not be called directly; use [[Await.ready]] instead.'''''
    *
@@ -47,7 +47,7 @@ trait Awaitable[+T] {
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
   /**
-   * Await and return the result (of type `T`) of this `Awaitable`.
+   * Awaits and returns the result (of type `T`) of this `Awaitable`.
    *
    * '''''This method should not be called directly; use [[Await.result]] instead.'''''
    *

@@ -1,25 +1,26 @@
 package scala.collection.mutable
 
-import scala.collection.immutable.List
 import org.junit.Test
 import org.junit.Assert._
 
 import scala.annotation.nowarn
 import scala.collection.SeqFactory
+import scala.collection.immutable.List
+import scala.tools.nsc.`strip margin`
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class ArrayDequeTest {
 
   @Test
-  def apply() = {
+  def apply: Unit = {
     val buffer = ArrayDeque.empty[Int]
-    val buffer2 = ArrayBuffer.empty[Int]
+    val standard = ArrayBuffer.empty[Int]
 
     def apply[U](f: Buffer[Int] => U) = {
       //println(s"Before: [buffer1=${buffer}; buffer2=${buffer2}]")
-      assertEquals(f(buffer), f(buffer2))
-      assertEquals(buffer, buffer2)
-      assertEquals(buffer.reverse, buffer2.reverse)
+      assertEquals(f(standard), f(buffer))
+      assertEquals(standard, buffer)
+      assertEquals(standard.reverse, buffer.reverse)
     }
 
     apply(_.+=(1, 2, 3, 4, 5)): @nowarn("cat=deprecation")
@@ -43,15 +44,15 @@ class ArrayDequeTest {
     apply(_.addAll(collection.immutable.Vector.tabulate(10)(identity)))
 
     (-100 to 100) foreach {i =>
-      assertEquals(buffer.splitAt(i), buffer2.splitAt(i))
+      assertEquals(standard.splitAt(i), buffer.splitAt(i))
     }
 
     for {
       i <- -100 to 100
       j <- -100 to 100
     } {
-      assertEquals(buffer.slice(i, j), buffer2.slice(i, j))
-      if (i > 0 && j > 0) assertEquals(List.from(buffer.sliding(i, j)), List.from(buffer2.sliding(i, j)))
+      assertEquals(standard.slice(i, j), buffer.slice(i, j))
+      if (i > 0 && j > 0) assertEquals(List.from(standard.sliding(i, j)), List.from(buffer.sliding(i, j)))
     }
   }
 
@@ -123,32 +124,53 @@ class ArrayDequeTest {
 
   @Test def `last of empty throws NoSuchElement`: Unit =
     assertThrows[NoSuchElementException](ArrayDeque.empty[Int].last, _.endsWith("last of empty ArrayDeque"))
+
+  @Test def `sliding throws on shrink`: Unit = {
+    val sut = ArrayDeque.from(1 to 10)
+    val it = sut.sliding(size = 2, step = 1)
+    assertTrue(it.hasNext)
+    assertEquals(2, it.next().size)
+    sut.clear()
+    assertThrows[java.util.ConcurrentModificationException](it.hasNext)
+  }
+
+  @Test def `sliding throws on grow`: Unit = {
+    val sut = ArrayDeque.from(1 to 10)
+    val it = sut.sliding(size = 2, step = 1)
+    assertTrue(it.hasNext)
+    assertEquals(2, it.next().size)
+    sut.addOne(100)
+    assertThrows[java.util.ConcurrentModificationException](it.hasNext)
+  }
 }
 
 object ArrayDequeTest {
 
   // tests scala/bug#11047
   def genericSlidingTest(factory: SeqFactory[ArrayDeque], collectionName: String): Unit = {
-    for {
-      i <- 0 to 40
-
-      range = 0 until i
-      other = factory.from(range)
-
-      j <- 1 to 40
-      k <- 1 to 40
-
-      iterableSliding = range.sliding(j, k).to(Seq)
-      otherSliding = other.sliding(j, k).to(Seq)
-    }
+    for (i <- 0 to 40; j <- 1 to 40; k <- 1 to 40) {
+      val range = 0 until i
+      val other = factory.from(range)
+      val iterableSliding = range.sliding(j, k).to(Seq)
+      val otherSliding = other.sliding(j, k).to(Seq)
       assert(iterableSliding == otherSliding,
-        s"""Iterable.from($range)).sliding($j,$k) differs from $collectionName.from($range)).sliding($j,$k)
-           |Iterable yielded: $iterableSliding
-           |$collectionName yielded: $otherSliding
-       """.stripMargin
+        sm"""Iterable.from($range)).sliding($j,$k) differs from $collectionName.from($range)).sliding($j,$k)
+            |Iterable yielded: $iterableSliding
+            |$collectionName yielded: $otherSliding
+            |"""
       )
+    }
 
     // scala/bug#11440
     assertEquals(0, factory.empty[Int].sliding(1).size)
+
+    // no general mutation check
+    locally {
+      val sut = factory.from(1 to 2)
+      val it = sut.sliding(size = 2, step = 1)
+      sut(1) = 100
+      assertTrue(it.hasNext)
+      assertEquals(1, it.size)
+    }
   }
 }

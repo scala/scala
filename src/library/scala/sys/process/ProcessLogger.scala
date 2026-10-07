@@ -81,15 +81,15 @@ class FileProcessLogger(file: File) extends ProcessLogger with Closeable with Fl
  *  when run.
  */
 object ProcessLogger {
-  /** Creates a [[scala.sys.process.ProcessLogger]] that redirects output to a `java.io.File`. */
+  /** Returns a [[scala.sys.process.ProcessLogger]] that redirects output to a `java.io.File`. */
   def apply(file: File): FileProcessLogger = new FileProcessLogger(file)
 
-  /** Creates a [[scala.sys.process.ProcessLogger]] that sends all output, standard and error,
+  /** Returns a [[scala.sys.process.ProcessLogger]] that sends all output, standard and error,
    *  to the passed function.
    */
   def apply(fn: String => Unit): ProcessLogger = apply(fn, fn)
 
-  /** Creates a [[scala.sys.process.ProcessLogger]] that sends all output to the corresponding
+  /** Returns a [[scala.sys.process.ProcessLogger]] that sends all output to the corresponding
    *  function.
    *
    *  @param fout  This function will receive standard output.

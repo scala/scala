@@ -296,11 +296,11 @@ object Test3_mutable {
     // ArrayBuilder
     val abu1 = ArrayBuilder.make[Long]
     val _abu1: ArrayBuilder[ClassManifest[Long]] = read(write(abu1))
-    check(abu1, _abu1)
+    assert(abu1 ne _abu1)
 
     val abu2 = ArrayBuilder.make[Float]
     val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
-    check(abu2, _abu2)
+    assert(abu2 ne _abu2)
 
     // ArraySeq
     val aq1 = ArraySeq(1, 2, 3)

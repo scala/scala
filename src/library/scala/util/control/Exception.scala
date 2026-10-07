@@ -169,7 +169,7 @@ object Exception {
 
   /** !!! Not at all sure of every factor which goes into this,
    *  and/or whether we need multiple standard variations.
-   *  @return true if `x` is $protectedExceptions otherwise false.
+   *  @return `true` if `x` is $protectedExceptions otherwise `false`.
    */
   def shouldRethrow(x: Throwable): Boolean = x match {
     case _: ControlThrowable      => true
@@ -218,11 +218,11 @@ object Exception {
 
     protected val name = "Catch"
 
-    /** Create a new Catch with additional exception handling logic. */
+    /** Creates a new `Catch` with additional exception handling logic. */
     def or[U >: T](pf2: Catcher[U]): Catch[U] = new Catch(pf orElse pf2, fin, rethrow)
     def or[U >: T](other: Catch[U]): Catch[U] = or(other.pf)
 
-    /** Apply this catch logic to the supplied body. */
+    /** Applies this catch logic to the supplied body. */
     def apply[U >: T](body: => U): U =
       try body
       catch {
@@ -231,7 +231,7 @@ object Exception {
       }
       finally fin foreach (_.invoke())
 
-    /** Create a new Catch container from this object and the supplied finally body.
+    /** Creates a new `Catch` container from this object and the supplied finally body.
      *  @param body The additional logic to apply after all existing finally bodies
      */
     def andFinally(body: => Unit): Catch[T] = {
@@ -239,23 +239,23 @@ object Exception {
       new Catch(pf, Some(appendedFin), rethrow)
     }
 
-    /** Apply this catch logic to the supplied body, mapping the result
+    /** Applies this catch logic to the supplied body, mapping the result
      *  into `Option[T]` - `None` if any exception was caught, `Some(T)` otherwise.
      */
     def opt[U >: T](body: => U): Option[U] = toOption(Some(body))
 
-    /** Apply this catch logic to the supplied body, mapping the result
+    /** Applies this catch logic to the supplied body, mapping the result
      *  into `Either[Throwable, T]` - `Left(exception)` if an exception was caught,
      *  `Right(T)` otherwise.
      */
     def either[U >: T](body: => U): Either[Throwable, U] = toEither(Right(body))
 
-    /** Apply this catch logic to the supplied body, mapping the result
+    /** Applies this catch logic to the supplied body, mapping the result
      * into `Try[T]` - `Failure` if an exception was caught, `Success(T)` otherwise.
      */
     def withTry[U >: T](body: => U): scala.util.Try[U] = toTry(Success(body))
 
-    /** Create a `Catch` object with the same `isDefinedAt` logic as this one,
+    /** Creates a `Catch` object with the same `isDefinedAt` logic as this one,
       * but with the supplied `apply` method replacing the current one. */
     def withApply[U](f: Throwable => U): Catch[U] = {
       val pf2 = new Catcher[U] {
@@ -306,7 +306,7 @@ object Exception {
   def catching[T](c: Catcher[T]): Catch[T] = new Catch(c)
 
   /** Creates a `Catch` object which will catch any of the supplied exceptions.
-   *  Unlike "catching" which filters out those in shouldRethrow, this one will
+   *  Unlike `catching`, which filters out those in `shouldRethrow`, this one will
    *  catch whatever you ask of it including $protectedExceptions.
    *  @group composition-catch-promiscuously
    */

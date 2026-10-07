@@ -164,7 +164,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     if (idx >= 0 && idx < sz) headptr(idx) = newelem
     else throw CommonErrors.indexOutOfBounds(index = idx, max = sz - 1)
 
-  /** Replace the contents of this $coll with the mapped result.
+  /** Replaces the contents of this $coll with the mapped result.
    *
    *  @param f the mapping function
    *  @return this $coll
@@ -435,7 +435,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
     }
 
     override def toString: String =
-      array.take(size).mkString("Unrolled@%08x".format(System.identityHashCode(this)) + "[" + size + "/" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
+      array.take(size).mkString(s"Unrolled@${System.identityHashCode(this).toHexString}[$size/${array.length}](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
   }
 }
 

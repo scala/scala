@@ -10,6 +10,9 @@ warn-unused-privates.scala:6: warning: private method bippy in class Bippy is ne
 warn-unused-privates.scala:7: warning: private method boop in class Bippy is never used
   private def boop(x: Int)            = x+a+b     // warn
               ^
+warn-unused-privates.scala:8: warning: private val MILLIS1 in class Bippy is never used
+  final private val MILLIS1           = 2000      // now warn, might have been inlined
+                    ^
 warn-unused-privates.scala:9: warning: private val MILLIS2 in class Bippy is never used
   final private val MILLIS2: Int      = 1000      // warn
                     ^
@@ -22,6 +25,9 @@ warn-unused-privates.scala:17: warning: private val BOOL in object Bippy is neve
 warn-unused-privates.scala:41: warning: private val hummer in class Boppy is never used
   private val hummer = "def" // warn
               ^
+warn-unused-privates.scala:43: warning: private val bum in class Boppy is never used
+  private final val bum   = "ghi"       // now warn, might have been (was) inlined
+                    ^
 warn-unused-privates.scala:48: warning: private var v1 in trait Accessors is never used
   private var v1: Int = 0 // warn
               ^
@@ -91,6 +97,9 @@ warn-unused-privates.scala:274: warning: private method f in class recursive ref
 warn-unused-privates.scala:277: warning: private class P in class recursive reference is not a usage is never used
   private class P {
                 ^
+warn-unused-privates.scala:284: warning: private val There in class Constantly is never used
+  private final val There = "there" // warn
+                    ^
 error: No warnings can be incurred under -Werror.
-31 warnings
+34 warnings
 1 error

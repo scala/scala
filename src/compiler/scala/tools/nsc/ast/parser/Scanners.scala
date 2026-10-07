@@ -695,7 +695,9 @@ trait Scanners extends ScannersCommon {
               } else {
                 offset += 1
                 getStringPart(multiLine = false)
-                sepRegions = STRINGLIT :: sepRegions // indicate single line string part
+                // don't enter the interpolation region if we recovered from an unclosed string
+                if (token != SEMI)
+                  sepRegions = STRINGLIT :: sepRegions // indicate single line string part
               }
             } else {
               nextChar()
@@ -958,7 +960,12 @@ trait Scanners extends ScannersCommon {
       val note =
         if (seenEscapedQuoteInInterpolation) "; note that `\\\"` no longer closes single-quoted interpolated string literals since 2.13.6, you can use a triple-quoted string instead"
         else ""
-      syntaxError(s"unclosed string literal$note")
+      error(offset, s"unclosed string literal$note")
+      // Recover as best we can by pretending the line has ended, so later
+      // statements (and completions) are not swallowed by the unclosed literal.
+      cbuf.clear()
+      adjustSepRegions(STRINGLIT)
+      token = SEMI
     }
 
     private def replaceUnicodeEscapesInTriple(): Unit = 
@@ -1137,6 +1144,7 @@ trait Scanners extends ScannersCommon {
         case 'n'  => putChar('\n')
         case 'f'  => putChar('\f')
         case 'r'  => putChar('\r')
+        case 's'  => putChar(' ')
         case '\"' => putChar('\"')
         case '\'' => putChar('\'')
         case '\\' => putChar('\\')

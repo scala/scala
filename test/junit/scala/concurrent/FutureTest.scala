@@ -6,7 +6,7 @@ import org.junit.Test
 
 import scala.tools.testkit.AssertUtil._
 import scala.util.{Success, Try}
-import duration.Duration.Inf
+import duration.Duration.{Inf, Undefined}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.impl.Promise.DefaultPromise
 import scala.util.chaining._
@@ -197,5 +197,10 @@ class FutureTest {
       println(b.mkString)
       assert(b.mkString == "b4a4")
     }
+  }
+
+  @Test def completedWaitUndefined(): Unit = {
+    assertThrows[IllegalArgumentException](Await.result(Future.successful(1), Undefined))
+    assertThrows[IllegalArgumentException](Await.ready(Future.successful(1), Undefined))
   }
 }

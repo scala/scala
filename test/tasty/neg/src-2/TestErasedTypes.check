@@ -4,7 +4,7 @@ TestErasedTypes_fail.scala:9: error: Unsupported Scala 3 erased value x; found i
 TestErasedTypes_fail.scala:10: error: Unsupported Scala 3 erased value x; found in method foo2 in trait tastytest.ErasedTypes.Foo.
   def test4(f: Foo) = f.foo2("foo")
                         ^
-TestErasedTypes_fail.scala:12: error: Unsupported Scala 3 erased method theString; found in object tastytest.ErasedTypes.ErasedCompileTimeOps.
+TestErasedTypes_fail.scala:12: error: Unsupported Scala 3 inline method theString; found in object tastytest.ErasedTypes.ErasedCompileTimeOps.
   def test5 = ErasedCompileTimeOps.theString
                                    ^
 3 errors

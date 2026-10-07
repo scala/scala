@@ -1,13 +1,16 @@
 //> using options -Werror -Xlint
 //
 class Foo {
-  def unary_~() : Foo = this
-  def unary_-()(implicit pos: Long) = this
+  def unary_~(): Foo = Foo()
+  def unary_-()(implicit pos: Long) = Foo()
 
-  def unary_! : Foo = this // ok
-  def unary_+(implicit pos: Long) = this // ok
+  def `unary_!`: Foo = Foo() // ok
+  def unary_+(implicit pos: Long) = Foo() // ok
+}
+object Foo {
+  def apply() = new Foo
 }
 object Test {
-  val f = new Foo
+  val f = Foo()
   val f2 = ~f
 }

@@ -1,0 +1,31 @@
+t13163.scala:7: error: method apply in object I1 cannot be accessed as a member of object O.this.I1 from class O
+ Access to protected method apply not permitted because
+ enclosing class O is not a subclass of
+ object I1 in class O where target is defined
+  def t1 = I1.apply(42) // error
+              ^
+t13163.scala:13: error: constructor I1 in class I1 cannot be accessed in class II1 from class II1 in class OO
+ Access to protected constructor I1 not permitted because
+ prefix type OO.this.I1 does not conform to
+ class II1 in class OO where the access takes place
+    def t1 = new I1(42)   // error
+             ^
+t13163.scala:14: error: method apply in object I1 cannot be accessed as a member of object OO.this.I1 from class II1 in class OO
+ Access to protected method apply not permitted because
+ enclosing class II1 in class OO is not a subclass of
+ object I1 in class O where target is defined
+    def t2 = I1.apply(42) // error
+                ^
+t13163.scala:17: error: constructor I1 in class I1 cannot be accessed in class OO from class OO
+ Access to protected constructor I1 not permitted because
+ enclosing class OO is not a subclass of
+ class I1 in class O where target is defined
+  def t1 = new I1(42) // error
+           ^
+t13163.scala:18: error: constructor I2 in class I2 cannot be accessed in class OO from class OO
+ Access to protected constructor I2 not permitted because
+ enclosing class OO is not a subclass of
+ class I2 in class O where target is defined
+  def t2 = new I2(42) // error
+           ^
+5 errors

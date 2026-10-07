@@ -1114,12 +1114,14 @@ trait Namers extends MethodSynthesis {
         case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt) // unreached, see methodSig
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
-      val nonStructural = if (!tree.symbol.isLocalToBlock && (currentRun.isScala3 || settings.warnInferStructural))
-        new CheckOrDropStructural(currentRun.sourceFeatures.noInferStructural, rhsTpe)(rhsTpe)
+      val noInferFlag = currentRun.sourceFeatures.noInferStructural
+      val nonStructural = if (!tree.symbol.isLocalToBlock && (currentRun.isScala3 || noInferFlag || settings.warnInferStructural))
+        new CheckOrDropStructural(noInferFlag, rhsTpe)(rhsTpe)
       else rhsTpe
       tree.tpt.defineType {
         // infer from overridden symbol, contingent on Xsource; exclude constants and whitebox macros
-        val inferOverridden = currentRun.isScala3 &&
+        val inferOverrideFlag = currentRun.sourceFeatures.inferOverride
+        val inferOverridden = (currentRun.isScala3 || inferOverrideFlag) &&
           !pt.isWildcard && pt != NoType && !pt.isErroneous &&
           !(tree.isInstanceOf[ValDef] && tree.symbol.isFinal && isConstantType(nonStructural)) &&
           openMacros.isEmpty && {
@@ -1146,7 +1148,7 @@ trait Namers extends MethodSynthesis {
           val action = pos.map(p => runReporting.codeAction("add explicit type", p.focus, s": $leg", msg)).getOrElse(Nil)
           runReporting.warning(tree.pos, msg, WarningCategory.Scala3Migration, tree.symbol, action)
         }
-        if (inferOverridden && currentRun.sourceFeatures.inferOverride) pt
+        if (inferOverridden && inferOverrideFlag) pt
         else {
           if (inferOverridden) warnIfInferenceChanged()
           legacy.tap(InferredImplicitError(tree, _, context))

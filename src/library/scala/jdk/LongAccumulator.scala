@@ -17,11 +17,12 @@ import java.util.Spliterator
 import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
+import scala.annotation._
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, LongStepper, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.implicitConversions
 
-/** A specialized Accumulator that holds `Long`s without boxing, see [[Accumulator]]. */
+/** A specialized `Accumulator` that holds `Long`s without boxing, see [[Accumulator]]. */
 final class LongAccumulator
   extends Accumulator[Long, AnyAccumulator, LongAccumulator]
     with mutable.SeqOps[Long, AnyAccumulator, LongAccumulator]
@@ -236,6 +237,7 @@ final class LongAccumulator
   }
 
   /** Copies the elements in this `LongAccumulator` into an `Array[Long]` */
+  @nowarn // cat=lint-overload see toArray[B: ClassTag]
   def toArray: Array[Long] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
     val a = new Array[Long](totalSize.toInt)

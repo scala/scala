@@ -106,7 +106,7 @@ class TastyHeaderUnpickler(config: UnpicklerConfig, reader: TastyReader) {
       )
 
       val possibles = config.toolOverrides
-      val validOverride = possibles.isEmpty || possibles.exists { overrideVersion =>
+      val validOverride = possibles.exists { overrideVersion =>
         TastyFormat.isVersionCompatible(
           fileMajor            = fileMajor,
           fileMinor            = fileMinor,

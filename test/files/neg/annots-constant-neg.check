@@ -69,10 +69,6 @@ Test.scala:69: error: Java annotation SuppressWarnings is abstract; cannot be in
 Error occurred in an application involving default arguments.
   @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
                             ^
-Test.scala:69: error: not found: value value
-Error occurred in an application involving default arguments.
-  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
-                                                 ^
 Test.scala:71: error: annotation argument needs to be a constant; found: new scala.inline()
   @Ann(value = 0, c = Array(new inline)) def u18 = 0 // err
                             ^
@@ -89,7 +85,7 @@ Test.scala:79: error: not enough arguments for constructor Ann2: (x: Int)(y: Int
 Unspecified value parameter x.
   @Ann2 def v7 = 0 // err
    ^
-Test.scala:80: error: missing argument list for constructor Ann2 in class Ann2
+Test.scala:80: error: missing argument list for constructor Ann2 in class Ann2 of type (x: Int)(y: Int): Ann2
   @Ann2(x = 0) def v8 = 0 // err
    ^
 Test.scala:83: error: no arguments allowed for nullary constructor Ann3: (): Ann3
@@ -107,4 +103,4 @@ currently not supported; ignoring arguments List(0)
   @Ann2(x = 0)(y = 0) def v9 = 0 // warn
    ^
 1 warning
-32 errors
+31 errors

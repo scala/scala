@@ -41,7 +41,7 @@ trait StripMarginInterpolator {
   final def sm(args: Any*): String = impl('|', args: _*)
 
   private final def impl(sep: Char, args: Any*): String = {
-    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringOps#isLineBreak
+    def isLineBreak(c: Char) = c == Chars.LF || c == Chars.FF // compatible with CharArrayReader
     def stripTrailingPart(s: String) = {
       val (pre, post) = s.span(c => !isLineBreak(c))
       pre + post.stripMargin(sep)

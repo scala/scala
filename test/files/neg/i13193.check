@@ -1,0 +1,9 @@
+i13193.scala:3: warning: constructor deprecatedName in class deprecatedName is deprecated (since 2.13.0): The parameter name should be a String, not a symbol.
+  def f(@deprecatedName(name = Symbol("x"), since="forever") a: Int): Int = a
+         ^
+i13193.scala:4: warning: constructor deprecatedName in class deprecatedName is deprecated (since 2.13.0): The parameter name should be a String, not a symbol.
+  def g(@deprecatedName(since = "forever", name = Symbol("x")) a: Int): Int = a
+         ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

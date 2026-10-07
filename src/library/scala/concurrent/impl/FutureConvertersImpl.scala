@@ -76,7 +76,7 @@ private[scala] object FutureConvertersImpl {
       * @inheritdoc
       *
       * WARNING: completing the result of this method will not complete the underlying
-      *          Scala Future or Promise (ie, the one that that was passed to `toJava`.)
+      *          Scala `Future` or `Promise` (ie, the one that that was passed to `toJava`.)
       */
     override def toCompletableFuture: CompletableFuture[T] = this
 

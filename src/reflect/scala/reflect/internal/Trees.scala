@@ -632,7 +632,8 @@ trait Trees extends api.Trees {
   case class UnApply(fun: Tree, args: List[Tree])
        extends TermTree with UnApplyApi {
     override def transform(transformer: Transformer): Tree =
-      transformer.treeCopy.UnApply(this, transformer.transform(fun), transformer.transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+      transformer.treeCopy.UnApply(this, transformer.transform(fun), transformer.transformTrees(args))
+        // bq: see test/.../unapplyContexts2.scala
     override def traverse(traverser: Traverser): Unit = {
       traverser.traverse(fun)
       traverser.traverseTrees(args)

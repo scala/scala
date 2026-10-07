@@ -21,60 +21,60 @@ import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.runtime.Statics.releaseFence
 
 /** A class for immutable linked lists representing ordered collections
-  *  of elements of type `A`.
-  *
-  *  This class comes with two implementing case classes `scala.Nil`
-  *  and `scala.::` that implement the abstract members `isEmpty`,
-  *  `head` and `tail`.
-  *
-  *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
-  *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
-  *
-  *  ==Performance==
-  *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
-  *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
-  *
-  *  '''Space:''' `List` implements '''structural sharing''' of the tail list. This means that many operations are either
-  *  zero- or constant-memory cost.
-  *  {{{
-  *  val mainList = List(3, 2, 1)
-  *  val with4 =    4 :: mainList  // re-uses mainList, costs one :: instance
-  *  val with42 =   42 :: mainList // also re-uses mainList, cost one :: instance
-  *  val shorter =  mainList.tail  // costs nothing as it uses the same 2::1::Nil instances as mainList
-  *  }}}
-  *
-  *  @example {{{
-  *  // Make a list via the companion object factory
-  *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-  *
-  *  // Make a list element-by-element
-  *  val when = "AM" :: "PM" :: Nil
-  *
-  *  // Pattern match
-  *  days match {
-  *    case firstDay :: otherDays =>
-  *      println("The first day of the week is: " + firstDay)
-  *    case Nil =>
-  *      println("There don't seem to be any week days.")
-  *  }
-  *  }}}
-  *
-  *  @note The functional list is characterized by persistence and structural sharing, thus offering considerable
-  *        performance and space consumption benefits in some scenarios if used correctly.
-  *        However, note that objects having multiple references into the same functional list (that is,
-  *        objects that rely on structural sharing), will be serialized and deserialized with multiple lists, one for
-  *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
-  *
-  *  @see  [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
-  *  section on `Lists` for more information.
-  *
-  *  @define coll list
-  *  @define Coll `List`
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  */
+ *  of elements of type `A`.
+ *
+ *  This class comes with two implementing case classes `scala.Nil`
+ *  and `scala.::` that implement the abstract members `isEmpty`,
+ *  `head` and `tail`.
+ *
+ *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
+ *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
+ *
+ *  ==Performance==
+ *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
+ *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
+ *
+ *  '''Space:''' `List` implements '''structural sharing''' of the tail list. This means that many operations are either
+ *  zero- or constant-memory cost.
+ *  {{{
+ *  val mainList = List(3, 2, 1)
+ *  val with4 =    4 :: mainList  // re-uses mainList, costs one :: instance
+ *  val with42 =   42 :: mainList // also re-uses mainList, cost one :: instance
+ *  val shorter =  mainList.tail  // costs nothing as it uses the same 2::1::Nil instances as mainList
+ *  }}}
+ *
+ *  @example {{{
+ *  // Make a list via the companion object factory
+ *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+ *
+ *  // Make a list element-by-element
+ *  val when = "AM" :: "PM" :: Nil
+ *
+ *  // Pattern match
+ *  days match {
+ *    case firstDay :: otherDays =>
+ *      println("The first day of the week is: " + firstDay)
+ *    case Nil =>
+ *      println("There don't seem to be any week days.")
+ *  }
+ *  }}}
+ *
+ *  @note The functional list is characterized by persistence and structural sharing, thus offering considerable
+ *        performance and space consumption benefits in some scenarios if used correctly.
+ *        However, note that objects having multiple references into the same functional list (that is,
+ *        objects that rely on structural sharing), will be serialized and deserialized with multiple lists, one for
+ *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
+ *
+ *  @see  [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
+ *  section on `Lists` for more information.
+ *
+ *  @define coll list
+ *  @define Coll `List`
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 @SerialVersionUID(3L)
 sealed abstract class List[+A]
   extends AbstractSeq[A]
@@ -186,17 +186,6 @@ sealed abstract class List[+A]
     h
   }
 
-  /** @inheritdoc
-    *
-    *  @example {{{
-    *  // Given a list
-    *  val letters = List('a','b','c','d','e')
-    *
-    *  // `slice` returns all elements beginning at index `from` and afterwards,
-    *  // up until index `until` (excluding index `until`.)
-    *  letters.slice(1,3) // Returns List('b','c')
-    *  }}}
-    */
   override def slice(from: Int, until: Int): List[A] = {
     val lo = scala.math.max(from, 0)
     if (until <= lo || isEmpty) Nil
@@ -541,7 +530,7 @@ sealed abstract class List[+A]
       var currentLast = newHead
 
       // we know that all elements are :: until at least firstMiss.tail
-      while (!(toProcess eq firstMiss)) {
+      while (toProcess ne firstMiss) {
         val newElem = new ::(toProcess.head, Nil)
         currentLast.next = newElem
         currentLast = newElem
@@ -561,7 +550,7 @@ sealed abstract class List[+A]
           next = next.tail
         } else {
           // its not a match - do we have outstanding elements?
-          while (!(nextToCopy eq next)) {
+          while (nextToCopy ne next) {
             val newElem = new ::(nextToCopy.head, Nil)
             currentLast.next = newElem
             currentLast = newElem

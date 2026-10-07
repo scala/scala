@@ -523,4 +523,13 @@ class ArrayBufferTest {
     bld.addOne("hello, world")
     assertTrue(bld.result().contains("hello, world"))
   }
+
+  @Test def `sliding throws on mutation`: Unit = {
+    val b = ArrayBuffer.from(1 to 10)
+    val it = b.sliding(size = 2, step = 1)
+    assertTrue(it.hasNext)
+    assertEquals(2, it.next().size)
+    b(2) = 42
+    assertThrows[java.util.ConcurrentModificationException](it.hasNext)
+  }
 }

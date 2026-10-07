@@ -330,8 +330,8 @@ abstract class BTypes {
     }
   }
 
-  /**
-   * InnerClass and EnclosingMethod attributes (EnclosingMethod is displayed as OUTERCLASS in asm).
+  /*
+   * InnerClasses and EnclosingMethod attributes (EnclosingMethod is displayed as OUTERCLASS in asm).
    *
    * In this summary, "class" means "class or interface".
    *
@@ -340,8 +340,6 @@ abstract class BTypes {
    *
    * Terminology
    * -----------
-   *
-   * Diagram here: https://blogs.oracle.com/darcy/entry/nested_inner_member_and_top
    *
    *  - Nested class (JLS 8): class whose declaration occurs within the body of another class
    *
@@ -675,19 +673,30 @@ abstract class BTypes {
       })
     }
 
-    def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo.force map {
-      case NestedInfo(_, outerName, innerName, isStaticNestedClass, enteringTyperPrivate) =>
-        // the static flag in the InnerClass table has a special meaning, see InnerClass comment
-        def adjustStatic(flags: Int): Int = ( flags & ~Opcodes.ACC_STATIC |
-          (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
-          ) & BCodeHelpers.INNER_CLASSES_FLAGS
-        InnerClassEntry(
-          internalName,
-          outerName.orNull,
-          innerName.orNull,
-          flags = adjustStatic(if (enteringTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
-        )
-    })
+    def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] =
+      for (i <- info) yield
+        i.nestedInfo.force.map {
+          case NestedInfo(_, outerName, innerName, isStaticNestedClass, enteringTyperPrivate) =>
+            var flags = i.flags
+            if (enteringTyperPrivate)
+              flags = (flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE
+            // for use of ACC_STATIC in InnerClasses, see `InnerClasses and EnclosingMethod attributes` above
+            if (isStaticNestedClass)
+              flags |= Opcodes.ACC_STATIC
+            else
+              flags &= ~Opcodes.ACC_STATIC
+            // Kotlin interop (scala/bug#13110)
+            if ((flags & Opcodes.ACC_ABSTRACT) != 0)
+              flags &= ~Opcodes.ACC_FINAL
+            flags &= BCodeHelpers.INNER_CLASSES_FLAGS
+
+            InnerClassEntry(
+              name = internalName,
+              outerName = outerName.orNull,
+              innerName = innerName.orNull,
+              flags = flags
+            )
+        }
 
     def inlineInfoAttribute: Either[NoClassBTypeInfo, InlineInfoAttribute] = info.map(i => {
       // InlineInfos are serialized for classes being compiled. For those the info was built by
