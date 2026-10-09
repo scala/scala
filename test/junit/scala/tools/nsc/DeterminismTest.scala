@@ -353,7 +353,10 @@ class DeterminismTest {
     // which would change the generic signature of the static forwarder `L.compose[A]`.
     def code = List[SourceFile](
       source("a.scala", "class M[A] extends (Int => A) { def apply(i: Int): A = ??? }"),
-      source("b.scala", "case class L(child: String)")
+      source("b.scala", "case class L(child: String)"),
+      // `Iterable.lazyZip[B]` returns `LazyZip2[A, B, this.type]`, so the forwarder's info is an existential
+      source("c.scala", "abstract class S1 extends scala.collection.immutable.Set[String]"),
+      source("d.scala", "abstract class S2[B] extends scala.collection.immutable.Set[B]")
     )
     test(List(code))
   }

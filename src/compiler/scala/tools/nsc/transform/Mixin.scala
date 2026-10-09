@@ -194,8 +194,13 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       if (mixinClass.typeParams.isEmpty) sym
       else {
         // `forwarderInfo` was obtained by `memberInfo`, which may share the type parameter symbols of
-        // `mixinMember`. Clone them so that renaming them below doesn't mutate the original method
-        sym modifyInfo (_ => forwarderInfo.cloneInfo(sym))
+        // `mixinMember`. Clone them so that renaming them below doesn't mutate the original method.
+        // It is an existential if the method's type refers to `this.type`, e.g. `Iterable.lazyZip`.
+        def cloneTypeParams(tp: Type): Type = tp match {
+          case ExistentialType(quantified, underlying) => newExistentialType(quantified, cloneTypeParams(underlying))
+          case _                                       => tp.cloneInfo(sym)
+        }
+        sym modifyInfo (_ => cloneTypeParams(forwarderInfo))
         avoidTypeParamShadowing(sym)
         sym
       }
