@@ -7,6 +7,7 @@ import org.junit.Test
 import scala.tools.testkit.AssertUtil._
 import scala.util.{Success, Try}
 import duration.Duration.{Inf, Undefined}
+import duration.DurationInt
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.impl.Promise.DefaultPromise
 import scala.util.chaining._
@@ -116,19 +117,20 @@ class FutureTest {
     assertEquals(Some(Success(1)), f.value)
   }
 
+  private val Noop = impl.Promise.getClass.getDeclaredFields.find(_.getName.contains("Noop")).get.tap(_.setAccessible(true)).get(impl.Promise)
+
+  private def numTransforms(p: AnyRef) = { // a DefaultPromise, as Promise or Future
+    def count(cs: impl.Promise.Callbacks[_]): Int = cs match {
+      case Noop => 0
+      case m: impl.Promise.ManyCallbacks[_] => 1 + count(m.rest)
+      case _ => 1
+    }
+    val cs = p.asInstanceOf[DefaultPromise[_]].get().asInstanceOf[impl.Promise.Callbacks[_]]
+    count(cs)
+  }
+
   @Test def t13058(): Unit = {
     implicit val directExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(_.run())
-    val Noop = impl.Promise.getClass.getDeclaredFields.find(_.getName.contains("Noop")).get.tap(_.setAccessible(true)).get(impl.Promise)
-
-    def numTransforms(p: Promise[_]) = {
-      def count(cs: impl.Promise.Callbacks[_]): Int = cs match {
-        case Noop => 0
-        case m: impl.Promise.ManyCallbacks[_] => 1 + count(m.rest)
-        case _ => 1
-      }
-      val cs = p.asInstanceOf[DefaultPromise[_]].get().asInstanceOf[impl.Promise.Callbacks[_]]
-      count(cs)
-    }
 
     locally {
       val p1 = Promise[Int]()
@@ -196,6 +198,85 @@ class FutureTest {
       p.complete(Success(41))
       println(b.mkString)
       assert(b.mkString == "b4a4")
+    }
+  }
+
+  @Test def t13197(): Unit = {
+    val p = Promise[Int]()
+    p.future.onComplete(_ => ())(ExecutionContext.parasitic) // callback that should not be removed
+    val ops = p.asInstanceOf[DefaultPromise[_]].get()
+
+    for (_ <- 1 to 100) {
+      assertThrows[TimeoutException](Await.result(p.future, 1.nanosecond))
+      assertThrows[TimeoutException](Await.ready(p.future, 1.nanosecond))
+    }
+    assertEquals(1, numTransforms(p)) // only the one `onComplete` callback, no leftovers from the Await calls
+    assertTrue(p.asInstanceOf[DefaultPromise[_]].get() eq ops)
+
+    Thread.currentThread.interrupt()
+    assertThrows[InterruptedException](Await.result(p.future, Inf)) // latch is added, interrupt flag => exception, latch removed
+    Thread.currentThread.interrupt()
+    assertThrows[InterruptedException](Await.result(p.future, 1.hour))
+    assertEquals(1, numTransforms(p)) // no leftovers from interrupted Await calls
+
+    p.success(42)
+    assertEquals(42, Await.result(p.future, 1.nanosecond))
+  }
+
+  @Test def t13197Linked(): Unit = {
+    // Completing `gate` links `inner` to `outer`, moving inner's callbacks to outer
+    def linked(inner: Future[Int]) = {
+      val gate = Promise[Unit]()
+      val outer = gate.future.flatMap(_ => inner)(ExecutionContext.parasitic)
+      (gate, outer)
+    }
+
+    // Await: linked while waiting, and already linked
+    locally {
+      val inner = Promise[Int]()
+      val (gate, outer) = linked(inner.future)
+      val t = new Thread(() => { Thread.sleep(100); gate.success(()) })
+      t.start()
+      assertThrows[TimeoutException](Await.ready(inner.future, 1.second))
+      t.join()
+      assertTrue(inner.asInstanceOf[DefaultPromise[_]].get().isInstanceOf[impl.Promise.Link[_]])
+      assertEquals(0, numTransforms(outer))
+
+      for (_ <- 1 to 100) assertThrows[TimeoutException](Await.ready(inner.future, 1.nanosecond))
+      assertEquals(0, numTransforms(outer))
+    }
+
+    // firstCompletedOf: linked after adding the handler
+    locally {
+      val inner = Promise[Int]()
+      val (gate, outer) = linked(inner.future)
+      val other = Promise[Int]()
+      val first = Future.firstCompletedOf(List(inner.future, other.future))(ExecutionContext.parasitic)
+      gate.success(())
+      assertEquals(1, numTransforms(outer))
+      other.success(1)
+      assertEquals(1, Await.result(first, Inf))
+      assertEquals(0, numTransforms(outer))
+    }
+
+    // Await and firstCompletedOf with a chain of links: a -> b -> c
+    locally {
+      val a = Promise[Int]()
+      val (g1, b) = linked(a.future)
+      val (g2, c) = linked(b)
+      val t = new Thread(() => { Thread.sleep(100); g1.success(()); g2.success(()) })
+      t.start()
+      assertThrows[TimeoutException](Await.ready(a.future, 1.second))
+      t.join()
+      assertTrue(b.asInstanceOf[DefaultPromise[_]].get().isInstanceOf[impl.Promise.Link[_]])
+      assertEquals(0, numTransforms(c))
+
+      val other = Promise[Int]()
+      val first = Future.firstCompletedOf(List(a.future, other.future))(ExecutionContext.parasitic)
+      assertEquals(1, numTransforms(c))
+      other.success(1)
+      assertEquals(1, Await.result(first, Inf))
+      assertEquals(0, numTransforms(c))
     }
   }
 
