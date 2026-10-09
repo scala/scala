@@ -127,4 +127,34 @@ object Function {
   def untupled[T1, T2, T3, T4, T5, R](f: ((T1, T2, T3, T4, T5)) => R): (T1, T2, T3, T4, T5) => R = {
     (x1, x2, x3, x4, x5) => f((x1, x2, x3, x4, x5))
   }
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[R](f: () => R): R =
+    f()
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[T1, R](f: T1 => R)(implicit x1: T1): R =
+    f(x1)
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[T1, T2, R](f: (T1, T2) => R)(implicit x1: T1, x2: T2): R =
+    f(x1, x2)
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[T1, T2, T3, R](f: (T1, T2, T3) => R)(implicit x1: T1, x2: T2, x3: T3): R =
+    f(x1, x2, x3)
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[T1, T2, T3, T4, R](f: (T1, T2, T3, T4) => R)(implicit x1: T1, x2: T2, x3: T3, x4: T4): R =
+    f(x1, x2, x3, x4)
+
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   */
+  def applyToContext[T1, T2, T3, T4, T5, R](f: (T1, T2, T3, T4, T5) => R)(implicit x1: T1, x2: T2, x3: T3, x4: T4, x5: T5): R =
+    f(x1, x2, x3, x4, x5)
 }

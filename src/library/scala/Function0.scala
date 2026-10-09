@@ -40,6 +40,10 @@ trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self
    *  @return   the result of function application.
    */
   def apply(): R
+  /** Apply the body of this function to the argument which is taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext: R = apply()
 
   override def toString(): String = "<function0>"
 }

@@ -61,6 +61,9 @@ object MimaFilters extends AutoPlugin {
     // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubTermSymbol"),
+
+    // scala/scala#10923
+    ProblemFilters.exclude[DirectMissingMethodProblem]("*.applyToContext"),
   )
 
   override val buildSettings = Seq(
