@@ -348,6 +348,16 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testMixinForwarderTypeParamRenaming(): Unit = {
+    // The mixin forwarder `M.compose[A$]` must not rename the type parameter of `Function1.compose`,
+    // which would change the generic signature of the static forwarder `L.compose[A]`.
+    def code = List[SourceFile](
+      source("a.scala", "class M[A] extends (Int => A) { def apply(i: Int): A = ??? }"),
+      source("b.scala", "case class L(child: String)")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
