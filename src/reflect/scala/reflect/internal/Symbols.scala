@@ -1998,16 +1998,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         that.isType || this.id < that.id
     }
 
-    /** `Object` precedes other base types of the same depth (universal traits like `Equals`), as it did when the
-     *  order was by id. Java generic signatures erase a refinement to its first parent, so `Equals with Object`
-     *  must not become `Equals`.
+    /** The order of base types of the same depth:
+     *
+     *  - Abstract types precede classes. The base type sequence of a reference to an abstract type is the type
+     *    itself followed by that of its upper bound as seen from the prefix, which may be deeper than its declared
+     *    bound, from which its depth is computed. E.g. `SymbolApi#NameType <: Universe#Name`, but in `Global`
+     *    its bound is the class `Names#Name`, of the same depth. The `lub` of two such base type sequences
+     *    relies on them being ordered by `isLess`.
+     *  - `Object` precedes other base types (universal traits like `Equals`), as it did when the order was by
+     *    id. Java generic signatures erase a refinement to its first parent, so `Equals with Object` must not
+     *    become `Equals`.
+     *  - Otherwise, by `compareByName`.
      */
-    private def isLessSameDepth(sym1: Symbol, sym2: Symbol): Boolean = {
-      val obj = definitions.ObjectClass
-      if (sym1 eq obj) true
-      else if (sym2 eq obj) false
-      else compareByName(sym1, sym2) < 0
-    }
+    private def isLessSameDepth(sym1: Symbol, sym2: Symbol): Boolean =
+      if (sym1.isAbstractType != sym2.isAbstractType) sym1.isAbstractType
+      else {
+        val obj = definitions.ObjectClass
+        if (sym1 eq obj) true
+        else if (sym2 eq obj) false
+        else compareByName(sym1, sym2) < 0
+      }
 
     /** A total order on symbols that, unlike their ids, doesn't depend on the order in which they are created.
      *
