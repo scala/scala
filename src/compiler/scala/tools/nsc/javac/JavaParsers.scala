@@ -748,42 +748,23 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
 
-      /* The constant type for a literal initializer of a `final` field */
-      def literalConstantTpe(const: Constant): Tree = {
-        def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
-        def isStringTyped = tpt1 match {
-          case Ident(TypeName("String")) => true
+      // A constant expression, folded by the namer, see `JavaConstantInitializer`
+      var constantInitializer: Tree = EmptyTree
+      if (in.token == EQUALS && !mods.isParameter) {
+        in.nextToken()
+        // a constant variable, if initialized with a constant expression (JLS 4.12.4)
+        def mayBeConstantTyped = tpt1 match {
+          case _: TypeTree if tpt1.tpe != null => isPrimitiveValueType(tpt1.tpe)
+          case Ident(tpnme.String) | Select(_, tpnme.String) => true // resolved by the namer
           case _ => false
         }
-        if (const.tag == StringTag && isStringTyped) constantTpe(const)
-        else if (tpt1.tpe != null && (const.tag == BooleanTag || const.isNumeric)) {
-          // for example, literal 'a' is ok for float. 127 is ok for byte, but 128 is not.
-          val converted = const.convertTo(tpt1.tpe)
-          if (converted == null) tpt1
-          else constantTpe(converted)
-        } else tpt1
+        if (mods.isFinal && mayBeConstantTyped) constantExprOpt().foreach(constantInitializer = _)
+        else skipTo(COMMA, SEMI)
       }
-
-      // A non-literal constant expression, folded by the namer, see `JavaConstantInitializer`
-      var constantInitializer: Tree = EmptyTree
-      val tpt2: Tree =
-        if (in.token == EQUALS && !mods.isParameter) {
-          in.nextToken()
-          if (mods.isFinal) { // a constant variable, if initialized with a constant expression (JLS 4.12.4)
-            constantExprOpt() match {
-              case Some(Literal(const)) => literalConstantTpe(const)
-              case Some(expr)           => constantInitializer = expr; tpt1
-              case None                 => tpt1
-            }
-          } else {
-            skipTo(COMMA, SEMI)
-            tpt1
-          }
-        } else tpt1
 
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
-        ValDef(mods1, name, tpt2, blankExpr)
+        ValDef(mods1, name, tpt1, blankExpr)
           .tap(vd => if (!constantInitializer.isEmpty) vd.updateAttachment(analyzer.JavaConstantInitializer(constantInitializer)))
       }
     }
