@@ -45,6 +45,7 @@ class JavaConstantsTest {
     |  public static final String S1S = "a" + 1 + 'c' + 1.5f + 2.5 + true + 10L + I1 + 1e10 + Float.MIN_VALUE;
     |  public static final String S2S = "x" + (char) 65 + (1 + 2) + (String) "y" + (java.lang.String) "z";
     |  public static final String S3S = "" + ("a" == "a") + TERNC;
+    |  public static final java.lang.String S4S = "a";
     |  public static final int NEG = ~I1, PLUS = +C1;
     |  public static final int INTMAX = Integer.MAX_VALUE + 1;
     |  public static final int PAREN = (I1) - 1, CAST = (int) 3.9 + (int) -3.9, CASTL = (int) 1e20;
