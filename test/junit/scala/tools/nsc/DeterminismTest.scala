@@ -338,6 +338,16 @@ class DeterminismTest {
     test(code :: Nil)
   }
 
+  @Test def testJavaEnumValueOf(): Unit = {
+    // The parameter of the implicitly declared `valueOf` of a Java enum is named `name`, whether the enum is
+    // parsed from source or loaded from a classfile. The lambda body that eta-expands it takes that name.
+    def code = List[SourceFile](
+      source("E.java", "public enum E { A, B }"),
+      source("u.scala", "object U { def f(xs: List[String]) = xs.map(E.valueOf) }")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
