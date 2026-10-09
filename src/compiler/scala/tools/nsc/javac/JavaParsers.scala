@@ -1021,7 +1021,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           blankExpr),
         DefDef(
           Modifiers(Flags.JAVA | Flags.STATIC), nme.valueOf, List(),
-          List(List(makeParam("x", TypeTree(StringTpe)))),
+          List(List(makeParam("name", TypeTree(StringTpe)))), // as named by javac (JLS 8.9.3)
           enumType,
           blankExpr))
       accept(RBRACE)
