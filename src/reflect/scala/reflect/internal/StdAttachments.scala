@@ -172,11 +172,6 @@ trait StdAttachments {
   case class PermittedSubclasses(permits: List[Tree]) extends PlainAttachment
   case class PermittedSubclassSymbols(permits: List[Symbol]) extends PlainAttachment
 
-  /** The initializer of a `final` field in a Java source file which may be a constant expression.
-   *  The namer gives the field a constant type if the expression evaluates to a constant.
-   */
-  case class JavaConstantInitializer(expr: Tree) extends PlainAttachment
-
   case class NamePos(pos: Position) extends PlainAttachment
 
   /** Not a named arg in an application. Used for suspicious literal booleans. */

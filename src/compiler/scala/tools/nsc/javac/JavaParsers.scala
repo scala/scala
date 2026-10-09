@@ -765,7 +765,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
         ValDef(mods1, name, tpt2, blankExpr)
-          .tap(vd => if (!constantInitializer.isEmpty) vd.updateAttachment(JavaConstantInitializer(constantInitializer)))
+          .tap(vd => if (!constantInitializer.isEmpty) vd.updateAttachment(analyzer.JavaConstantInitializer(constantInitializer)))
       }
     }
 
