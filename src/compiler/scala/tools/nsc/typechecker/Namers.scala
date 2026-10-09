@@ -1810,7 +1810,8 @@ trait Namers extends MethodSynthesis {
             }
             case _ => null
           } catch {
-            case _: CyclicReference => null // only in invalid Java code
+            // fields whose initializers refer to each other, which javac does not treat as constants either
+            case _: CyclicReference => null
           }
         javaConstantFolder(expr, resolve) match {
           case null  => declared

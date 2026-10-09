@@ -48,6 +48,11 @@ class JavaConstantsTest {
     |  public static final String S3S = "" + ("a" == "a") + TERNC;
     |  public static final java.lang.String S4S = "a";
     |  public static final int NEG = ~I1, PLUS = +C1;
+    |  public static final int CYC1 = J.CYC2 + 0, CYC2 = J.CYC1 + 0;
+    |  public static final int CYC4 = J.CYC3 + 0, CYC3 = J.CYC4 + 0;
+    |  public static final int SIZE = 4;
+    |  public static int SIZE() { return 0; }
+    |  public static final int BYTES = SIZE * 2, BYTES2 = J.SIZE * 2;
     |  public static final int INTMAX = Integer.MAX_VALUE + 1;
     |  public static final int OVF = Integer.MIN_VALUE / -1, OVF2 = Integer.MAX_VALUE * 2, DIVZ = 1 / 0;
     |  public static final long LOVF = Long.MAX_VALUE * 2, LSHL = 1L << 65, BSHL = (byte) 1 << 33L;
