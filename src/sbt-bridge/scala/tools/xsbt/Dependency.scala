@@ -28,6 +28,13 @@ import java.util.{ HashMap => JavaMap }
 
 object Dependency {
   def name = "xsbt-dependency"
+
+  // DependencyByMacroExpansion only exists in Zinc 1.10 and later
+  private lazy val macroExpansionContext: DependencyContext =
+    try DependencyByMacroExpansion
+    catch {
+      case _: NoSuchFieldError => DependencyByMemberRef
+    }
 }
 
 /**
@@ -114,6 +121,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     val memberRef = processDependency(DependencyByMemberRef, allowLocal = false)(_)
     val inheritance = processDependency(DependencyByInheritance, allowLocal = true)(_)
     val localInheritance = processDependency(LocalDependencyByInheritance, allowLocal = true)(_)
+    val scala2MacroExpansion = processDependency(Dependency.macroExpansionContext, allowLocal = false)(_)
 
     @deprecated("Use processDependency that takes allowLocal.", "1.1.0")
     def processDependency(context: DependencyContext)(dep: ClassDependency): Unit =
@@ -192,6 +200,27 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
                  * but when it does we must ensure the incremental compiler tries its best no to lose
                  * any dependency. Therefore, we do a last-time effort to get the origin of the symbol
                  * by inspecting the classpath manually.
+                 *
+                 * UPDATE: This can also happen without compiler bugs if the symbol is simply uninitialized.
+                 * Example, `class Client { def foo = Server.foo }`. When compiling client, the type `Foo` returned
+                 * by `Server.foo` does not need to be initialized as we do not select from it or check its
+                 * conformance to another type.
+                 *
+                 * Initializing `targetSymbol` before calling `assosicatedFile` would work but is problematic
+                 * see zinc/zinc#949
+                 *
+                 * Perhaps consider this?
+                 * val file = targetSymbol.associatedFile match {
+                 *   case NoAbstractFile => sym.rawInfo match {
+                 *     case cfl: global.loaders.ClassfileLoader =>
+                 *       val f = cfl.associatedFile(sym) // Gets the file from the loader
+                 *       if (f.exists) f else NoAbstractFile
+                 *     case f => f
+                 *   }
+                 * }
+                 *
+                 * Or the status quo might just be perfectly fine -- if compilation doesn't need to force `Foo`,
+                 * then there isn't a real dependency.
                  */
                 val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, includePackageObjectClassNames = false)
                 global.findAssociatedFile(fqn) match {
@@ -218,6 +247,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     private val _memberRefCache = new JavaSet[ClassDependency]()
     private val _inheritanceCache = new JavaSet[ClassDependency]()
     private val _localInheritanceCache = new JavaSet[ClassDependency]()
+    private val _dependencyByMacroExpansionCache = new JavaSet[ClassDependency]()
     private val _topLevelImportCache = new JavaSet[Symbol]()
 
     private var _currentDependencySource: Symbol = _
@@ -293,9 +323,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
       val dependency = ClassDependency(fromClass, depClass)
+      // An anonymous class be the enclosing class of an existential type symbol inferred from refinements,
+      // prior to https://github.com/scala/scala/pull/10940. Allowing this here leads to a dependency on class name
+      // that does not exist. Guard against it here to avoid the issue with legacy compiler versions.
       if (
         !cache.contains(dependency) &&
-        !depClass.isRefinementClass
+        !depClass.isAnonOrRefinementClass
       ) {
         process(dependency)
         cache.add(dependency)
@@ -367,10 +400,28 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       override def addDependency(symbol: global.Symbol) = handler(symbol)
     }
 
-    def addTypeDependencies(tpe: Type): Unit = {
+    object TypeDependencyTraverserForMacro extends TypeDependencyTraverser {
+      private var owner: Symbol = _
+      def setOwner(symbol: Symbol) = owner = symbol
+      override def addDependency(symbol: global.Symbol): Unit = {
+        addClassDependency(
+          _dependencyByMacroExpansionCache,
+          processor.scala2MacroExpansion,
+          owner,
+          symbol
+        )
+      }
+    }
+
+    def addTypeDependencies(tpe: Type, forMacro: Boolean = false): Unit = {
       val fromClass = resolveDependencySource
-      TypeDependencyTraverser.setOwner(fromClass)
-      TypeDependencyTraverser.traverse(tpe)
+      if (forMacro) {
+        TypeDependencyTraverserForMacro.setOwner(fromClass)
+        TypeDependencyTraverserForMacro.traverse(tpe)
+      } else {
+        TypeDependencyTraverser.setOwner(fromClass)
+        TypeDependencyTraverser.traverse(tpe)
+      }
     }
 
     private def addInheritanceDependency(dep: Symbol): Unit = {
@@ -421,6 +472,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       case sel @ SelectFromTypeTree(qual, _) =>
         traverse(qual); addTreeDependency(sel)
 
+      // A compound type's parents (`B with C`) are not inherited by the enclosing class.
+      case CompoundTypeTree(templ) =>
+        traverseTrees(templ.parents)
+        traverse(templ.self)
+        traverseTrees(templ.body)
+
       case Template(parents, self, body) =>
         // use typeSymbol to dealias type aliases -- we want to track the dependency on the real class in the alias's RHS
         def flattenTypeToSymbols(tp: Type): List[Symbol] =
@@ -445,7 +502,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           addDependency(symbol)
         }
 
-        inheritanceTypes.foreach(addTypeDependencies)
+        inheritanceTypes.foreach(addTypeDependencies(_, forMacro = false))
         addTypeDependencies(self.tpt.tpe)
 
         traverseTrees(body)
@@ -466,6 +523,14 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         addTypeDependencies(typeTree.tpe)
 
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
+        // TODO: typesTouchedDuringMacroExpansion can be provided by compiler
+        // in the form of tree attachment
+        val typesTouchedDuringMacroExpansion = original match {
+          case Apply(TypeApply(_, args), _) => args.map(_.tpe)
+          case TypeApply(_, args)           => args.map(_.tpe)
+          case _                            => List.empty[Type]
+        }
+        typesTouchedDuringMacroExpansion.foreach(addTypeDependencies(_, forMacro = true))
         traverse(original)
         super.traverse(m)
 

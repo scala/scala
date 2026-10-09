@@ -36,6 +36,94 @@ class ExtractAPITest extends BridgeTesting {
     assertEquals(fooClassApi.definitionType, DefinitionType.PackageModule)
   }
 
+  // Default getters of constructor arguments are all named `<init>$default$N`, so a change to
+  // one class's constructor would invalidate clients of every other class with one.
+  @Test
+  def `ExtractAPI should name default getters of constructor arguments after their class`(): Unit = {
+    val src =
+      """|class B(z: Int) { def this(x: Int, y: Int = 2) = this(x + y) }
+         |class C(z: String) { def this(x: Int, y: Int = 2) = this("") }
+         |""".stripMargin
+    val apis = extractApisFromSrc(src)
+    def moduleDefNames(name: String): Set[String] = {
+      val module = apis.find(c => c.name == name && c.definitionType == DefinitionType.Module).get
+      module.structure.declared.map(_.name).toSet
+    }
+    assertEquals(Set("B;init;default;2"), moduleDefNames("B").filter(_.contains("default")))
+    assertEquals(Set("C;init;default;2"), moduleDefNames("C").filter(_.contains("default")))
+  }
+
+  // Regression guard for https://github.com/sbt/sbt/issues/1079.
+  // A type parameter of a type alias declared inside a refinement (a type lambda) is named
+  // by `Symbol.fullName`, whose owner chain passes through the anonymous `<refinement>`
+  // class. The pickler rewrites that class's owner (scala/bug#6596), so the parameter is
+  // named `test.<refinement>.a` from source and `test.KleisliMonadReader.<refinement>.a`
+  // when unpickled, flipping the API hash of every class built on the type lambda.
+  @Test
+  def `ExtractAPI should give stable names to type parameters owned by a refinement class (sbt-sbt-1079)`(): Unit = {
+    val monadReader =
+      """|package test
+         |trait MonadReader[F[_], R] {
+         |  def ask: F[R]
+         |  def local[A](f: R => R)(fa: F[A]): F[A]
+         |}
+         |""".stripMargin
+    val kleisli =
+      """|package test
+         |case class Kleisli[F[_], R, A](run: R => F[A])
+         |trait KleisliMonadReader[F[_], R]
+         |    extends MonadReader[({ type l[a] = Kleisli[F, R, a] })#l, R] {
+         |  def ask: Kleisli[F, R, R] = ???
+         |  def local[A](f: R => R)(fa: Kleisli[F, R, A]): Kleisli[F, R, A] = ???
+         |}
+         |""".stripMargin
+    val impl =
+      """|package test
+         |class Impl extends KleisliMonadReader[Option, Int]
+         |""".stripMargin
+    // compile everything together (from source), then recompile `impl` alone,
+    // unpickling the support types from class files.
+    val apis = extractApisFromSrcs(List(monadReader, kleisli, impl), List(impl))
+    val List(_, _, implFromSource, implUnpickled) = apis.toList
+    def implClass(as: Set[ClassLike]): ClassLike = as.find(_.name == "test.Impl").get
+    val fromSource = implClass(implFromSource)
+    val unpickled = implClass(implUnpickled)
+    // Upstream additionally asserts on the rendered API (ShowAPI, not available in this test suite)
+    // that the parameter is named `<refinement>.a` with no owner prefix.
+    assertTrue(
+      "Impl API differs between compiling from source and unpickling",
+      SameAPI(fromSource, unpickled)
+    )
+  }
+
+  // Since sbt/zinc#1782 a type parameter declared in a refinement is named relative to the
+  // outermost refinement, so the parameters of sibling type lambdas share a name.
+  @Test
+  def `ExtractAPI should tell apart type parameters of sibling refinements with the same name`(): Unit = {
+    def fooApi(arg1: String, arg2: String): ClassLike = {
+      val src =
+        s"""|trait Two[F[_], G[_]]
+            |class X[A]
+            |class Y[A]
+            |class H[F[_]]
+            |trait Foo extends Two[({ type l[a] = $arg1 })#l, ({ type l[a] = $arg2 })#l]
+            |""".stripMargin
+      extractApisFromSrc(src).find(_.name == "Foo").get
+    }
+    def nested(body: String): String = s"H[({ type m[b] = $body })#m]"
+    assertTrue(SameAPI(fooApi("X[a]", "Y[a]"), fooApi("X[a]", "Y[a]")))
+    assertFalse(SameAPI(fooApi("X[a]", "Y[a]"), fooApi("Y[a]", "X[a]")))
+    assertFalse(SameAPI(fooApi("X[a]", "X[Int]"), fooApi("X[Int]", "X[a]")))
+    assertTrue(SameAPI(fooApi(nested("Map[a, b]"), "X[a]"), fooApi(nested("Map[a, b]"), "X[a]")))
+    assertFalse(SameAPI(fooApi(nested("Map[a, b]"), "X[a]"), fooApi(nested("Map[b, a]"), "X[a]")))
+    assertFalse(
+      SameAPI(
+        fooApi(nested("Map[a, b]"), nested("Map[b, a]")),
+        fooApi(nested("Map[b, a]"), nested("Map[a, b]"))
+      )
+    )
+  }
+
   @Test
   def `ExtractAPI should extract nested classes`(): Unit = {
     val src =

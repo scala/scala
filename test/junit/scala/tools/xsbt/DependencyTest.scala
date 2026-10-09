@@ -1,7 +1,9 @@
 package scala.tools.xsbt
 
 import org.junit.Test
-import org.junit.Assert.{assertEquals, assertTrue}
+import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
+
+import xsbti.api.DependencyContext.DependencyByMacroExpansion
 
 import scala.tools.xsbt.TestCallback.ExtractedClassDependencies
 
@@ -88,6 +90,65 @@ class DependencyTest extends BridgeTesting {
     assertEquals(inheritance("Outer"), Set.empty)
     assertEquals(memberRef("Bar"), Set("Outer", "Outer.Inner"))
     assertEquals(inheritance("Bar"), Set.empty)
+  }
+
+  @Test
+  def `Dependency phase should not record compound types in members as inheritance`(): Unit = {
+    val srcA =
+      """trait A[T <: B with C] { self: B with C =>
+        |  def result: B with C = ???
+        |  def parameter(value: B with C): Unit = ()
+        |  def generic[U <: B with C]: Unit = ()
+        |  def cast(value: AnyRef) = value.asInstanceOf[B with C]
+        |  type Alias = B with C
+        |  type Bound <: B with C
+        |  type EmptyRefined = B {}
+        |  type Refined = B { type X = C }
+        |  type Nested = Box[B with C]
+        |  type Existential = (Box[T] forSome { type T <: B }) with C
+        |  type Annotated = (B @unchecked) with C
+        |}""".stripMargin
+    val deps = extractDependenciesFromSrcs(srcA, "trait B", "trait C", "trait Box[T]")
+    assertEquals(deps.memberRef("A"), Set("B", "C", "Box"))
+    assertEquals(deps.inheritance("A"), Set.empty)
+  }
+
+  @Test
+  def `Dependency phase should not record dependencies on anonymous classes`(): Unit = {
+    // Adapted from zinc's scripted test source-dependencies/anon-class-dep (sbt/zinc#1517)
+    val srcRefined =
+      """class SRC[_]
+        |class Refined {
+        |  def select() = new {
+        |    def using(opt: Option[SRC[_]] => Some[SRC[_]]) = opt
+        |  }
+        |}""".stripMargin
+    val srcClient =
+      """class Client {
+        |  def temp = new Refined().select().using(null)
+        |}""".stripMargin
+    val deps = extractDependenciesFromSrcs(srcRefined, srcClient)
+    val memberRef = deps.memberRef
+    assertTrue(memberRef("Client").contains("Refined"))
+    assertFalse(memberRef("Client").exists(_.contains("anon")))
+  }
+
+  @Test
+  def `Dependency phase should record type arguments of a macro call as macro expansion dependencies`(): Unit = {
+    val srcMacros =
+      """import scala.language.experimental.macros
+        |import scala.reflect.macros.blackbox
+        |object Macros {
+        |  def foo[T]: Unit = macro impl[T]
+        |  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = { import c.universe._; q"()" }
+        |}
+        |class A""".stripMargin
+    val srcApp = "class App { def x = Macros.foo[A] }"
+    val deps = withTemporaryDirectory { tmpDir =>
+      val (_, testCallback) = compileSrcss(tmpDir, mkReporter, List(List(srcMacros), List(srcApp)))
+      testCallback.binaryDependencies.toList.collect { case (_, on, from, context) => (on, from, context) }
+    }
+    assertTrue(deps.toString, deps.contains(("A", "App", DependencyByMacroExpansion)))
   }
 
   @Test
