@@ -1212,7 +1212,11 @@ trait Namers extends MethodSynthesis {
       pending.foreach(ErrorUtils.issueTypeError)
 
       val parents = {
-        def checkParent(tpt: Tree): Type = if (tpt.tpe.isError) AnyRefTpe else tpt.tpe
+        def checkParent(tpt: Tree): Type =
+          if (tpt.tpe.isError) AnyRefTpe
+          // In Java sources, `Object` is typed as `ObjectTpeJava`. As a parent, it is `ObjectTpe`, as in `ClassfileParser`.
+          else if (tpt.tpe eq ObjectTpeJava) ObjectTpe
+          else tpt.tpe
         parentTrees map checkParent
       }
 

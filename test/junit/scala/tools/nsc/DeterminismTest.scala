@@ -338,6 +338,16 @@ class DeterminismTest {
     test(code :: Nil)
   }
 
+  @Test def testJavaObjectParent(): Unit = {
+    // The superclass of a Java interface is `Object`, whether it is parsed from source or loaded from a classfile.
+    // `A` inherits it as its superclass, and its pickle refers to it.
+    def code = List[SourceFile](
+      source("J.java", "public interface J { String name(); }"),
+      source("a.scala", "case class A(name: String) extends J")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
