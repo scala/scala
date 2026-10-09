@@ -358,6 +358,24 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testJavaThrowsClause(): Unit = {
+    // Forwarders to Java methods carry the same `throws` clause whether the Java interface is
+    // parsed from source or loaded from a classfile.
+    def code = List[SourceFile](
+      source("J.java",
+        """
+          |public interface J<X extends java.io.IOException> {
+          |  default String f() throws java.io.IOException, InterruptedException { return ""; }
+          |  default <E extends RuntimeException> void g() throws E {}
+          |  default <E extends X> void h() throws E, X {}
+          |  default void i() throws X {}
+          |}
+        """.stripMargin),
+      source("b.scala", "object O extends J[java.io.FileNotFoundException]; class C extends J[java.io.IOException]")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 

@@ -588,11 +588,43 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM, typeNames.EMPTY, anns), t, ident().toTermName)
     }
 
-    def optThrows(): Unit = {
+    /** Type parameters of the enclosing classes, innermost first. */
+    private[this] var classTypeParams: List[List[TypeDef]] = Nil
+
+    def inClassTypeParamScope[T](tparams: List[TypeDef])(body: => T): T = {
+      val saved = classTypeParams
+      classTypeParams = tparams :: classTypeParams
+      try body finally classTypeParams = saved
+    }
+
+    /** Parses an optional `throws` clause, returning `@throws[T]()` annotations for the thrown types.
+     *
+     *  A thrown type variable is replaced by its erasure, which is what `ClassfileParser` sees in the
+     *  `Exceptions` attribute. This way, the annotations, and hence the `Exceptions` attributes and generic
+     *  signatures of forwarders to this method, are the same whether the method is compiled from source
+     *  or from a classfile.
+     */
+    def optThrows(methodTypeParams: List[TypeDef]): List[Tree] = {
+      val scope = (methodTypeParams :: classTypeParams).flatten
+      def erased(tp: Tree, seen: Set[Name]): Tree = tp match {
+        case Ident(name) if !seen(name) =>
+          scope.find(_.name == name) match {
+            case Some(TypeDef(_, _, _, TypeBoundsTree(_, hi))) if !hi.isEmpty =>
+              val first = hi match {
+                case CompoundTypeTree(Template(parent :: _, _, _)) => parent
+                case _                                             => hi
+              }
+              erased(first.duplicate.setPos(tp.pos), seen + name)
+            case _ => tp
+          }
+        case _ => tp
+      }
       if (in.token == THROWS) {
         in.nextToken()
-        repsep(() => typ(), COMMA)
-      }
+        repsep(() => typ(), COMMA).map { tp =>
+          atPos(tp.pos)(New(AppliedTypeTree(scalaDot(TypeName("throws")), List(erased(tp, Set.empty))), ListOfNil))
+        }
+      } else Nil
     }
 
     def methodBody(): Tree = {
@@ -630,10 +662,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       if (in.token == LPAREN && rtptName != nme.EMPTY && !inInterface) {
         // constructor declaration
         val vparams = formalParams()
-        optThrows()
+        val throwsAnnots = optThrows(tparams)
         List {
           atPos(pos) {
-            DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
+            DefDef(mods withAnnotations throwsAnnots, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
           }
         }
       } else if (in.token == LBRACE && rtptName != nme.EMPTY && parentToken == RECORD) {
@@ -649,7 +681,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           // method declaration
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
-          optThrows()
+          mods1 = mods1 withAnnotations optThrows(tparams)
           val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.JAVA_DEFAULTMETHOD) || (mods hasFlag Flags.STATIC) || (mods hasFlag Flags.PRIVATE)
           val bodyOk = !(mods1 hasFlag Flags.DEFERRED) && isConcreteInterfaceMethod
           val body =
@@ -856,7 +888,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
       val interfaces = interfacesOpt()
       val permits = permitsOpt()
-      val (statics, body) = typeBody(CLASS)
+      val (statics, body) = inClassTypeParamScope(tparams)(typeBody(CLASS))
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body))
           .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
@@ -871,7 +903,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val header = formalParams()
       val superclass = javaLangRecord()
       val interfaces = interfacesOpt()
-      val (statics, body) = typeBody(RECORD)
+      val (statics, body) = inClassTypeParamScope(tparams)(typeBody(RECORD))
 
       // Generate accessors, if not already explicitly specified. Record bodies tend to be trivial.
       val existing = body.iterator.collect { case DefDef(_, name, Nil, ListOfNil, _, _) => name }.toSet
@@ -917,7 +949,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           List(javaLangObject())
         }
       val permits = permitsOpt()
-      val (statics, body) = typeBody(INTERFACE)
+      val (statics, body) = inClassTypeParamScope(tparams)(typeBody(INTERFACE))
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
                  name, tparams,
