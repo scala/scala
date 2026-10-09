@@ -49,6 +49,9 @@ class JavaConstantsTest {
     |  public static final java.lang.String S4S = "a";
     |  public static final int NEG = ~I1, PLUS = +C1;
     |  public static final int INTMAX = Integer.MAX_VALUE + 1;
+    |  public static final int OVF = Integer.MIN_VALUE / -1, OVF2 = Integer.MAX_VALUE * 2, DIVZ = 1 / 0;
+    |  public static final long LOVF = Long.MAX_VALUE * 2, LSHL = 1L << 65, BSHL = (byte) 1 << 33L;
+    |  public static final short SNEG = -(short) 1;
     |  public static final int PAREN = (I1) - 1, CAST = (int) 3.9 + (int) -3.9, CASTL = (int) 1e20;
     |  public static final float FCAST = (float) 1e40;
     |  public static final long LONGCHAR = 'a' * 1000000000L;
