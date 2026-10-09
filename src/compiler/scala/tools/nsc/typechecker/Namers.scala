@@ -1786,8 +1786,10 @@ trait Namers extends MethodSynthesis {
           val tptTyped = typer.typedType(tpt)
           context.unit.transformed(tpt) = tptTyped
           vdef.attachments.get[JavaConstantInitializer] match {
-            case Some(JavaConstantInitializer(expr)) => javaConstantType(expr, tptTyped.tpe)
-            case _                                   => tptTyped.tpe
+            case Some(JavaConstantInitializer(expr)) =>
+              vdef.removeAttachment[JavaConstantInitializer]
+              javaConstantType(expr, tptTyped.tpe)
+            case _ => tptTyped.tpe
           }
         }
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
