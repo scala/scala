@@ -1781,11 +1781,43 @@ trait Namers extends MethodSynthesis {
         } else {
           val tptTyped = typer.typedType(tpt)
           context.unit.transformed(tpt) = tptTyped
-          tptTyped.tpe
+          vdef.attachments.get[JavaConstantInitializer] match {
+            case Some(JavaConstantInitializer(expr)) => javaConstantType(expr, tptTyped.tpe)
+            case _                                   => tptTyped.tpe
+          }
         }
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
       pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
     }
+
+    private object javaConstantFolder extends javac.JavaConstantFolder {
+      val global: Namers.this.global.type = Namers.this.global
+    }
+
+    /** The type of a Java `final` field of type `declared` with initializer `expr`: a constant type
+     *  if `expr` is a constant expression, as for a field read from a classfile with a `ConstantValue`.
+     */
+    private def javaConstantType(expr: Tree, declared: Type): Type =
+      if (!(isPrimitiveValueType(declared) || declared.typeSymbol == StringClass)) declared
+      else {
+        def resolve(ref: Tree): Constant =
+          try typer.silent(_.typed(ref.duplicate, EXPRmode, WildcardType)) match {
+            case SilentResultValue(typed) => typed.tpe match {
+              case ConstantType(c) => c
+              case _               => null
+            }
+            case _ => null
+          } catch {
+            case _: CyclicReference => null // only in invalid Java code
+          }
+        javaConstantFolder(expr, resolve) match {
+          case null  => declared
+          case const =>
+            // assignment conversion, e.g. an `int` constant to a `byte` field if it is in range
+            val converted = const.convertTo(declared)
+            if (converted == null) declared else ConstantType(converted)
+        }
+      }
 
     // Pretend we're an erroneous symbol, for now, so that we match while finding the overridden symbol,
     // but are not considered during implicit search.
