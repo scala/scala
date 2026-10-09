@@ -52,6 +52,10 @@ trait Namers extends MethodSynthesis {
     case _                 => false
   }
 
+  private object javaConstantFolder extends javac.JavaConstantFolder {
+    val global: Namers.this.global.type = Namers.this.global
+  }
+
   private class NormalNamer(context: Context) extends Namer(context)
   def newNamer(context: Context): Namer = new NormalNamer(context)
 
@@ -1790,10 +1794,6 @@ trait Namers extends MethodSynthesis {
         }
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
       pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
-    }
-
-    private object javaConstantFolder extends javac.JavaConstantFolder {
-      val global: Namers.this.global.type = Namers.this.global
     }
 
     /** The type of a Java `final` field of type `declared` with initializer `expr`: a constant type

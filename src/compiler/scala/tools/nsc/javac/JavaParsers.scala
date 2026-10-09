@@ -44,6 +44,25 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)
   }
 
+  private object ConstantExprOps {
+    object Unsupported extends scala.util.control.ControlThrowable
+
+    // binary operators, by increasing precedence
+    val binaryOps: Array[Map[Int, TermName]] = Array(
+      Map(BARBAR -> nme.ZOR),
+      Map(AMPAMP -> nme.ZAND),
+      Map(BAR -> nme.OR),
+      Map(HAT -> nme.XOR),
+      Map(AMP -> nme.AND),
+      Map(EQEQ -> nme.EQ, BANGEQ -> nme.NE),
+      Map(LT -> nme.LT, GT -> nme.GT, LTEQ -> nme.LE, GTEQ -> nme.GE),
+      Map(LTLT -> nme.LSL, GTGT -> nme.ASR, GTGTGT -> nme.LSR),
+      Map(PLUS -> nme.ADD, MINUS -> nme.SUB),
+      Map(ASTERISK -> nme.MUL, SLASH -> nme.DIV, PERCENT -> nme.MOD),
+    )
+    val unaryOps: Map[Int, TermName] = Map(PLUS -> nme.UNARY_+, MINUS -> nme.UNARY_-, TILDE -> nme.UNARY_~, BANG -> nme.UNARY_!)
+  }
+
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
     def unit: CompilationUnit
@@ -778,24 +797,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      *  Returns `None` if the initializer contains anything else, skipping to the next `,` or `;`.
      */
     def constantExprOpt(): Option[Tree] = {
-      object Unsupported extends scala.util.control.ControlThrowable
+      import ConstantExprOps._
       def unsupported(): Nothing = throw Unsupported
       var depth = 0 // number of open parentheses
-
-      // binary operators, by increasing precedence
-      val binaryOps: Array[Map[Int, TermName]] = Array(
-        Map(BARBAR -> nme.ZOR),
-        Map(AMPAMP -> nme.ZAND),
-        Map(BAR -> nme.OR),
-        Map(HAT -> nme.XOR),
-        Map(AMP -> nme.AND),
-        Map(EQEQ -> nme.EQ, BANGEQ -> nme.NE),
-        Map(LT -> nme.LT, GT -> nme.GT, LTEQ -> nme.LE, GTEQ -> nme.GE),
-        Map(LTLT -> nme.LSL, GTGT -> nme.ASR, GTGTGT -> nme.LSR),
-        Map(PLUS -> nme.ADD, MINUS -> nme.SUB),
-        Map(ASTERISK -> nme.MUL, SLASH -> nme.DIV, PERCENT -> nme.MOD),
-      )
-      val unaryOps: Map[Int, TermName] = Map(PLUS -> nme.UNARY_+, MINUS -> nme.UNARY_-, TILDE -> nme.UNARY_~, BANG -> nme.UNARY_!)
 
       def expr(): Tree = {
         val cond = binary(0)
