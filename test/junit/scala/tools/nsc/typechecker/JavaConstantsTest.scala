@@ -32,6 +32,7 @@ class JavaConstantsTest {
     |  public static final int C3 = 'a' + 'b';
     |  public static final int C4 = -'a';
     |  public static final float F1 = 1.0f / 3;
+    |  public static final float F2 = 1.00000017881393432617187499f, F3 = -1.00000017881393432617187499f * 1;
     |  public static final double D1 = 1 / 2;
     |  public static final double D2 = 1.0 / 0;
     |  public static final double D3 = 5.5 % 2;
