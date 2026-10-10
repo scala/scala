@@ -7,6 +7,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.util.Properties.isJavaAtLeast
 import scala.util.Random
+import scala.util.control.NonFatal
 
 /** Like `JavaConstantsTest`, but with random constant expressions biased towards numeric edge cases:
  *  boundary values, negative zero, NaN and infinities, subnormals, literals that need rounding,
@@ -30,14 +31,14 @@ class JavaConstantsPropertyTest {
   }
 
   def check(seed: Long, fields: Int): Option[String] = {
+    def withSeed[R](what: String)(body: => R): R =
+      try body catch { case NonFatal(e) => throw new AssertionError(s"seed $seed: $what", e) }
     val gen = new Gen(new Random(seed), fields)
-    val source = gen.source
-    val expected =
-      try JavaConstantsTest.javacFieldTypes("J.java", source, List("J"))
-      catch { case e: AssertionError => throw new AssertionError(s"seed $seed: invalid Java", e) }
-    val actual =
-      try JavaConstantsTest.fieldTypes(JavaConstantsTest.newGlobal(""), List(new BatchSourceFile("J.java", source)), List("J"))
-      catch { case e: AssertionError => throw new AssertionError(s"seed $seed: scalac failed to compile valid Java", e) }
+    val source = withSeed("generator crashed")(gen.source)
+    val expected = withSeed("invalid Java")(JavaConstantsTest.javacFieldTypes("J.java", source, List("J")))
+    val actual = withSeed("scalac failed to compile valid Java") {
+      JavaConstantsTest.fieldTypes(JavaConstantsTest.newGlobal(""), List(new BatchSourceFile("J.java", source)), List("J"))
+    }
     val decls = gen.decls.map { case (name, code) => s"J.$name" -> code }.toMap
     def byField(types: List[String]) = types.map(t => t.substring(0, t.indexOf(':')) -> t).toMap
     val e = byField(expected)
