@@ -16,6 +16,8 @@ import scala.tools.nsc.{FileUtils, Global, Settings}
  *  classfiles emitted by javac, where constant variables have a `ConstantValue` attribute.
  */
 class JavaConstantsTest {
+  import JavaConstantsTest._
+
   val J = """
     |public class J {
     |  public static final int I1 = 4 * 1024;
@@ -60,6 +62,12 @@ class JavaConstantsTest {
     |  public static final int PAREN = (I1) - 1, CAST = (int) 3.9 + (int) -3.9, CASTL = (int) 1e20;
     |  public static final float FCAST = (float) 1e40;
     |  public static final long LONGCHAR = 'a' * 1000000000L;
+    |  public static final int UND = 1_000__000, BIN = 0b1010_1010, OCT = 0_17, HEXU = 0xFF_FF;
+    |  public static final long LUND = 0x7fff_ffff_ffff_ffffL, LBIN = 0B1L << 62, LOCT = 017777777777777_77777777L;
+    |  public static final float HEXF = 0x1.8p1f, HEXF2 = 0x.8P-1F, HEXF3 = 0x1.0000011p0f, LOSSY = 16777217, LOSSY2 = -Long.MAX_VALUE;
+    |  public static final double HEXD = 0x1p-1074, HEXD2 = 0X1.FFFF_FFFF_FFFFFp1023d, DUND = 1_0.5_0e1_0, AFTERHEX = 0xF + .5, LOSSY3 = Long.MAX_VALUE - 1;
+    |  public static final String NUL = "a\0b\000c";
+    |  public static final boolean NULEQ = "" == "\0";
     |  public static final int NOTCONST = Integer.parseInt("1");
     |  public static final int NOTCONST2 = new int[]{1, 2}.length, AFTER = (3 + 4);
     |  public static final int NOTCONST3 = (Integer.valueOf(1)) + 1, AFTER2 = 5;
@@ -76,6 +84,15 @@ class JavaConstantsTest {
     |}
     |""".stripMargin
 
+  @Test def constantTypesFromSourceMatchClassfile(): Unit = {
+    val expected = javacFieldTypes("J.java", J, List("J", "I", "K"))
+    assert(expected.contains("J.I1: Int(4096)"), expected.mkString("\n"))
+    val actual = fieldTypes(newGlobal(""), List(new BatchSourceFile("J.java", J)), List("J", "I", "K"))
+    assertEquals(expected.mkString("\n"), actual.mkString("\n"))
+  }
+}
+
+object JavaConstantsTest {
   def newGlobal(classpath: String): Global = {
     val settings = new Settings
     settings.usejavacp.value = true
@@ -84,31 +101,31 @@ class JavaConstantsTest {
     new Global(settings, new StoreReporter(settings))
   }
 
-  def fieldTypes(g: Global, javaSources: List[SourceFile]): List[String] = {
+  /** The types of the fields of the given top-level classes, as seen after typer. */
+  def fieldTypes(g: Global, javaSources: List[SourceFile], classes: List[String]): List[String] = {
     import g._, rootMirror.EmptyPackageClass
     val run = new Run
     run.compileSources(javaSources)
     assert(!reporter.hasErrors, reporter.asInstanceOf[StoreReporter].infos.mkString("\n"))
     exitingTyper {
       for {
-        cls  <- List("J", "I", "K")
+        cls  <- classes
         sym  <- List(EmptyPackageClass.info.decl(TypeName(cls)), EmptyPackageClass.info.decl(TermName(cls)).moduleClass)
         decl <- sym.info.decls.toList if decl.isValue && !decl.isMethod
       } yield s"$cls.${decl.name.decoded}: ${decl.info}"
     }.sorted
   }
 
-  @Test def constantTypesFromSourceMatchClassfile(): Unit = {
+  /** The types of the fields of the given classes, read from the classfiles that javac emits for `source`. */
+  def javacFieldTypes(fileName: String, source: String, classes: List[String]): List[String] = {
     val out = Files.createTempDirectory("javac-out")
     try {
-      val src = Files.write(out.resolve("J.java"), J.getBytes(UTF_8))
-      assertEquals(0, ToolProvider.getSystemJavaCompiler.run(null, null, null, "-d", out.toString, src.toString))
+      val src = Files.write(out.resolve(fileName), source.getBytes(UTF_8))
+      val err = new java.io.ByteArrayOutputStream
+      val status = ToolProvider.getSystemJavaCompiler.run(null, null, err, "-encoding", "UTF-8", "-nowarn", "-d", out.toString, src.toString)
+      assertEquals(err.toString, 0, status)
       Files.delete(src)
-
-      val expected = fieldTypes(newGlobal(out.toString), Nil)
-      assert(expected.contains("J.I1: Int(4096)"), expected.mkString("\n"))
-      val actual = fieldTypes(newGlobal(""), List(new BatchSourceFile("J.java", J)))
-      assertEquals(expected.mkString("\n"), actual.mkString("\n"))
+      fieldTypes(newGlobal(out.toString), Nil, classes)
     } finally FileUtils.deleteRecursive(out)
   }
 }
