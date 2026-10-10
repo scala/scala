@@ -348,6 +348,37 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testMixinForwarderTypeParamRenaming(): Unit = {
+    // The mixin forwarder `M.compose[A$]` must not rename the type parameter of `Function1.compose`,
+    // which would change the generic signature of the static forwarder `L.compose[A]`.
+    def code = List[SourceFile](
+      source("a.scala", "class M[A] extends (Int => A) { def apply(i: Int): A = ??? }"),
+      source("b.scala", "case class L(child: String)"),
+      // `Iterable.lazyZip[B]` returns `LazyZip2[A, B, this.type]`, so the forwarder's info is an existential
+      source("c.scala", "abstract class S1 extends scala.collection.immutable.Set[String]"),
+      source("d.scala", "abstract class S2[B] extends scala.collection.immutable.Set[B]")
+    )
+    test(List(code))
+  }
+
+  @Test def testJavaThrowsClause(): Unit = {
+    // Forwarders to Java methods carry the same `throws` clause whether the Java interface is
+    // parsed from source or loaded from a classfile.
+    def code = List[SourceFile](
+      source("J.java",
+        """
+          |public interface J<X extends java.io.IOException> {
+          |  default String f() throws java.io.IOException, InterruptedException { return ""; }
+          |  default <E extends RuntimeException> void g() throws E {}
+          |  default <E extends X> void h() throws E, X {}
+          |  default void i() throws X {}
+          |}
+        """.stripMargin),
+      source("b.scala", "object O extends J[java.io.FileNotFoundException]; class C extends J[java.io.IOException]")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
