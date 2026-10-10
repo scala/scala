@@ -466,6 +466,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             val clone = cloneAccessor()
 
             setClonedTraitSetterFlags(clazz, getter, clone)
+            // If `clazz` redeclares the val (abstractly, say `def m: T`), the getter is not mixed in
+            // and there is no field to assign: give the setter a unit body, as for an overridden val,
+            // rather than dropping it. The trait's initializer calls it.
+            if (getterConflictsExistingVal(getter)) clone setFlag OVERRIDDEN_TRAIT_SETTER
             // println(s"mixed in trait setter ${clone.defString}")
 
             List(clone)
