@@ -311,6 +311,9 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                 if (in.ch == 'x' || in.ch == 'X') {
                   in.next()
                   base = 16
+                } else if (in.ch == 'b' || in.ch == 'B') {
+                  in.next()
+                  base = 2
                 } else {
                   base = 8
                 }
@@ -700,11 +703,12 @@ trait JavaScanners extends ast.parser.ScannersCommon {
         }
         oct.asInstanceOf[Char]
       } // end octal
-      def greatEscape: Char = {
+      // -1 for an escaped line terminator in a text block, which contributes no character
+      def greatEscape: Int = {
         in.next()
         if ('0' <= in.ch && in.ch <= '7') octal
         else {
-          val x = in.ch match {
+          val x: Int = in.ch match {
             case 'b'  => '\b'
             case 's'  => ' '
             case 't'  => '\t'
@@ -716,24 +720,24 @@ trait JavaScanners extends ast.parser.ScannersCommon {
             case '\\' => '\\'
             case CR | LF if inTextBlock =>
               if (!scanOnly) in.next()
-              0.toChar
+              -1
             case _    =>
               if (!scanOnly) syntaxError(in.cpos - 1, "invalid escape character")
               in.ch
           }
-          if (x != 0) in.next()
+          if (x != -1) in.next()
           x
         }
       } // end greatEscape
       // begin getlitch
-      val c: Char =
+      val c: Int =
         if (in.ch == '\\') greatEscape
         else {
           val res = in.ch
           in.next()
           res
         }
-      if (c != 0 && !scanOnly) putChar(c)
+      if (c != -1 && !scanOnly) putChar(c.toChar)
     } // end getlitch
 
     /** read a triple-quote delimited text block, starting after the first three
@@ -852,10 +856,8 @@ trait JavaScanners extends ast.parser.ScannersCommon {
      */
     protected def getFraction(): Unit = {
       token = DOUBLELIT
-      while ('0' <= in.ch && in.ch <= '9') {
-        putChar(in.ch)
-        in.next()
-      }
+      base = 10 // also for a literal like `09.5`, or one starting with `.`
+      getDigits(10)
       if (in.ch == 'e' || in.ch == 'E') {
         val lookahead = in.copy
         lookahead.next()
@@ -869,13 +871,34 @@ trait JavaScanners extends ast.parser.ScannersCommon {
             putChar(in.ch)
             in.next()
           }
-          while ('0' <= in.ch && in.ch <= '9') {
-            putChar(in.ch)
-            in.next()
-          }
+          getDigits(10)
         }
         token = DOUBLELIT
       }
+      getFloatSuffix()
+    }
+
+    /** read the fraction and binary exponent of a hexadecimal floating point number */
+    protected def getHexFraction(): Unit = {
+      token = DOUBLELIT
+      if (in.ch == '.') {
+        putChar(in.ch)
+        in.next()
+        getDigits(16)
+      }
+      if (in.ch == 'p' || in.ch == 'P') {
+        putChar(in.ch)
+        in.next()
+        if (in.ch == '+' || in.ch == '-') {
+          putChar(in.ch)
+          in.next()
+        }
+        getDigits(10)
+      }
+      getFloatSuffix()
+    }
+
+    private def getFloatSuffix(): Unit = {
       if (in.ch == 'd' || in.ch == 'D') {
         putChar(in.ch)
         in.next()
@@ -927,10 +950,11 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       val limit: Double =
         if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
       try {
+        val literal = if (base == 16) "0x" + name else name.toString
         // a float literal is rounded to float directly, not via double (JLS 3.10.2)
         val value: Double =
-          if (token == FLOATLIT) java.lang.Float.parseFloat(name.toString).toDouble
-          else java.lang.Double.parseDouble(name.toString)
+          if (token == FLOATLIT) java.lang.Float.parseFloat(literal).toDouble
+          else java.lang.Double.parseDouble(literal)
         if (value > limit)
           syntaxError("floating point number too large")
         if (negated) -value else value
@@ -940,14 +964,20 @@ trait JavaScanners extends ast.parser.ScannersCommon {
           0.0
       }
     }
+    /** read digits, skipping the underscores that may separate them */
+    private def getDigits(base: Int): Unit =
+      while (digit2int(in.ch, base) >= 0 || in.ch == '_') {
+        if (in.ch != '_') putChar(in.ch)
+        in.next()
+      }
+
     /** read a number into name and set base
     */
     protected def getNumber(): Unit = {
-      while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
-        putChar(in.ch)
-        in.next()
-      }
+      getDigits(if (base < 10) 10 else base)
       token = INTLIT
+      if (base == 16 && (in.ch == '.' || in.ch == 'p' || in.ch == 'P'))
+        return getHexFraction()
       if (base <= 10 && in.ch == '.') {
         val lookahead = in.copy
         lookahead.next()
