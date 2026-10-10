@@ -253,6 +253,11 @@ trait MacroAnnotationAttachments {
   def unmarkExpanded(sym: Symbol): Symbol = if (sym != null && sym != NoSymbol) sym.removeAttachment[SymbolExpansionStatus] else sym
 
   case class CacheAttachment(cache: mutable.Map[String, Any])
+  /** The initializer of a `final` field in a Java source file which may be a constant expression.
+   *  The namer gives the field a constant type if the expression evaluates to a constant.
+   */
+  case class JavaConstantInitializer(expr: Tree)
+
   implicit class RichTree(tree: Tree) {
     def cached[T](key: String, op: => T): T = {
       val cache = tree.attachments.get[CacheAttachment].map(_.cache).getOrElse(mutable.Map[String, Any]())

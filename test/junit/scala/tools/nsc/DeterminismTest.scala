@@ -348,6 +348,22 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testJavaConstantExpression(): Unit = {
+    // A reference to a Java constant variable is inlined whether the Java class is parsed from source
+    // or loaded from a classfile, where it has a `ConstantValue` attribute.
+    def code = List[SourceFile](
+      source("J.java",
+        """
+          |public class J {
+          |  public static final int SIZE = 4;
+          |  public static final int NUM_BYTES = SIZE * 1024;
+          |}
+        """.stripMargin),
+      source("b.scala", "class C { def f = new Array[Byte](J.NUM_BYTES) }")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 

@@ -5,8 +5,7 @@ public class Constants {
     public static final int ConstIdent = ConstInt;
     public static final int ConstSelect = Constants.ConstInt;
 
-    // this is a known limitation in scala's javac parser for constants, it will be treated as -1.
-    // the java compiler will flag an error.
+    // not a constant, the java compiler will flag an error.
     public static final int NegatedInt = !1;
 
     public static final int     ConstOpExpr1 = 1 + 2;

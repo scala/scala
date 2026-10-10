@@ -44,6 +44,25 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)
   }
 
+  private object ConstantExprOps {
+    object Unsupported extends scala.util.control.ControlThrowable
+
+    // binary operators, by increasing precedence
+    val binaryOps: Array[Map[Int, TermName]] = Array(
+      Map(BARBAR -> nme.ZOR),
+      Map(AMPAMP -> nme.ZAND),
+      Map(BAR -> nme.OR),
+      Map(HAT -> nme.XOR),
+      Map(AMP -> nme.AND),
+      Map(EQEQ -> nme.EQ, BANGEQ -> nme.NE),
+      Map(LT -> nme.LT, GT -> nme.GT, LTEQ -> nme.LE, GTEQ -> nme.GE),
+      Map(LTLT -> nme.LSL, GTGT -> nme.ASR, GTGTGT -> nme.LSR),
+      Map(PLUS -> nme.ADD, MINUS -> nme.SUB),
+      Map(ASTERISK -> nme.MUL, SLASH -> nme.DIV, PERCENT -> nme.MOD),
+    )
+    val unaryOps: Map[Int, TermName] = Map(PLUS -> nme.UNARY_+, MINUS -> nme.UNARY_-, TILDE -> nme.UNARY_~, BANG -> nme.UNARY_!)
+  }
+
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
     def unit: CompilationUnit
@@ -729,48 +748,138 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
 
-      /* Tries to detect final static literals syntactically and returns a constant type replacement */
-      def optConstantTpe(): Tree = {
-        def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
-
-        def forConst(const: Constant): Tree = {
-          in.nextToken()
-          if (in.token != SEMI) tpt1
-          else {
-            def isStringTyped = tpt1 match {
-              case Ident(TypeName("String")) => true
-              case _ => false
-            }
-            if (const.tag == StringTag && isStringTyped) constantTpe(const)
-            else if (tpt1.tpe != null && (const.tag == BooleanTag || const.isNumeric)) {
-              // for example, literal 'a' is ok for float. 127 is ok for byte, but 128 is not.
-              val converted = const.convertTo(tpt1.tpe)
-              if (converted == null) tpt1
-              else constantTpe(converted)
-            } else tpt1
-          }
+      // A constant expression, folded by the namer, see `JavaConstantInitializer`
+      var constantInitializer: Tree = EmptyTree
+      if (in.token == EQUALS && !mods.isParameter) {
+        in.nextToken()
+        // a constant variable, if initialized with a constant expression (JLS 4.12.4)
+        def mayBeConstantTyped = tpt1 match {
+          case _: TypeTree if tpt1.tpe != null => isPrimitiveValueType(tpt1.tpe)
+          case Ident(tpnme.String) | Select(_, tpnme.String) => true // resolved by the namer
+          case _ => false
         }
-
-        in.nextToken() // EQUALS
-        if (mods.hasFlag(Flags.STATIC) && mods.isFinal) {
-          val neg = in.token match {
-            case MINUS | BANG => in.nextToken(); true
-            case _ => false
-          }
-          tryLiteral(neg).map(forConst).getOrElse(tpt1)
-        } else tpt1
+        if (mods.isFinal && mayBeConstantTyped) constantExprOpt().foreach(constantInitializer = _)
+        else skipTo(COMMA, SEMI)
       }
-
-      val tpt2: Tree =
-        if (in.token == EQUALS && !mods.isParameter) {
-          val res = optConstantTpe()
-          skipTo(COMMA, SEMI)
-          res
-        } else tpt1
 
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
-        ValDef(mods1, name, tpt2, blankExpr)
+        ValDef(mods1, name, tpt1, blankExpr)
+          .tap(vd => if (!constantInitializer.isEmpty) vd.updateAttachment(analyzer.JavaConstantInitializer(constantInitializer)))
+      }
+    }
+
+    /** Parses a field initializer that may be a constant expression (JLS 15.29): literals, (qualified) names,
+     *  casts to primitive types or `String`, and unary, binary and conditional operators. Whether names
+     *  refer to constants, and the value of the expression, is determined by the namer.
+     *
+     *  Unary and binary operators are represented as `Apply(Select(x, op), args)`, casts as `Typed(x, tpt)`.
+     *
+     *  Returns `None` if the initializer contains anything else, skipping to the next `,` or `;`.
+     */
+    def constantExprOpt(): Option[Tree] = {
+      import ConstantExprOps._
+      def unsupported(): Nothing = throw Unsupported
+      var depth = 0 // number of open parentheses
+
+      def expr(): Tree = {
+        val cond = binary(0)
+        if (in.token == QMARK) {
+          in.nextToken()
+          val thenp = expr()
+          if (in.token != COLON) unsupported()
+          in.nextToken()
+          atPos(cond.pos)(If(cond, thenp, expr()))
+        } else cond
+      }
+
+      def binary(level: Int): Tree =
+        if (level == binaryOps.length) unary()
+        else {
+          var t = binary(level + 1)
+          while (binaryOps(level).contains(in.token)) {
+            val op = binaryOps(level)(in.token)
+            in.nextToken()
+            t = atPos(t.pos)(Apply(Select(t, op), List(binary(level + 1))))
+          }
+          t
+        }
+
+      def isName(t: Tree): Boolean = t match {
+        case Ident(_)     => true
+        case Select(q, _) => isName(q)
+        case _            => false
+      }
+
+      def unary(): Tree = in.token match {
+        case MINUS if in.lookaheadToken == INTLIT || in.lookaheadToken == LONGLIT =>
+          // `-2147483648` is a literal
+          in.nextToken()
+          literal(negate = true)
+        case op if unaryOps.contains(op) =>
+          val pos = in.currentPos
+          in.nextToken()
+          atPos(pos)(Apply(Select(unary(), unaryOps(op)), Nil))
+        case LPAREN =>
+          val pos = in.currentPos
+          in.nextToken()
+          depth += 1
+          def closeParen(): Unit = {
+            if (in.token != RPAREN) unsupported()
+            in.nextToken()
+            depth -= 1
+          }
+          in.token match {
+            case BOOLEAN | BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE =>
+              val tpt = basicType()
+              closeParen()
+              atPos(pos)(Typed(unary(), tpt))
+            case _ =>
+              val t = expr()
+              closeParen()
+              // `(String) x` is a cast, `(x) - y` is not (JLS 15.16)
+              in.token match {
+                case IDENTIFIER | LPAREN | BANG | TILDE if isName(t) => atPos(pos)(Typed(unary(), convertToTypeId(t)))
+                case token if isLiteral(token) && isName(t)         => atPos(pos)(Typed(unary(), convertToTypeId(t)))
+                case _                                              => t
+              }
+          }
+        case IDENTIFIER =>
+          var t: Tree = atPos(in.currentPos)(Ident(ident().toTermName))
+          while (in.token == DOT) {
+            in.nextToken()
+            if (in.token != IDENTIFIER) unsupported()
+            t = atPos(t.pos)(Select(t, ident().toTermName))
+          }
+          t
+        case _ =>
+          literal(negate = false)
+      }
+
+      def literal(negate: Boolean): Tree = {
+        val pos = in.currentPos
+        tryLiteral(negate) match {
+          case Some(const) => in.nextToken(); atPos(pos)(Literal(const))
+          case None        => unsupported()
+        }
+      }
+
+      try {
+        val t = expr()
+        if (in.token == COMMA || in.token == SEMI) Some(t)
+        else {
+          skipTo(COMMA, SEMI)
+          None
+        }
+      } catch {
+        case Unsupported =>
+          while (depth > 0) {
+            skipTo(RPAREN)
+            if (in.token == RPAREN) in.nextToken()
+            depth -= 1
+          }
+          skipTo(COMMA, SEMI)
+          None
       }
     }
 

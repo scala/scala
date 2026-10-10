@@ -93,7 +93,7 @@ abstract class ConstantFolder {
       else LiteralType(folded)
     }
 
-  private def foldUnop(op: Name, x: Constant): Constant = {
+  private[nsc] def foldUnop(op: Name, x: Constant): Constant = {
     val N = nme
     import N._
     val value: Any = op match {
@@ -249,6 +249,12 @@ abstract class ConstantFolder {
       case _                                        => null
     }
   }
+  /** Folds a binary operation as the JVM evaluates it: integer overflow wraps around silently.
+   *  Division by zero throws an `ArithmeticException`.
+   */
+  private[nsc] def foldBinopUnchecked(op: Name, x: Constant, y: Constant): Constant =
+    try foldBinop(op, x, y)
+    catch { case e: ConstFoldException => Constant(e.value) }
   private def safelyFoldBinop(tree: Tree, site: Symbol)(op: Name, x: Constant, y: Constant): Constant =
     try foldBinop(op, x, y)
     catch {

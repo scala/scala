@@ -52,6 +52,10 @@ trait Namers extends MethodSynthesis {
     case _                 => false
   }
 
+  private object javaConstantFolder extends javac.JavaConstantFolder {
+    val global: Namers.this.global.type = Namers.this.global
+  }
+
   private class NormalNamer(context: Context) extends Namer(context)
   def newNamer(context: Context): Namer = new NormalNamer(context)
 
@@ -1781,11 +1785,47 @@ trait Namers extends MethodSynthesis {
         } else {
           val tptTyped = typer.typedType(tpt)
           context.unit.transformed(tpt) = tptTyped
-          tptTyped.tpe
+          vdef.attachments.get[JavaConstantInitializer] match {
+            case Some(JavaConstantInitializer(expr)) =>
+              vdef.removeAttachment[JavaConstantInitializer]
+              javaConstantType(expr, tptTyped.tpe)
+            case _ => tptTyped.tpe
+          }
         }
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
       pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
     }
+
+    /** The type of a Java `final` field of type `declared` with initializer `expr`: a constant type
+     *  if `expr` is a constant expression, as for a field read from a classfile with a `ConstantValue`.
+     */
+    private def javaConstantType(expr: Tree, declared: Type): Type =
+      if (!(isPrimitiveValueType(declared) || declared.typeSymbol == StringClass)) declared
+      else {
+        def resolve(ref: Tree): Constant =
+          try typer.silent(_.typed(ref.duplicate, EXPRmode, WildcardType)) match {
+            case SilentResultValue(typed) => typed.tpe match {
+              case ConstantType(c) => c
+              case _               => null
+            }
+            case _ => null
+          } catch {
+            // fields whose initializers refer to each other, which javac does not treat as constants either
+            case _: CyclicReference => null
+          }
+        javaConstantFolder(expr, resolve) match {
+          case null  => declared
+          case const =>
+            // assignment conversion (JLS 5.2), e.g. an `int` constant to a `byte` field if it is in range.
+            // Unlike Scala, Java allows widening an `int` or `long` to `float` or `double` with loss of precision.
+            val converted = declared.typeSymbol match {
+              case FloatClass if const.isNumeric && const.tag <= FloatTag => Constant(const.floatValue)
+              case DoubleClass if const.isNumeric                          => Constant(const.doubleValue)
+              case _                                                       => const.convertTo(declared)
+            }
+            if (converted == null) declared else ConstantType(converted)
+        }
+      }
 
     // Pretend we're an erroneous symbol, for now, so that we match while finding the overridden symbol,
     // but are not considered during implicit search.
