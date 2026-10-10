@@ -1816,8 +1816,13 @@ trait Namers extends MethodSynthesis {
         javaConstantFolder(expr, resolve) match {
           case null  => declared
           case const =>
-            // assignment conversion, e.g. an `int` constant to a `byte` field if it is in range
-            val converted = const.convertTo(declared)
+            // assignment conversion (JLS 5.2), e.g. an `int` constant to a `byte` field if it is in range.
+            // Unlike Scala, Java allows widening an `int` or `long` to `float` or `double` with loss of precision.
+            val converted = declared.typeSymbol match {
+              case FloatClass if const.isNumeric && const.tag <= FloatTag => Constant(const.floatValue)
+              case DoubleClass if const.isNumeric                          => Constant(const.doubleValue)
+              case _                                                       => const.convertTo(declared)
+            }
             if (converted == null) declared else ConstantType(converted)
         }
       }
