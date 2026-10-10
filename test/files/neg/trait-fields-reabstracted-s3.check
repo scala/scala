@@ -1,0 +1,15 @@
+trait-fields-reabstracted-s3.scala:6: error: stable, immutable value required to override:
+val m: String (defined in trait T)
+Scala 3 checks an abstract member that re-declares a concrete one as an override.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=B.m
+abstract class B extends T { def m: String }
+                                 ^
+trait-fields-reabstracted-s3.scala:7: error: cannot override final member:
+final def f: Int (defined in trait T)
+Scala 3 checks an abstract member that re-declares a concrete one as an override.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=B2.f
+abstract class B2 extends T { def f: Int }
+                                  ^
+2 errors
