@@ -574,9 +574,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         currentOwner == module || enclosed
       }
 
-    def handleTreeType(t: Tree): Unit =
-      if ((t.tpe ne null) && t.tpe != NoType /*&& !treeInfo.isSuperConstrCall(t)*/) { // see isCurrentlyEnclosedBy
-        for (tp <- t.tpe if tp != NoType && !treeTypes(tp)) {
+    // Hoisted to avoid allocating capturing lambdas and a `FilterTypeCollector` per tree.
+    private[this] object treeTypeTraverser extends TypeTraverser {
+      def traverse(tp: Type): Unit = {
+        if (tp != NoType && !treeTypes(tp)) {
           // Include references to private/local aliases (which might otherwise refer to an enclosing class)
           val isAlias = {
             val td = tp.typeSymbolDirect
@@ -598,11 +599,24 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           for (annot <- tp.annotations)
             descend(annot)
         }
-        // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-        t.tpe.prefix foreach {
+        tp.mapOver(this)
+      }
+    }
+    private[this] object prefixTraverser extends TypeTraverser {
+      def traverse(tp: Type): Unit = {
+        tp match {
           case SingleType(_, sym) => recordReference(sym)
-          case _                  => ()
+          case _                  =>
         }
+        tp.mapOver(this)
+      }
+    }
+
+    def handleTreeType(t: Tree): Unit =
+      if ((t.tpe ne null) && t.tpe != NoType /*&& !treeInfo.isSuperConstrCall(t)*/) { // see isCurrentlyEnclosedBy
+        treeTypeTraverser.traverse(t.tpe)
+        // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
+        prefixTraverser.traverse(t.tpe.prefix)
       }
 
     def descend(annot: AnnotationInfo): Unit =
