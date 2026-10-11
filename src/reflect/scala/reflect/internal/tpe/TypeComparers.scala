@@ -34,6 +34,13 @@ trait TypeComparers {
   private[this] val _knownFalseSubTypes = new IdentityHashMap[Type, List[Type]]
   def knownFalseSubTypes = _knownFalseSubTypes
 
+  // Called on every top-level `isSubType` / `isSameType`, but the map is only populated for pathological recursive
+  // subtype checks. Guard the `clear()`, as `IdentityHashMap.clear` zeroes the entire table even when empty.
+  private def clearKnownFalseSubTypes(): Unit = {
+    val m = knownFalseSubTypes
+    if (!m.isEmpty) m.clear()
+  }
+
   final case class SubTypePair(tp1: Type, tp2: Type) {
     // scala/bug#8146 we used to implement equality here in terms of pairwise =:=.
     //         But, this was inconsistent with hashCode, which was based on the
@@ -89,7 +96,7 @@ trait TypeComparers {
   } finally {
     subsametypeRecursions -= 1
     if (subsametypeRecursions == 0) {
-      knownFalseSubTypes.clear()
+      clearKnownFalseSubTypes()
       // undoLog.clear() // too eager, breaks #3281, #3866
     }
   }
@@ -127,7 +134,7 @@ trait TypeComparers {
   finally {
     subsametypeRecursions -= 1
     if (subsametypeRecursions == 0) {
-      knownFalseSubTypes.clear()
+      clearKnownFalseSubTypes()
       // undoLog.clear() // too eager, breaks #3281, #3866
     }
   }
@@ -322,7 +329,7 @@ trait TypeComparers {
   } finally {
     subsametypeRecursions -= 1
     if (subsametypeRecursions == 0) {
-      knownFalseSubTypes.clear()
+      clearKnownFalseSubTypes()
       // undoLog.clear() // too eager, breaks #3281, #3866
     }
   }
