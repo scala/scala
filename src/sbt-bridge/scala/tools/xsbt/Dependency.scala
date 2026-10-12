@@ -529,11 +529,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         // TODO: typesTouchedDuringMacroExpansion can be provided by compiler
         // in the form of tree attachment
-        val typesTouchedDuringMacroExpansion = original match {
-          case Apply(TypeApply(_, args), _) => args.map(_.tpe)
-          case TypeApply(_, args)           => args.map(_.tpe)
-          case _                            => List.empty[Type]
-        }
+        val typesTouchedDuringMacroExpansion = treeInfo.dissectApplied(original).targs.map(_.tpe)
         typesTouchedDuringMacroExpansion.foreach(addTypeDependencies(_, forMacro = true))
         traverse(original)
         super.traverse(m)

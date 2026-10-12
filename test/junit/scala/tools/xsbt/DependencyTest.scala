@@ -140,16 +140,23 @@ class DependencyTest extends BridgeTesting {
         |import scala.reflect.macros.blackbox
         |object Macros {
         |  def foo[T]: Unit = macro impl[T]
+        |  def bar[T](x: Int)(implicit d: DummyImplicit): Unit = macro implBar[T]
         |  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = { import c.universe._; q"()" }
+        |  def implBar[T: c.WeakTypeTag](c: blackbox.Context)(x: c.Tree)(d: c.Tree): c.Tree = impl[T](c)
         |}
-        |class A""".stripMargin
-    val srcApp = "class App { def x = Macros.foo[A] }; class App2 { def x = Macros.foo[A] }"
+        |class A
+        |class B""".stripMargin
+    val srcApp =
+      """class App { def x = Macros.foo[A] }
+        |class App2 { def x = Macros.foo[A] }
+        |class App3 { def x = Macros.bar[B](1) }""".stripMargin
     val deps = withTemporaryDirectory { tmpDir =>
       val (_, testCallback) = compileSrcss(tmpDir, mkReporter, List(List(srcMacros), List(srcApp)))
       testCallback.binaryDependencies.toList.collect { case (_, on, from, context) => (on, from, context) }
     }
     assertTrue(deps.toString, deps.contains(("A", "App", DependencyByMacroExpansion)))
     assertTrue(deps.toString, deps.contains(("A", "App2", DependencyByMacroExpansion)))
+    assertTrue(deps.toString, deps.contains(("B", "App3", DependencyByMacroExpansion)))
   }
 
   @Test
