@@ -143,12 +143,13 @@ class DependencyTest extends BridgeTesting {
         |  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = { import c.universe._; q"()" }
         |}
         |class A""".stripMargin
-    val srcApp = "class App { def x = Macros.foo[A] }"
+    val srcApp = "class App { def x = Macros.foo[A] }; class App2 { def x = Macros.foo[A] }"
     val deps = withTemporaryDirectory { tmpDir =>
       val (_, testCallback) = compileSrcss(tmpDir, mkReporter, List(List(srcMacros), List(srcApp)))
       testCallback.binaryDependencies.toList.collect { case (_, on, from, context) => (on, from, context) }
     }
     assertTrue(deps.toString, deps.contains(("A", "App", DependencyByMacroExpansion)))
+    assertTrue(deps.toString, deps.contains(("A", "App2", DependencyByMacroExpansion)))
   }
 
   @Test
