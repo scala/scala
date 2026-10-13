@@ -80,6 +80,9 @@ class ExtractAPI[GlobalType <: Global](
 
   private[this] val emptyStringArray = Array.empty[String]
 
+  // `<refinement>`, matched by refinementRelativeName below.
+  private[this] val refineClassName = tpnme.REFINE_CLASS_NAME.toString
+
   private[this] val allNonLocalClassSymbols = perRunCaches.newSet[Symbol]()
   private[this] val allNonLocalClassesInSrc = perRunCaches.newSet[xsbti.api.ClassLike]()
   private[this] val _mainClasses = perRunCaches.newSet[String]()
@@ -331,7 +334,7 @@ class ExtractAPI[GlobalType <: Global](
         case returnType =>
           val retType = processType(in, dropConst(returnType))
           xsbti.api.Def.of(
-            simpleName(s),
+            simpleNameForMethod(s),
             getAccess(s),
             getModifiers(s),
             annotations(in, s),
@@ -700,8 +703,20 @@ class ExtractAPI[GlobalType <: Global](
         debuglog(s"Renaming existential type variable ${s.fullName} to $rename")
         rename
       case None =>
-        s.fullName
+        refinementRelativeName(s)
     }
+
+  /**
+   * `s.fullName` cut at the outermost refinement class. The pickler rewrites that class's
+   * owner (scala/bug#6596), so the full name of a type parameter declared inside a refinement
+   * differs between typing from source and unpickling, flipping the API hash of every class
+   * built on it (sbt/sbt#1079). Names with no refinement in the owner chain are unchanged.
+   */
+  private def refinementRelativeName(s: Symbol): String = {
+    val full = s.fullName
+    val start = full.indexOf(refineClassName)
+    if (start < 0) full else full.substring(start)
+  }
 
   /* Representation for the self type of a class symbol `s`, or `emptyType` for an *unascribed* self variable (or no self variable at all).
      Only the self variable's explicitly ascribed type is relevant for incremental compilation. */
@@ -844,9 +859,22 @@ class ExtractAPI[GlobalType <: Global](
   }
 
   private def simpleName(s: Symbol): String = {
-    val n = s.unexpandedName
-    val n2 = if (n == nme.CONSTRUCTOR) constructorNameAsString(s.enclClass) else n.decode.toString
-    n2.trim
+    s.unexpandedName.decode.toString.trim
+  }
+
+  private def simpleNameForMethod(s: Symbol): String = {
+    val name = s.unexpandedName
+    val untrimmedName =
+      if (name == nme.CONSTRUCTOR)
+        constructorNameAsString(s.enclClass)
+      else {
+        val decoded = name.decode.toString
+        decoded match {
+          case ExtractAPI.ConstructorWithDefaultArgument(index) => constructorNameAsString(s.enclClass, index)
+          case _                                     => decoded
+        }
+      }
+    untrimmedName.trim
   }
 
   private def staticAnnotations(annotations: List[AnnotationInfo]): List[AnnotationInfo] =
@@ -869,5 +897,6 @@ class ExtractAPI[GlobalType <: Global](
 }
 
 object ExtractAPI {
+  private val ConstructorWithDefaultArgument = "<init>\\$default\\$(\\d+)".r
   private val emptyAnnotationArray = new Array[xsbti.api.Annotation](0)
 }
