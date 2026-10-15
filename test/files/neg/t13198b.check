@@ -1,0 +1,6 @@
+t13198b.scala:7: error: type mismatch;
+ found   : List[C]
+ required: String
+  def g(a: A, c: C, d: D): String = d.n(a.m(c))
+                                       ^
+1 error
