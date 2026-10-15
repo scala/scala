@@ -846,6 +846,8 @@ lazy val junit = project.in(file("test") / "junit")
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep, compilerInterfaceDep),
+    // Zinc's own hashing, as the reference for the bridge's ApiHasher
+    libraryDependencies += ("org.scala-sbt" % "zinc-apiinfo_2.13" % "1.10.8" % Test).intransitive(),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value),

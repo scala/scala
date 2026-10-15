@@ -17,8 +17,7 @@ package xsbt
 
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
-import xsbti.api._
-import scala.tools.xsbt.visitor.TreeBuilder
+import scala.tools.xsbt.visitor.{ ApiHashSink, ApiHasher }
 import xsbti.VirtualFile
 
 object API {
@@ -67,33 +66,52 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf case x => throw new MatchError(x) }
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
+      val hashSink = callback match {
+        case sink: ApiHashSink => sink
+        case _                 => null
+      }
+      val reportTrees = (hashSink eq null) || hashSink.wantsTrees
+
       val extractApi = ExtractAPI.trees[global.type](global, sourceFile)
-      val traverser = new TopLevelHandler(extractApi)
-      traverser.apply(unit.body)
+      if (reportTrees) new TopLevelHandler(c => extractApi.extractAllClassesOf(c.owner, c)).apply(unit.body)
 
       val extractUsedNames = new ExtractUsedNames[global.type](global)
       extractUsedNames.extractAndReport(unit)
 
-      val classApis = traverser.allNonLocalClasses
-      val mainClasses = traverser.mainClasses
+      if (reportTrees) {
+        // Use of iterators make this code easier to profile
 
-      // Use of iterators make this code easier to profile
+        val classApisIt = extractApi.allExtractedNonLocalClasses.iterator
+        while (classApisIt.hasNext) {
+          callback.api(sourceFile, classApisIt.next())
+        }
 
-      val classApisIt = classApis.iterator
-      while (classApisIt.hasNext) {
-        callback.api(sourceFile, classApisIt.next())
+        val mainClassesIt = extractApi.mainClasses.iterator
+        while (mainClassesIt.hasNext) {
+          callback.mainClass(sourceFile, mainClassesIt.next())
+        }
+
+        addNonLocalClassSymbols(extractApi.allExtractedNonLocalSymbols)
       }
 
-      val mainClassesIt = mainClasses.iterator
-      while (mainClassesIt.hasNext) {
-        callback.mainClass(sourceFile, mainClassesIt.next())
+      if (hashSink ne null) {
+        val hashApi = new ExtractAPI[global.type, ApiHasher](global, sourceFile, new ApiHasher)
+        new TopLevelHandler(c => hashApi.extractAllClassesOf(c.owner, c)).apply(unit.body)
+        hashApi.allExtractedNonLocalClasses.foreach { c =>
+          hashSink.apiHashes(sourceFile, ApiHasher.hashes(c, hashSink.optimizedSealed))
+        }
+        if (!reportTrees) {
+          hashApi.mainClasses.foreach(callback.mainClass(sourceFile, _))
+          addNonLocalClassSymbols(hashApi.allExtractedNonLocalSymbols)
+        }
       }
+    }
 
-      extractApi.allExtractedNonLocalSymbols.foreach { cs =>
+    private def addNonLocalClassSymbols(syms: Set[Symbol]): Unit =
+      syms.foreach { cs =>
         // Only add the class symbols defined in this compilation unit
         if (cs.sourceFile != null) nonLocalClassSymbolsInCurrentUnits.+=(cs)
       }
-    }
   }
 
   private case class FlattenedNames(binaryName: String, className: String)
@@ -186,17 +204,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     }
   }
 
-  private final class TopLevelHandler(extractApi: ExtractAPI[global.type, TreeBuilder])
-      extends TopLevelTraverser {
-    def allNonLocalClasses: Set[ClassLike] = {
-      extractApi.allExtractedNonLocalClasses
-    }
-
-    def mainClasses: Set[String] = extractApi.mainClasses
-
-    def `class`(c: Symbol): Unit = {
-      extractApi.extractAllClassesOf(c.owner, c)
-    }
+  private final class TopLevelHandler(f: Symbol => Unit) extends TopLevelTraverser {
+    def `class`(c: Symbol): Unit = f(c)
   }
 
   private abstract class TopLevelTraverser extends Traverser {
