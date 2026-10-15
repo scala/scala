@@ -145,7 +145,7 @@ public final class Statics {
 
   // @ForceInline would be nice here.
   public static void releaseFence() throws Throwable {
-    VM.RELEASE_FENCE.invoke();
+    VM.RELEASE_FENCE.invokeExact();
   }
 
   final static class VM {
