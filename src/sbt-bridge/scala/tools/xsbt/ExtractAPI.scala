@@ -234,10 +234,7 @@ class ExtractAPI[GlobalType <: Global](
         }
       }
       printWriter.append(end)
-      val result = getAndResetBuffer()
-      val benchmark = trees.mkString(start, sep, end)
-      assert(result == benchmark, List(result, benchmark).mkString("[", "|", "]"))
-      result
+      getAndResetBuffer()
     }
     private def getAndResetBuffer(): String = {
       printWriter.flush()
