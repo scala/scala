@@ -1319,9 +1319,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       sym.setInfo(info)
       // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
       if (!sym.hasJavaEnumFlag)
-        for (k <- permittedSubclasses)
-          if (k.parentSymbols.contains(sym))
-            sym.addChild(k)
+        // entries that don't extend `sym` are filtered in `knownDirectSubclasses`, checking parents here could cycle (scala/bug#13176)
+        permittedSubclasses.foreach(sym.addChild)
     }
   }
 

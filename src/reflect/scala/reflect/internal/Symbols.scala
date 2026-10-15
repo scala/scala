@@ -146,7 +146,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if(!isPastTyper)
         updateAttachment(KnownDirectSubclassesCalled)
 
-      children
+      // Children of a sealed Java class from a classfile are taken from its PermittedSubclasses attribute, which
+      // may name classes that don't extend it (JVMS 4.7.31). Drop them, a macro matching on them would not typecheck.
+      if (isJava && sourceFile == null) children.filter(_.parentSymbols.contains(this))
+      else children
     }
 
     def selfType = {
