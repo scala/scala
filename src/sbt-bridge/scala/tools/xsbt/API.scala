@@ -18,6 +18,7 @@ package xsbt
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
 import xsbti.api._
+import scala.tools.xsbt.visitor.TreeBuilder
 import xsbti.VirtualFile
 
 object API {
@@ -66,7 +67,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf case x => throw new MatchError(x) }
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
-      val extractApi = new ExtractAPI[global.type](global, sourceFile)
+      val extractApi = ExtractAPI.trees[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
       traverser.apply(unit.body)
 
@@ -185,7 +186,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     }
   }
 
-  private final class TopLevelHandler(extractApi: ExtractAPI[global.type])
+  private final class TopLevelHandler(extractApi: ExtractAPI[global.type, TreeBuilder])
       extends TopLevelTraverser {
     def allNonLocalClasses: Set[ClassLike] = {
       extractApi.allExtractedNonLocalClasses

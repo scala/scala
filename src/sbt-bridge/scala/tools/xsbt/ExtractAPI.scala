@@ -17,8 +17,9 @@ package xsbt
 
 import java.util.{ Arrays, Comparator }
 import scala.tools.nsc.symtab.Flags
+import scala.tools.xsbt.visitor.{ ApiVisitor, TreeBuilder }
 import xsbti.VirtualFile
-import xsbti.api._
+import xsbti.api.{ DefinitionType, Lazy }
 
 import scala.annotation.tailrec
 import scala.tools.nsc.Global
@@ -55,27 +56,29 @@ import scala.PartialFunction.cond
  * an example.
  *
  */
-class ExtractAPI[GlobalType <: Global](
+class ExtractAPI[GlobalType <: Global, V <: ApiVisitor](
     val global: GlobalType,
     // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
     // This is used when recording inheritance dependencies.
-    sourceFile: VirtualFile
+    sourceFile: VirtualFile,
+    val v: V
 ) extends Compat
     with ClassName
     with GlobalHelpers {
 
   import global._
+  import v.{ typeTag, pathComponentTag, annotationTag, annotationArgumentTag, typeParameterTag, methodParameterTag, parameterListTag, classDefinitionTag }
 
   private def error(msg: String) = throw new RuntimeException(msg)
 
   // this cache reduces duplicate work both here and when persisting
   //   caches on other structures had minimal effect on time and cache size
   //   (tried: Definition, Modifier, Path, Id, String)
-  private[this] val typeCache = perRunCaches.newMap[(Symbol, Type), xsbti.api.Type]()
+  private[this] val typeCache = perRunCaches.newMap[(Symbol, Type), v.Type]()
   // these caches are necessary for correctness
-  private[this] val structureCache = perRunCaches.newMap[Symbol, xsbti.api.Structure]()
+  private[this] val structureCache = perRunCaches.newMap[Symbol, v.Structure]()
   private[this] val classLikeCache =
-    perRunCaches.newMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]()
+    perRunCaches.newMap[(Symbol, Symbol), v.ClassLikeDef]()
   private[this] val pending = perRunCaches.newSet[xsbti.api.Lazy[_]]()
 
   private[this] val emptyStringArray = Array.empty[String]
@@ -84,7 +87,7 @@ class ExtractAPI[GlobalType <: Global](
   private[this] val refineClassName = tpnme.REFINE_CLASS_NAME.toString
 
   private[this] val allNonLocalClassSymbols = perRunCaches.newSet[Symbol]()
-  private[this] val allNonLocalClassesInSrc = perRunCaches.newSet[xsbti.api.ClassLike]()
+  private[this] val allNonLocalClassesInSrc = perRunCaches.newSet[v.ClassLike]()
   private[this] val _mainClasses = perRunCaches.newSet[String]()
 
   /**
@@ -184,19 +187,18 @@ class ExtractAPI[GlobalType <: Global](
       forceStructures()
     }
 
-  private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
-  private def path(components: List[PathComponent]) =
-    xsbti.api.Path.of(components.toArray[PathComponent])
+  private def thisPath(sym: Symbol): Array[v.PathComponent] =
+    pathComponents(sym, v.thisComponent :: Nil).toArray
   @tailrec
-  private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] = {
+  private def pathComponents(sym: Symbol, postfix: List[v.PathComponent]): List[v.PathComponent] = {
     if (sym == NoSymbol || sym.isRoot || sym.isEmptyPackageClass || sym.isRootPackage) postfix
-    else pathComponents(sym.owner, xsbti.api.Id.of(simpleName(sym)) :: postfix)
+    else pathComponents(sym.owner, v.id(simpleName(sym)) :: postfix)
   }
-  private def types(in: Symbol, t: List[Type]): Array[xsbti.api.Type] =
+  private def types(in: Symbol, t: List[Type]): Array[v.Type] =
     t.toArray[Type].map(processType(in, _))
   private def projectionType(in: Symbol, pre: Type, sym: Symbol) = {
     if (pre == NoPrefix) {
-      if (sym.isLocalClass || sym.isRoot || sym.isRootPackage) Constants.emptyType
+      if (sym.isLocalClass || sym.isRoot || sym.isRootPackage) v.emptyType
       else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound) reference(sym)
       else {
         // this appears to come from an existential type in an inherited member- not sure why isExistential is false here
@@ -204,11 +206,11 @@ class ExtractAPI[GlobalType <: Global](
       println("\tFlags: " + sym.flags + ", istype: " + sym.isType + ", absT: " + sym.isAbstractType + ", alias: " + sym.isAliasType + ", nonclass: " + isNonClassType(sym))*/
         reference(sym)
       }
-    } else if (sym.isRoot || sym.isRootPackage) Constants.emptyType
-    else xsbti.api.Projection.of(processType(in, pre), simpleName(sym))
+    } else if (sym.isRoot || sym.isRootPackage) v.emptyType
+    else v.projection(processType(in, pre), simpleName(sym))
   }
-  private def reference(sym: Symbol): xsbti.api.ParameterRef =
-    xsbti.api.ParameterRef.of(tparamID(sym))
+  private def reference(sym: Symbol): v.Type =
+    v.parameterRef(tparamID(sym))
 
   // Constructing PrintWriters can cause lock contention in highly parallel code,
   // it's constructor looks up the "line.separator" system property which locks
@@ -249,27 +251,27 @@ class ExtractAPI[GlobalType <: Global](
   // The compiler only pickles static annotations, so only include these in the API.
   // This way, the API is not sensitive to whether we compiled from source or loaded from classfile.
   // (When looking at the sources we see all annotations, but when loading from classes we only see the pickled (static) ones.)
-  private def mkAnnotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = {
-    if (in == NoSymbol) ExtractAPI.emptyAnnotationArray
+  private[this] val emptyAnnotationArray = new Array[v.Annotation](0)
+  private def mkAnnotations(in: Symbol, as: List[AnnotationInfo]): Array[v.Annotation] = {
+    if (in == NoSymbol) emptyAnnotationArray
     else
       staticAnnotations(as) match {
-        case Nil => ExtractAPI.emptyAnnotationArray
+        case Nil => emptyAnnotationArray
         case staticAs =>
           staticAs.map { a =>
-            xsbti.api.Annotation.of(
+            v.annotation(
               processType(in, a.atp),
               if (a.assocs.isEmpty)
                 Array(
-                  xsbti.api.AnnotationArgument
-                    .of("", ReusableTreePrinter.mkString(a.args, "(", ",", ")"))
+                  v.annotationArgument("", ReusableTreePrinter.mkString(a.args, "(", ",", ")"))
                 ) // what else to do with a Tree?
               else
                 a.assocs
                   .map {
                     case (name, value) =>
-                      xsbti.api.AnnotationArgument.of(name.toString, value.toString)
+                      v.annotationArgument(name.toString, value.toString)
                   }
-                  .toArray[xsbti.api.AnnotationArgument]
+                  .toArray[v.AnnotationArgument]
             )
           }.toArray
       }
@@ -277,7 +279,7 @@ class ExtractAPI[GlobalType <: Global](
 
   // HOT method, hand optimized to reduce allocations and needless creation of Names with calls to getterIn/setterIn
   // on non-fields.
-  private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] = {
+  private def annotations(in: Symbol, s: Symbol): Array[v.Annotation] = {
     val saved = phase
     phase = currentRun.typerPhase
     try {
@@ -287,7 +289,7 @@ class ExtractAPI[GlobalType <: Global](
       //  a) they are recorded as normal source methods anyway
       //  b) there is no way to distinguish them from user-defined methods
       if (b.hasGetter) {
-        val annotations = collection.mutable.LinkedHashSet[xsbti.api.Annotation]()
+        val annotations = collection.mutable.LinkedHashSet[v.Annotation]()
         def add(sym: Symbol) = if (sym != NoSymbol) {
           val anns = mkAnnotations(in, sym.annotations)
           var i = 0
@@ -301,7 +303,7 @@ class ExtractAPI[GlobalType <: Global](
         add(b.setterIn(b.enclClass))
         annotations.toArray
       } else {
-        if (b.annotations.isEmpty) ExtractAPI.emptyAnnotationArray
+        if (b.annotations.isEmpty) emptyAnnotationArray
         else mkAnnotations(in, b.annotations)
       }
     } finally {
@@ -311,16 +313,16 @@ class ExtractAPI[GlobalType <: Global](
 
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
 
-  private def defDef(in: Symbol, s: Symbol): xsbti.api.Def = {
+  private def defDef(in: Symbol, s: Symbol): v.ClassDefinition = {
     @tailrec
     def build(
         t: Type,
-        typeParams: Array[xsbti.api.TypeParameter],
-        valueParameters: List[xsbti.api.ParameterList]
-    ): xsbti.api.Def = {
-      def parameterList(syms: List[Symbol]): xsbti.api.ParameterList = {
+        typeParams: Array[v.TypeParameter],
+        valueParameters: List[v.ParameterList]
+    ): v.ClassDefinition = {
+      def parameterList(syms: List[Symbol]): v.ParameterList = {
         val isImplicitList = cond(syms) { case head :: _ => isImplicit(head) }
-        xsbti.api.ParameterList.of(syms.map(parameterS).toArray, isImplicitList)
+        v.parameterList(syms.map(parameterS).toArray, isImplicitList)
       }
       t match {
         case PolyType(typeParams0, base) =>
@@ -333,7 +335,7 @@ class ExtractAPI[GlobalType <: Global](
           build(resultType, typeParams, valueParameters)
         case returnType =>
           val retType = processType(in, dropConst(returnType))
-          xsbti.api.Def.of(
+          v.defDef(
             simpleNameForMethod(s),
             getAccess(s),
             getModifiers(s),
@@ -344,7 +346,7 @@ class ExtractAPI[GlobalType <: Global](
           )
       }
     }
-    def parameterS(s: Symbol): xsbti.api.MethodParameter = {
+    def parameterS(s: Symbol): v.MethodParameter = {
       val tp: global.Type = s.info
       makeParameter(simpleName(s), tp, tp.typeSymbol, s)
     }
@@ -354,7 +356,7 @@ class ExtractAPI[GlobalType <: Global](
         tpe: Type,
         ts: Symbol,
         paramSym: Symbol
-    ): xsbti.api.MethodParameter = {
+    ): v.MethodParameter = {
       import xsbti.api.ParameterModifier._
       val (t, special) =
         if (ts == definitions.RepeatedParamClass) // || s == definitions.JavaRepeatedParamClass)
@@ -363,7 +365,7 @@ class ExtractAPI[GlobalType <: Global](
           (tpe.typeArgs.head, ByName)
         else
           (tpe, Plain)
-      xsbti.api.MethodParameter.of(name, processType(in, t), hasDefault(paramSym), special)
+      v.methodParameter(name, processType(in, t), hasDefault(paramSym), special)
     }
     val t = viewer(in).memberInfo(s)
     build(t, Array(), Nil)
@@ -377,8 +379,8 @@ class ExtractAPI[GlobalType <: Global](
           String,
           xsbti.api.Access,
           xsbti.api.Modifiers,
-          Array[xsbti.api.Annotation],
-          xsbti.api.Type
+          Array[v.Annotation],
+          v.Type
       ) => T
   ): T = {
     val t = dropNullary(viewer(in).memberType(s))
@@ -394,11 +396,11 @@ class ExtractAPI[GlobalType <: Global](
     case _                     => t
   }
 
-  private def typeDef(in: Symbol, s: Symbol): xsbti.api.TypeMember = {
+  private def typeDef(in: Symbol, s: Symbol): v.ClassDefinition = {
     val (typeParams, tpe) =
       viewer(in).memberInfo(s) match {
         case PolyType(typeParams0, base) => (typeParameters(in, typeParams0), base)
-        case t                           => (Array[xsbti.api.TypeParameter](), t)
+        case t                           => (Array[v.TypeParameter](), t)
       }
     val name = simpleName(s)
     val access = getAccess(s)
@@ -406,10 +408,10 @@ class ExtractAPI[GlobalType <: Global](
     val as = annotations(in, s)
 
     if (s.isAliasType)
-      xsbti.api.TypeAlias.of(name, access, modifiers, as, typeParams, processType(in, tpe))
+      v.typeAlias(name, access, modifiers, as, typeParams, processType(in, tpe))
     else if (s.isAbstractType) {
       val bounds = tpe.bounds
-      xsbti.api.TypeDeclaration.of(
+      v.typeDeclaration(
         name,
         access,
         modifiers,
@@ -422,9 +424,9 @@ class ExtractAPI[GlobalType <: Global](
       error("Unknown type member" + s)
   }
 
-  private def structure(info: Type, s: Symbol): xsbti.api.Structure =
+  private def structure(info: Type, s: Symbol): v.Structure =
     structureCache.getOrElseUpdate(s, mkStructure(info, s))
-  private def structureWithInherited(info: Type, s: Symbol): xsbti.api.Structure =
+  private def structureWithInherited(info: Type, s: Symbol): v.Structure =
     structureCache.getOrElseUpdate(s, mkStructureWithInherited(info, s))
 
   private def removeConstructors(ds: List[Symbol]): List[Symbol] = ds filter { !_.isConstructor }
@@ -434,7 +436,7 @@ class ExtractAPI[GlobalType <: Global](
    *
    * (for refinement types, and ClassInfoTypes encountered outside of a definition???).
    */
-  private def mkStructure(info: Type, s: Symbol): xsbti.api.Structure = {
+  private def mkStructure(info: Type, s: Symbol): v.Structure = {
     // We're not interested in the full linearization, so we can just use `parents`,
     // which side steps issues with baseType when f-bounded existential types and refined types mix
     // (and we get cyclic types which cause a stack overflow in showAPI).
@@ -452,7 +454,7 @@ class ExtractAPI[GlobalType <: Global](
    *
    * TODO: can we include hashes for parent classes instead? This seems a bit messy.
    */
-  private def mkStructureWithInherited(info: Type, s: Symbol): xsbti.api.Structure = {
+  private def mkStructureWithInherited(info: Type, s: Symbol): v.Structure = {
     val ancestorTypes0 = linearizedAncestorTypes(info)
     val ancestorTypes =
       if (s.isDerivedValueClass) {
@@ -481,23 +483,23 @@ class ExtractAPI[GlobalType <: Global](
       bases: List[Type],
       declared: List[Symbol],
       inherited: List[Symbol]
-  ): xsbti.api.Structure = {
-    xsbti.api.Structure.of(
+  ): v.Structure = {
+    v.structure(
       lzy(types(s, bases)),
       lzy(processDefinitions(s, declared)),
       lzy(processDefinitions(s, inherited))
     )
   }
-  private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
+  private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[v.ClassDefinition] =
     sort(defs.toArray).flatMap((d: Symbol) => definition(in, d))
   private[this] def sort(defs: Array[Symbol]): Array[Symbol] = {
     Arrays.sort(defs, sortClasses)
     defs
   }
 
-  private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.ClassDefinition] = {
-    def mkVar = Some(fieldDef(in, sym, keepConst = false, xsbti.api.Var.of(_, _, _, _, _)))
-    def mkVal = Some(fieldDef(in, sym, keepConst = true, xsbti.api.Val.of(_, _, _, _, _)))
+  private def definition(in: Symbol, sym: Symbol): Option[v.ClassDefinition] = {
+    def mkVar = Some(fieldDef(in, sym, keepConst = false, v.varDef(_, _, _, _, _)))
+    def mkVal = Some(fieldDef(in, sym, keepConst = true, v.valDef(_, _, _, _, _)))
     if (isClass(sym))
       if (ignoreClass(sym)) {
         allNonLocalClassSymbols.+=(sym); None
@@ -566,9 +568,9 @@ class ExtractAPI[GlobalType <: Global](
       else mapOver(tp)
   }
 
-  private def processType(in: Symbol, t: Type): xsbti.api.Type =
+  private def processType(in: Symbol, t: Type): v.Type =
     typeCache.getOrElseUpdate((in, t), makeType(in, t))
-  private def makeType(in: Symbol, t: Type): xsbti.api.Type = {
+  private def makeType(in: Symbol, t: Type): v.Type = {
 
     val dealiased = t match {
       case TypeRef(_, sym, _) if sym.isAliasType => t.dealias
@@ -576,11 +578,11 @@ class ExtractAPI[GlobalType <: Global](
     }
 
     dealiased match {
-      case NoPrefix             => Constants.emptyType
-      case ThisType(sym)        => xsbti.api.Singleton.of(thisPath(sym))
+      case NoPrefix             => v.emptyType
+      case ThisType(sym)        => v.singleton(thisPath(sym))
       case SingleType(pre, sym) => projectionType(in, pre, sym)
       case ConstantType(constant) =>
-        xsbti.api.Constant.of(processType(in, constant.tpe), constant.stringValue)
+        v.constant(processType(in, constant.tpe), constant.stringValue)
 
       /* explaining the special-casing of references to refinement classes (https://support.typesafe.com/tickets/1882)
        *
@@ -621,55 +623,55 @@ class ExtractAPI[GlobalType <: Global](
           else
             base
         else
-          xsbti.api.Parameterized.of(base, types(in, args))
+          v.parameterized(base, types(in, args))
       case SuperType(thistpe: Type, supertpe: Type) =>
         reporter.warning(
           NoPosition,
           "sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe
         )
-        Constants.emptyType
+        v.emptyType
       case at: AnnotatedType =>
         at.annotations match {
           case Nil => processType(in, at.underlying)
           case annots =>
-            xsbti.api.Annotated.of(processType(in, at.underlying), mkAnnotations(in, annots))
+            v.annotated(processType(in, at.underlying), mkAnnotations(in, annots))
         }
       case rt: CompoundType   => structure(rt, rt.typeSymbol)
       case et: ExistentialType => makeExistentialType(in, et)
       case NoType =>
-        Constants.emptyType // this can happen when there is an error that will be reported by a later phase
+        v.emptyType // this can happen when there is an error that will be reported by a later phase
       case PolyType(typeParams, resultType) =>
-        xsbti.api.Polymorphic.of(processType(in, resultType), typeParameters(in, typeParams))
+        v.polymorphic(processType(in, resultType), typeParameters(in, typeParams))
       case NullaryMethodType(_) =>
         reporter.warning(
           NoPosition,
           "sbt-api: Unexpected nullary method type " + in + " in " + in.owner
         )
-        Constants.emptyType
+        v.emptyType
       case MethodType(_, _) =>
         reporter.echo(NoPosition, s"sbt-api: Unhandled method type $in in ${in.owner}")
-        Constants.emptyType
+        v.emptyType
       case _ =>
         reporter.warning(NoPosition, "sbt-api: Unhandled type " + t.getClass + " : " + t)
-        Constants.emptyType
+        v.emptyType
     }
   }
-  private def makeExistentialType(in: Symbol, t: ExistentialType): xsbti.api.Existential = {
+  private def makeExistentialType(in: Symbol, t: ExistentialType): v.Type = {
     val ExistentialType(typeVariables, qualified) = t
     existentialRenamings.enterExistentialTypeVariables(typeVariables)
     try {
       val typeVariablesConverted = typeParameters(in, typeVariables)
       val qualifiedConverted = processType(in, qualified)
-      xsbti.api.Existential.of(qualifiedConverted, typeVariablesConverted)
+      v.existential(qualifiedConverted, typeVariablesConverted)
     } finally {
       existentialRenamings.leaveExistentialTypeVariables(typeVariables)
     }
   }
-  private def typeParameters(in: Symbol, s: Symbol): Array[xsbti.api.TypeParameter] =
+  private def typeParameters(in: Symbol, s: Symbol): Array[v.TypeParameter] =
     typeParameters(in, s.typeParams)
-  private def typeParameters(in: Symbol, s: List[Symbol]): Array[xsbti.api.TypeParameter] =
-    s.map(typeParameter(in, _)).toArray[xsbti.api.TypeParameter]
-  private def typeParameter(in: Symbol, s: Symbol): xsbti.api.TypeParameter = {
+  private def typeParameters(in: Symbol, s: List[Symbol]): Array[v.TypeParameter] =
+    s.map(typeParameter(in, _)).toArray[v.TypeParameter]
+  private def typeParameter(in: Symbol, s: Symbol): v.TypeParameter = {
     val varianceInt = s.variance
     import xsbti.api.Variance._
     val annots = annotations(in, s)
@@ -677,7 +679,7 @@ class ExtractAPI[GlobalType <: Global](
       if (varianceInt < 0) Contravariant else if (varianceInt > 0) Covariant else Invariant
     viewer(in).memberInfo(s) match {
       case TypeBounds(low, high) =>
-        xsbti.api.TypeParameter.of(
+        v.typeParameter(
           tparamID(s),
           annots,
           typeParameters(in, s),
@@ -686,7 +688,7 @@ class ExtractAPI[GlobalType <: Global](
           processType(in, high)
         )
       case PolyType(typeParams, base) =>
-        xsbti.api.TypeParameter.of(
+        v.typeParameter(
           tparamID(s),
           annots,
           typeParameters(in, typeParams),
@@ -720,13 +722,13 @@ class ExtractAPI[GlobalType <: Global](
 
   /* Representation for the self type of a class symbol `s`, or `emptyType` for an *unascribed* self variable (or no self variable at all).
      Only the self variable's explicitly ascribed type is relevant for incremental compilation. */
-  private def selfType(in: Symbol, s: Symbol): xsbti.api.Type =
+  private def selfType(in: Symbol, s: Symbol): v.Type =
     // `sym.typeOfThis` is implemented as `sym.thisSym.info`, which ensures the *self* symbol is initialized (the type completer is run).
     // We can safely avoid running the type completer for `thisSym` for *class* symbols where `thisSym == this`,
     // as that invariant is established on completing the class symbol (`mkClassLike` calls `s.initialize` before calling us).
     // Technically, we could even ignore a self type that's a supertype of the class's type,
     // as it does not contribute any information relevant outside of the class definition.
-    if ((s.thisSym eq s) || (s.thisSym.tpeHK == s.tpeHK)) Constants.emptyType
+    if ((s.thisSym eq s) || (s.thisSym.tpeHK == s.tpeHK)) v.emptyType
     else processType(in, s.typeOfThis)
 
   def extractAllClassesOf(in: Symbol, c: Symbol): Unit = {
@@ -734,7 +736,7 @@ class ExtractAPI[GlobalType <: Global](
     ()
   }
 
-  def allExtractedNonLocalClasses: Set[ClassLike] = {
+  def allExtractedNonLocalClasses: Set[v.ClassLike] = {
     forceStructures()
     allNonLocalClassesInSrc.toSet
   }
@@ -746,9 +748,9 @@ class ExtractAPI[GlobalType <: Global](
     _mainClasses.toSet
   }
 
-  private def classLike(in: Symbol, c: Symbol): ClassLikeDef =
+  private def classLike(in: Symbol, c: Symbol): v.ClassLikeDef =
     classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
-  private def mkClassLike(in: Symbol, c: Symbol): ClassLikeDef = {
+  private def mkClassLike(in: Symbol, c: Symbol): v.ClassLikeDef = {
     // Normalize to a class symbol, and initialize it.
     // (An object -- aka module -- also has a term symbol,
     //  but it's the module class that holds the info about its structure.)
@@ -767,8 +769,8 @@ class ExtractAPI[GlobalType <: Global](
     val name = classNameAsSeenIn(in, c)
     val tParams = typeParameters(in, sym) // look at class symbol
     val selfType = lzy(this.selfType(in, sym))
-    def constructClass(structure: xsbti.api.Lazy[Structure]): ClassLike = {
-      xsbti.api.ClassLike.of(
+    def constructClass(structure: Lazy[v.Structure]): v.ClassLike = {
+      v.classLike(
         name,
         acc,
         modifiers,
@@ -792,7 +794,7 @@ class ExtractAPI[GlobalType <: Global](
     if (hasMainMethod(sym, defType))
       _mainClasses += name
 
-    val classDef = xsbti.api.ClassLikeDef.of(
+    val classDef = v.classLikeDef(
       name,
       acc,
       modifiers,
@@ -853,9 +855,6 @@ class ExtractAPI[GlobalType <: Global](
     val privateLocal = xsbti.api.Private.of(local)
     val protectedLocal = xsbti.api.Protected.of(local)
     val unqualified = xsbti.api.Unqualified.of()
-    val emptyPath = xsbti.api.Path.of(Array())
-    val thisPath = xsbti.api.This.of()
-    val emptyType = xsbti.api.EmptyType.of()
   }
 
   private def simpleName(s: Symbol): String = {
@@ -898,5 +897,7 @@ class ExtractAPI[GlobalType <: Global](
 
 object ExtractAPI {
   private val ConstructorWithDefaultArgument = "<init>\\$default\\$(\\d+)".r
-  private val emptyAnnotationArray = new Array[xsbti.api.Annotation](0)
+
+  def trees[G <: Global](global: G, sourceFile: VirtualFile): ExtractAPI[G, TreeBuilder] =
+    new ExtractAPI[G, TreeBuilder](global, sourceFile, new TreeBuilder)
 }
