@@ -5555,7 +5555,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             handleMissing
           }
           else {
-            if ((sym ne NoSymbol) && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
+            if (sym.isTerm && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
               // Rewrites "qual.name ..." to "{ val lhs = qual ; lhs.name ... }" in cases where
               // qual is not stable and name has a method type which depends on its prefix. If
               // this is the case then hoisting qual out as a stable val means that members of
