@@ -29,8 +29,8 @@ import ApiHasher._
  *
  * `HashAPI` is a running fold: each node `extend`s one hash with a fixed sequence of ints, so a
  * node's contribution depends on what came before it and can't be kept as a single int. A node
- * becomes a `Tape` instead: the ints `HashAPI` would `extend` with, and the structures embedded
- * among them. Structures stay as nodes because `HashAPI` keeps per-hash state about them (it
+ * becomes a `Tape` instead: the ints `HashAPI` would `extend` with, with the structures and the
+ * larger child nodes among them kept by reference. Structures stay as nodes because `HashAPI` keeps per-hash state about them (it
  * hashes a structure met a second time by the hash at the end of its first visit), and because
  * `NameHashing` collects the members of every structure it can reach.
  */
@@ -204,9 +204,9 @@ final class ApiHasher extends ApiVisitor {
   private final class TapeBuilder {
     private[this] var ints = new Array[Int](64)
     private[this] var n = 0
-    private[this] var structs: Array[HStructure] = null
-    private[this] var at: Array[Int] = null
-    private[this] var ns = 0
+    private[this] var kids: Array[AnyRef] = new Array[AnyRef](8)
+    private[this] var at: Array[Int] = new Array[Int](8)
+    private[this] var nk = 0
 
     def int(i: Int): Unit = {
       if (n == ints.length) ints = java.util.Arrays.copyOf(ints, n * 2)
@@ -215,23 +215,23 @@ final class ApiHasher extends ApiVisitor {
     }
     def str(s: String): Unit = int(ApiHasher.this.str(s))
     def bool(x: Boolean): Unit = int(if (x) TrueHash else FalseHash)
-    private def struct(s: HStructure, pos: Int): Unit = {
-      if (structs eq null) { structs = new Array[HStructure](4); at = new Array[Int](4) }
-      else if (ns == structs.length) {
-        structs = java.util.Arrays.copyOf(structs, ns * 2); at = java.util.Arrays.copyOf(at, ns * 2)
+    private def kid(k: AnyRef, pos: Int): Unit = {
+      if (nk == kids.length) { kids = java.util.Arrays.copyOf(kids, nk * 2); at = java.util.Arrays.copyOf(at, nk * 2) }
+      kids(nk) = k
+      at(nk) = pos
+      nk += 1
+    }
+    /** Copies a small child, and refers to a larger one. */
+    def tape(t: Tape): Unit =
+      if (t.ints.length + t.kids.length > InlineLimit) kid(t, n)
+      else {
+        val base = n
+        var i = 0
+        while (i < t.kids.length) { kid(t.kids(i), base + t.at(i)); i += 1 }
+        i = 0
+        val ts = t.ints
+        while (i < ts.length) { int(ts(i)); i += 1 }
       }
-      structs(ns) = s
-      at(ns) = pos
-      ns += 1
-    }
-    def tape(t: Tape): Unit = {
-      val base = n
-      var i = 0
-      while (i < t.structCount) { struct(t.structs(i), base + t.at(i)); i += 1 }
-      i = 0
-      val ts = t.ints
-      while (i < ts.length) { int(ts(i)); i += 1 }
-    }
     def tapes(ts: Array[Tape]): Unit = {
       int(ts.length)
       var i = 0
@@ -239,10 +239,11 @@ final class ApiHasher extends ApiVisitor {
     }
     def result(): Tape = {
       val t =
-        if (ns == 0) new Tape(java.util.Arrays.copyOf(ints, n), Tape.NoStructs, Tape.NoAt)
-        else new Tape(java.util.Arrays.copyOf(ints, n), java.util.Arrays.copyOf(structs, ns), java.util.Arrays.copyOf(at, ns))
+        if (nk == 0) new Tape(java.util.Arrays.copyOf(ints, n), Tape.NoKids, Tape.NoAt)
+        else new Tape(java.util.Arrays.copyOf(ints, n), java.util.Arrays.copyOf(kids, nk), java.util.Arrays.copyOf(at, nk))
+      java.util.Arrays.fill(kids, 0, nk, null)
       n = 0
-      ns = 0
+      nk = 0
       t
     }
   }
@@ -282,11 +283,22 @@ object ApiHasher {
   /** `HashAPI`'s trait breakers: fields, objects and super accessors. */
   final val KindTraitBreaker = 1
 
-  /** The ints `HashAPI` extends its hash with for one node, with structure `structs(i)` before `ints(at(i))`. */
-  final class Tape(val ints: Array[Int], val structs: Array[HStructure], val at: Array[Int]) {
-    def structCount: Int = structs.length
+  /** Children with at most this many ints and children of their own are copied into their parent. */
+  final val InlineLimit = 8
+
+  /**
+   * The ints `HashAPI` extends its hash with for one node. `kids(i)`, a structure or a larger
+   * child node, comes before `ints(at(i))`.
+   */
+  final class Tape(val ints: Array[Int], val kids: Array[AnyRef], val at: Array[Int]) {
     /** A structure on its own, which `HashAPI` hashes without its members in some positions. */
-    def bareStructure: HStructure = if (ints.length == 0 && structs.length == 1) structs(0) else null
+    def bareStructure: HStructure =
+      if (ints.length == 0 && kids.length == 1) kids(0) match {
+        case s: HStructure => s
+        case t: Tape       => t.bareStructure
+        case x             => throw new MatchError(x)
+      }
+      else null
 
     /**
      * Equal when the `xsbti.api` nodes would be: `ExtractAPI` merges a field's and its accessors'
@@ -294,16 +306,16 @@ object ApiHasher {
      */
     override def equals(o: Any): Boolean = o match {
       case t: Tape =>
-        java.util.Arrays.equals(ints, t.ints) && java.util.Arrays.equals(at, t.at) &&
-          java.util.Arrays.equals(structs.asInstanceOf[Array[AnyRef]], t.structs.asInstanceOf[Array[AnyRef]])
+        java.util.Arrays.equals(ints, t.ints) && java.util.Arrays.equals(at, t.at) && java.util.Arrays.equals(kids, t.kids)
       case _ => false
     }
     override def hashCode: Int = java.util.Arrays.hashCode(ints)
   }
   object Tape {
-    val NoStructs = new Array[HStructure](0)
+    val NoKids = new Array[AnyRef](0)
     val NoAt = new Array[Int](0)
-    def of(is: Int*): Tape = new Tape(is.toArray, NoStructs, NoAt)
+    def of(i0: Int): Tape = new Tape(Array(i0), NoKids, NoAt)
+    def of(i0: Int, i1: Int): Tape = new Tape(Array(i0, i1), NoKids, NoAt)
     def of(s: HStructure): Tape = new Tape(new Array[Int](0), Array(s), Array(0))
   }
 
@@ -338,51 +350,95 @@ object ApiHasher {
   final class ClassHashes(val name: String, val definitionType: DefinitionType, val apiHash: Int, val extraHash: Int, val nameHashes: Array[NameHash])
 
   def hashes(c: HClass, optimizedSealed: Boolean): ClassHashes = {
-    val apiHash = Fold.hashAPI(c, includeTraitBreakers = false)
+    val f = new Fold
+    val apiHash = f.hashAPI(c, includeTraitBreakers = false)
     val extraHash =
-      if (c.definitionType == DefinitionType.Trait) Fold.hashAPI(c, includeTraitBreakers = true) else apiHash
-    new ClassHashes(c.name, c.definitionType, apiHash, extraHash, nameHashes(c, optimizedSealed))
+      if (c.definitionType == DefinitionType.Trait) f.hashAPI(c, includeTraitBreakers = true) else apiHash
+    new ClassHashes(c.name, c.definitionType, apiHash, extraHash, nameHashes(f, c, optimizedSealed))
   }
 
   /** `NameHashing.nameHashes`. */
-  def nameHashes(c: HClass, optimizedSealed: Boolean): Array[NameHash] = {
+  private def nameHashes(f: Fold, c: HClass, optimizedSealed: Boolean): Array[NameHash] = {
     val defs = publicDefinitions(c)
     val location = Location(c.name, if (c.definitionType == DefinitionType.Trait || c.definitionType == DefinitionType.ClassDef) TypeName else TermName).hashCode
-    val (implicits, regular) = defs.partition(_.modifiers.isImplicit)
-    val forPatMat =
-      if (optimizedSealed) group(defs.filter { case cl: HClass => cl.modifiers.isSealed; case _ => false }, location, UseScope.PatMatTarget, includeSealedChildren = true)
-      else Nil
+    val result = new collection.mutable.ArrayBuffer[NameHash](defs.length)
     val sealedChildren = !optimizedSealed
-    (group(regular, location, UseScope.Default, sealedChildren) ++ group(implicits, location, UseScope.Implicit, sealedChildren) ++ forPatMat).toArray
+    group(f, defs, d => !d.modifiers.isImplicit, location, UseScope.Default, sealedChildren, result)
+    group(f, defs, d => d.modifiers.isImplicit, location, UseScope.Implicit, sealedChildren, result)
+    if (optimizedSealed)
+      group(f, defs, { case cl: HClass => cl.modifiers.isSealed; case _ => false }, location, UseScope.PatMatTarget, includeSealedChildren = true, result)
+    result.toArray
   }
 
-  private def group(defs: collection.Seq[HDefinition], location: Int, scope: UseScope, includeSealedChildren: Boolean): List[NameHash] = {
-    val groups = new java.util.LinkedHashMap[String, collection.mutable.ArrayBuffer[HDefinition]]()
-    defs.foreach { d =>
-      val n = d.name
-      val key = n.substring(n.lastIndexOf('.') + 1)
-      var g = groups.get(key)
-      if (g eq null) { g = new collection.mutable.ArrayBuffer[HDefinition]; groups.put(key, g) }
-      g += d
-    }
-    val result = List.newBuilder[NameHash]
-    groups.forEach { (name, ds) =>
-      val f = new Fold(includeDefinitions = false, includeSealedChildren = includeSealedChildren, includeTraitBreakers = false)
-      f.symmetric(ds.size) { i =>
-        f.definition(ds(i))
-        f.extend(location)
+  /** One name hash per local name among the selected definitions, each grouped in visit order. */
+  private def group(
+      f: Fold,
+      defs: Array[HDefinition],
+      select: HDefinition => Boolean,
+      location: Int,
+      scope: UseScope,
+      includeSealedChildren: Boolean,
+      result: collection.mutable.ArrayBuffer[NameHash]
+  ): Unit = {
+    val n = defs.length
+    val next = new Array[Int](n)
+    val first = new java.util.HashMap[String, Integer]()
+    var i = n - 1
+    while (i >= 0) {
+      val d = defs(i)
+      if (select(d)) {
+        val key = d.name.substring(d.name.lastIndexOf('.') + 1)
+        val prev = first.put(key, i)
+        next(i) = if (prev eq null) -1 else prev.intValue
       }
-      result += NameHash.of(name, scope, f.result)
+      i -= 1
     }
-    result.result()
+    first.forEach { (key, head) =>
+      f.reset(includeDefinitions = false, includeSealedChildren = includeSealedChildren, includeTraitBreakers = false)
+      f.hash = 0
+      val current = f.hash
+      var a, b, count = 0
+      var c = 1
+      var j = head.intValue
+      while (j >= 0) {
+        f.hash = 1
+        f.definition(defs(j))
+        f.extend(location)
+        val h = f.result
+        a += h; b ^= h; c *= h | 1; count += 1
+        j = next(j)
+      }
+      f.hash = current
+      f.extend(unordered(a, b, c, count))
+      result += NameHash.of(key, scope, f.result)
+    }
+  }
+
+  /** `MurmurHash3.unorderedHash` with its default seed, from its running sums. */
+  private def unordered(a: Int, b: Int, c: Int, count: Int): Int = {
+    var h = MurmurHash3.traversableSeed
+    h = MurmurHash3.mix(h, a)
+    h = MurmurHash3.mix(h, b)
+    h = MurmurHash3.mixLast(h, c)
+    MurmurHash3.finalizeHash(h, count)
   }
 
   /** `NameHashing`'s `ExtractPublicDefinitions` visit, in the same order. */
-  private def publicDefinitions(c: HClass): collection.Seq[HDefinition] = {
+  private def publicDefinitions(c: HClass): Array[HDefinition] = {
     val out = new collection.mutable.ArrayBuffer[HDefinition]
-    val seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap[HStructure, java.lang.Boolean])
-    def tape(t: Tape): Unit = { var i = 0; while (i < t.structCount) { structure(t.structs(i)); i += 1 } }
-    def structure(s: HStructure): Unit = if (seen.add(s)) {
+    val seen = new java.util.IdentityHashMap[HStructure, HStructure]
+    def tape(t: Tape): Unit = {
+      var i = 0
+      while (i < t.kids.length) {
+        t.kids(i) match {
+          case s: HStructure => structure(s)
+          case k: Tape       => tape(k)
+          case x             => throw new MatchError(x)
+        }
+        i += 1
+      }
+    }
+    def structure(s: HStructure): Unit = if (seen.put(s, s) eq null) {
       s.parents.get.foreach(tape)
       s.declared.get.foreach(definition)
       s.inherited.get.foreach(definition)
@@ -392,8 +448,8 @@ object ApiHasher {
     tape(c.header)
     tape(c.typeParameters)
     tape(c.selfType.get)
-    c.structure.get.structs.foreach(structure)
-    out
+    structure(c.structure.get.bareStructure)
+    out.toArray
   }
 
   private case class Location(className: String, nameType: NameType)
@@ -401,34 +457,46 @@ object ApiHasher {
   private case object TermName extends NameType
   private case object TypeName extends NameType
 
-  private object Fold {
-    def hashAPI(c: HClass, includeTraitBreakers: Boolean): Int = {
-      val f = new Fold(includeDefinitions = true, includeSealedChildren = true, includeTraitBreakers = includeTraitBreakers)
-      f.hash = 1
-      f.hashClass(c)
-      f.result
-    }
-  }
-
-  /** `HashAPI`, over tapes. */
-  private final class Fold(includeDefinitions: Boolean, includeSealedChildren: Boolean, includeTraitBreakers: Boolean) {
+  /** `HashAPI`, over tapes. Reused across the hashes of one class. */
+  private final class Fold {
     var hash = 0
-    private[this] val visitedStructures = new java.util.IdentityHashMap[HStructure, List[Int]]
-    private[this] val visitedClasses = new java.util.IdentityHashMap[HClass, List[Int]]
+    private[this] var includeDefinitions = true
+    private[this] var includeSealedChildren = true
+    private[this] var includeTraitBreakers = false
+    private[this] var visitedStructures: java.util.IdentityHashMap[HStructure, List[Int]] = null
+    private[this] var visitedClasses: java.util.IdentityHashMap[HClass, List[Int]] = null
+
+    def reset(includeDefinitions: Boolean, includeSealedChildren: Boolean, includeTraitBreakers: Boolean): Unit = {
+      this.includeDefinitions = includeDefinitions
+      this.includeSealedChildren = includeSealedChildren
+      this.includeTraitBreakers = includeTraitBreakers
+      if ((visitedStructures ne null) && !visitedStructures.isEmpty) visitedStructures.clear()
+      if ((visitedClasses ne null) && !visitedClasses.isEmpty) visitedClasses.clear()
+    }
+
+    def hashAPI(c: HClass, includeTraitBreakers: Boolean): Int = {
+      reset(includeDefinitions = true, includeSealedChildren = true, includeTraitBreakers = includeTraitBreakers)
+      hash = 1
+      hashClass(c)
+      result
+    }
 
     def extend(a: Int): Unit = hash = MurmurHash3.mix(hash, a)
     def result: Int = MurmurHash3.finalizeHash(hash, 1)
 
-    private def visit[K](map: java.util.IdentityHashMap[K, List[Int]], k: K)(f: => Unit): Unit = {
+    /** `HashAPI.visit`, up to `hashF`: false, after extending, if `k` was visited before. */
+    private def enter[K](map: java.util.IdentityHashMap[K, List[Int]], k: K): Boolean = {
       val prev = map.put(k, hash :: (map.get(k) match { case null => Nil; case l => l }))
       prev match {
-        case x :: _ => extend(x)
-        case _ =>
-          f
-          var hs = map.get(k)
-          while (hs ne Nil) { extend(hs.head); hs = hs.tail }
-          map.put(k, hash :: Nil)
+        case x :: _ => extend(x); false
+        case _      => true
       }
+    }
+    /** `HashAPI.visit`, after `hashF`. */
+    private def exit[K](map: java.util.IdentityHashMap[K, List[Int]], k: K): Unit = {
+      var hs = map.get(k)
+      while (hs ne Nil) { extend(hs.head); hs = hs.tail }
+      map.put(k, hash :: Nil)
     }
 
     def tape(t: Tape): Unit = {
@@ -436,11 +504,16 @@ object ApiHasher {
       var i = 0
       var s = 0
       while (i < ints.length) {
-        while (s < t.structCount && t.at(s) == i) { structure(t.structs(s), includeDefinitions = true, isTrait = false); s += 1 }
+        while (s < t.kids.length && t.at(s) == i) { kid(t.kids(s)); s += 1 }
         extend(ints(i))
         i += 1
       }
-      while (s < t.structCount) { structure(t.structs(s), includeDefinitions = true, isTrait = false); s += 1 }
+      while (s < t.kids.length) { kid(t.kids(s)); s += 1 }
+    }
+    private def kid(k: AnyRef): Unit = k match {
+      case s: HStructure => structure(s, includeDefinitions = true, isTrait = false)
+      case t: Tape       => tape(t)
+      case x             => throw new MatchError(x)
     }
 
     /** `hashType(t, includeDefinitions)`, which only matters for a bare structure. */
@@ -449,23 +522,51 @@ object ApiHasher {
       case s    => structure(s, includeDefinitions, isTrait = false)
     }
 
-    def structure(s: HStructure, includeDefinitions: Boolean, isTrait: Boolean): Unit =
-      visit(visitedStructures, s) {
+    def structure(s: HStructure, includeDefinitions: Boolean, isTrait: Boolean): Unit = {
+      if (visitedStructures eq null) visitedStructures = new java.util.IdentityHashMap[HStructure, List[Int]]
+      if (enter(visitedStructures, s)) {
         extend(StructureHash)
         val parents = s.parents.get
         extend(parents.length)
-        parents.foreach(tpe(_, includeDefinitions))
+        var i = 0
+        while (i < parents.length) { tpe(parents(i), includeDefinitions); i += 1 }
         if (includeDefinitions) {
           definitions(s.declared.get, isTrait)
           definitions(s.inherited.get, isTrait)
         }
+        exit(visitedStructures, s)
       }
+    }
 
+    /** `hashDefinitions`: the non-private definitions, then a trait's private trait breakers. */
     private def definitions(ds: Array[HDef], isTrait: Boolean): Unit = {
-      val defs = new collection.mutable.ArrayBuffer[HDef](ds.length)
-      ds.foreach(d => if (d.isNonPrivate) defs += d)
-      if (isTrait && includeTraitBreakers) ds.foreach(d => if (d.kind == KindTraitBreaker && d.isPrivate) defs += d)
-      symmetric(defs.length)(i => tape(defs(i).tape))
+      val current = hash
+      var a, b, count = 0
+      var c = 1
+      var i = 0
+      while (i < ds.length) {
+        val d = ds(i)
+        if (d.isNonPrivate) {
+          hash = 1; tape(d.tape)
+          val h = result
+          a += h; b ^= h; c *= h | 1; count += 1
+        }
+        i += 1
+      }
+      if (isTrait && includeTraitBreakers) {
+        i = 0
+        while (i < ds.length) {
+          val d = ds(i)
+          if (d.kind == KindTraitBreaker && d.isPrivate) {
+            hash = 1; tape(d.tape)
+            val h = result
+            a += h; b ^= h; c *= h | 1; count += 1
+          }
+          i += 1
+        }
+      }
+      hash = current
+      extend(unordered(a, b, c, count))
     }
 
     def definition(d: HDefinition): Unit = d match {
@@ -473,36 +574,30 @@ object ApiHasher {
       case d: HDef   => tape(d.tape)
     }
 
-    def hashClass(c: HClass): Unit = visit(visitedClasses, c) {
-      extend(ClassHash)
-      tape(c.typeParameters)
-      tape(c.selfType.get)
-      if (includeSealedChildren) {
-        val cs = c.childrenOfSealedClass
-        symmetric(cs.length)(i => tpe(cs(i), includeDefinitions))
+    def hashClass(c: HClass): Unit = {
+      if (visitedClasses eq null) visitedClasses = new java.util.IdentityHashMap[HClass, List[Int]]
+      if (enter(visitedClasses, c)) {
+        extend(ClassHash)
+        tape(c.typeParameters)
+        tape(c.selfType.get)
+        if (includeSealedChildren) {
+          val cs = c.childrenOfSealedClass
+          val current = hash
+          var a, b, count = 0
+          var k = 1
+          var i = 0
+          while (i < cs.length) {
+            hash = 1; tpe(cs(i), includeDefinitions)
+            val h = result
+            a += h; b ^= h; k *= h | 1; count += 1
+            i += 1
+          }
+          hash = current
+          extend(unordered(a, b, k, count))
+        }
+        structure(c.structure.get.bareStructure, includeDefinitions, c.definitionType == DefinitionType.Trait)
+        exit(visitedClasses, c)
       }
-      structure(c.structure.get.structs(0), includeDefinitions, c.definitionType == DefinitionType.Trait)
-    }
-
-    /** `hashSymmetric`: each element from a fresh hash, combined as `MurmurHash3.unorderedHash` does, with its default seed. */
-    def symmetric(n: Int)(element: Int => Unit): Unit = {
-      val current = hash
-      var a, b, count = 0
-      var c = 1
-      var i = 0
-      while (i < n) {
-        hash = 1
-        element(i)
-        val h = result
-        a += h; b ^= h; c *= h | 1; count += 1
-        i += 1
-      }
-      var h = MurmurHash3.traversableSeed
-      h = MurmurHash3.mix(h, a)
-      h = MurmurHash3.mix(h, b)
-      h = MurmurHash3.mixLast(h, c)
-      hash = current
-      extend(MurmurHash3.finalizeHash(h, count))
     }
   }
 }
