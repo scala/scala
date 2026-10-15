@@ -2698,8 +2698,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def initChildren(sym: Symbol): Unit =
         if (sym.isJava && sym.isSealed)
           sym.attachments.get[PermittedSubclassSymbols] match {
-            case Some(PermittedSubclassSymbols(permits)) =>
-              for (child <- permits if child.isJava)
+            case Some(permitted) =>
+              for (child <- permitted.symbols if child.isJava)
                 initChildren(child.initialize)
             case _ =>
               val seen = mutable.HashSet.empty[Symbol]
