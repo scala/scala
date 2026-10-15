@@ -85,7 +85,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.FieldTypeInferred
     this.LookupAmbiguityWarning
     this.PermittedSubclasses
-    this.PermittedSubclassSymbols
     this.NamePos
     this.UnnamedArg
     this.DiscardedValue
