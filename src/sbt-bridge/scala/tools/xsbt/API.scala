@@ -29,6 +29,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
 
   import scala.collection.mutable
   private val nonLocalClassSymbolsInCurrentUnits = new mutable.HashSet[Symbol]()
+  private lazy val hashContext = new ApiHasher.Context
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
   class ApiPhase(prev: Phase) extends GlobalPhase(prev) {
@@ -95,11 +96,13 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       }
 
       if (hashSink ne null) {
-        val hashApi = new ExtractAPI[global.type, ApiHasher](global, sourceFile, new ApiHasher)
+        val hasher = new ApiHasher(hashContext)
+        val hashApi = new ExtractAPI[global.type, ApiHasher](global, sourceFile, hasher)
         new TopLevelHandler(c => hashApi.extractAllClassesOf(c.owner, c)).apply(unit.body)
         hashApi.allExtractedNonLocalClasses.foreach { c =>
-          hashSink.apiHashes(sourceFile, ApiHasher.hashes(c, hashSink.optimizedSealed))
+          hashSink.apiHashes(sourceFile, hasher.hashes(c, hashSink.optimizedSealed))
         }
+        hashContext.reset()
         if (!reportTrees) {
           hashApi.mainClasses.foreach(callback.mainClass(sourceFile, _))
           addNonLocalClassSymbols(hashApi.allExtractedNonLocalSymbols)
