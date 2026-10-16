@@ -1081,7 +1081,8 @@ object LazyList extends SeqFactory[LazyList] {
 
   private val Empty: LazyList[Nothing] = new LazyList(EmptyMarker)
 
-  private val _tailUpdater: LazyListBase.TailUpdater = Empty.makeTailUpdater
+  // lazy val because `scala` package forces `LazyList`, `makeTailUpdater` uses `Predef.classOf`
+  private lazy val _tailUpdater: LazyListBase.TailUpdater = Empty.makeTailUpdater
 
   /** Creates a new LazyList. */
   @inline private def newLL[A](state: => LazyList[A]): LazyList[A] = new LazyList[A](() => state)
