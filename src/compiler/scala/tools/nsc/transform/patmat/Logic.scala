@@ -684,11 +684,12 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *  NOTE: V = 1 does not preclude V = Int, or V = Any, it could be said to preclude
          *        V = String, but we don't model that.
          */
+        // the domain lookups are linear in the size of a `ListSet`, so test them last,
+        // as this is called for every pair of equality symbols
         def excludes(a: Const, b: Const): Boolean = {
-          val bothInDomain  = domain exists (d => d(a) && d(b))
           val eitherIsNull  = a == NullConst || b == NullConst
           val bothAreValues = a.isValue && b.isValue
-          bothInDomain && (eitherIsNull || bothAreValues) && (a != b)
+          (eitherIsNull || bothAreValues) && (a != b) && domain.exists(d => d(a) && d(b))
         }
 
           // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
