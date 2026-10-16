@@ -1,4 +1,4 @@
-# To build the spec on Travis CI
+# To build the spec on GitHub Actions
 source "https://rubygems.org"
 
 gem "jekyll", "3.6.3"

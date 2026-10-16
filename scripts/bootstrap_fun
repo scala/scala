@@ -24,7 +24,7 @@
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
 
-clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
+clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on GitHub Actions it's a fresh machine every time)
 
 ## BUILD STEPS:
 
@@ -36,9 +36,9 @@ determineScalaVersion() {
   if [ -z "$SCALA_VER_BASE" ]; then
     echo "No SCALA_VER_BASE specified."
 
-    travis_fold_start determineScalaVersion "Determining Scala version"
+    fold_start determineScalaVersion "Determining Scala version"
     $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
-    travis_fold_end determineScalaVersion
+    fold_end determineScalaVersion
     parseScalaProperties "buildcharacter.properties"
     SCALA_VER_BASE="$maven_version_base"
     SCALA_VER_SUFFIX="$maven_version_suffix"
@@ -95,9 +95,9 @@ buildStarr() {
     git clone "file://$(pwd)" $STARR_DIR
     cd $STARR_DIR
     git checkout $STARR_REF
-    travis_fold_start starr "Building starr"
+    fold_start starr "Building starr"
     $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
-    travis_fold_end starr
+    fold_end starr
   )
   SET_STARR=-Dstarr.version=$STARR_VER
 }
@@ -111,12 +111,12 @@ buildLocker() {
   clearIvyCache
   cd $WORKSPACE
 
-  travis_fold_start locker "Building locker"
+  fold_start locker "Building locker"
   $SBT_CMD -no-colors $sbtArgs \
     $SET_STARR \
     "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
     $clean publish
-  travis_fold_end locker
+  fold_end locker
 }
 
 #### QUICK
@@ -126,12 +126,12 @@ invokeQuickInternal() {
   setupCmd="$1"
   shift
 
-  travis_fold_start quick "Building bootstrapped"
+  fold_start quick "Building bootstrapped"
   $SBT_CMD $sbtArgs \
       -Dstarr.version=$SCALA_VER \
       "$setupCmd" \
       "$@"
-  travis_fold_end quick
+  fold_end quick
 }
 
 invokeQuick() {
@@ -153,7 +153,7 @@ buildQuick() {
 
 testStability() {
   # Run stability tests using the just built version as "quick" and a new version as "strap"
-  travis_fold_start stab "Testing stability"
+  fold_start stab "Testing stability"
   cd $WORKSPACE
 
   mv build/quick quick1
@@ -164,5 +164,5 @@ testStability() {
   mv build/quick build/strap
   mv quick1 build/quick
   scripts/stability-test.sh
-  travis_fold_end stab
+  fold_end stab
 }

@@ -1,13 +1,14 @@
 #!/bin/bash -e
 
-if [ -z "$GPG_ENC_PASS" ]; then
-  echo "GPG_ENC_PASS is missing/empty, so skipping credentials & gpg setup"
+if [ -z "$PGP_SECRET" ]; then
+  echo "PGP_SECRET is missing/empty, so skipping credentials & gpg setup"
   exit
 fi
 
+# PGP_SECRET is the base64-encoded, ASCII-armored private key, as for sbt-ci-release
 sensitive() {
   envsubst < files/credentials-private-repo-netrc > ~/.credentials-private-repo-netrc
-  openssl enc -d -aes-256-cbc -salt -pbkdf2 -pass "pass:$GPG_ENC_PASS" -in files/scala-key.asc.enc | \
+  base64 --decode <<< "$PGP_SECRET" | \
     gpg --batch --yes --import --pinentry-mode loopback --passphrase "$PGP_PASSPHRASE"
 }
 

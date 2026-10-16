@@ -1202,8 +1202,3 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
 }
 
 Global / excludeLintKeys := (Global / excludeLintKeys).value ++ Set(scalaSource, javaSource, resourceDirectory)
-
-{
-  scala.build.TravisOutput.installIfOnTravis()
-  Nil
-}
