@@ -1,0 +1,10 @@
+t12974-escape.scala:6: error: private object P escapes its defining scope as part of type Class[_ <: C.this.P.type]
+  def a() = P.getClass
+      ^
+t12974-escape.scala:7: error: private trait Style escapes its defining scope as part of type Class[_ <: C.this.Style]
+  def b(s: AnyRef) = { val c = s.asInstanceOf[Style].getClass; c }
+      ^
+t12974-escape.scala:10: error: private trait Style escapes its defining scope as part of type Class[_ <: C.this.Style]
+  def c(s: AnyRef) = foo(s.asInstanceOf[Style])
+      ^
+3 errors

@@ -540,11 +540,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       // To fully benefit from special casing the return type of
       // getClass, we have to catch it immediately so expressions like
-      // x.getClass().newInstance() are typed with the type of x. TODO: If the
-      // type of the qualifier is inaccessible, we can cause private types to
-      // escape scope here, e.g. pos/t1107. I'm not sure how to properly handle
-      // this so for now it requires the type symbol be public.
-      def isGetClassCall = isGetClass(sym) && pre.typeSymbol.isPublic
+      // x.getClass().newInstance() are typed with the type of x.
+      // For non-public classes, this aligns with Scala 3 under -Xsource:3: a private class
+      // can then escape into the inferred type of a non-private member (neg/t12974-escape).
+      def isGetClassCall = isGetClass(sym) && (pre.typeSymbol.isPublic || currentRun.isScala3)
 
       if (tree.isErrorTyped)
         tree
