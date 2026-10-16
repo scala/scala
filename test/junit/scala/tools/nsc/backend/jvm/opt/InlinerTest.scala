@@ -2292,4 +2292,23 @@ class InlinerTest extends BytecodeTesting {
         |""".stripMargin
     compileClassesSeparately(List(c1, c2), compilerArgs)
   }
+
+  @Test def t13156(): Unit = {
+    val code =
+      """class C {
+        |  def f(x: Int) = x
+        |  def g(a: Int) = f(a) + a
+        |}
+        |""".stripMargin
+    // scalac doesn't emit IINC on parameters, but javac does. simulate that here.
+    val g = inlineTest(code, c => {
+      val f = getAsmMethod(c, "f")
+      f.instructions.insert(new IincInsnNode(1, 5))
+    })
+    // new local for inlined `x` because it's written (don't modify the `a` parameter slot)
+    assertSameCode(convertMethod(g), List(
+      VarOp(ALOAD, 0), VarOp(ILOAD, 1), VarOp(ISTORE, 2), Op(POP),
+      Incr(IINC, 2, 5), VarOp(ILOAD, 2), Jump(GOTO, Label(9)), Label(9),
+      VarOp(ILOAD, 1), Op(IADD), Op(IRETURN)))
+  }
 }
