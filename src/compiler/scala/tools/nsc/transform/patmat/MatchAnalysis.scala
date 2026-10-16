@@ -307,7 +307,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
           val okSubst = Substitution(unboundFrom.toList, unboundTo.toList) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
           foreach2(okSubst.from, okSubst.to){(f, t) =>
-            if (pointsToBound.exists(sym => t.exists(_.symbol == sym)) || tm.isInstanceOf[ExtractorTreeMaker])
+            if (tm.isInstanceOf[ExtractorTreeMaker] || t.exists(t1 => pointsToBound(t1.symbol)))
               pointsToBound += f
           }
           // debug.patmat("pointsToBound: "+ pointsToBound)
