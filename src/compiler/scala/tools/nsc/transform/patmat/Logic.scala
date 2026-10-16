@@ -730,12 +730,20 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           override def hashCode = a.hashCode ^ b.hashCode
         }
 
+        val candidates = if (equalitySyms.lengthIs > 16) new ImplicationCandidates(equalitySyms) else null
+
         equalitySyms map { sym =>
           // if we've already excluded the pair at some point (-A \/ -B), then don't exclude the symmetric one (-B \/ -A)
           // (nor the positive implications -B \/ A, or -A \/ B, which would entail the equality axioms falsifying the whole formula)
-          val todo = equalitySyms filterNot (b => (b.const == sym.const) || excludedPair(ExcludedPair(b.const, sym.const)))
-          val (excluded, notExcluded) = partitionConserve(todo)(b => excludes(sym.const, b.const))
-          val implied = notExcluded filter (b => implies(sym.const, b.const))
+          def todo(b: Sym) = (b.const != sym.const) && !excludedPair(ExcludedPair(b.const, sym.const))
+          val (excluded, implied) =
+            if (candidates eq null) {
+              val (excluded, notExcluded) = partitionConserve(equalitySyms filter todo)(b => excludes(sym.const, b.const))
+              (excluded, notExcluded filter (b => implies(sym.const, b.const)))
+            } else (
+              candidates.excluded(sym.const) filter (b => todo(b) && excludes(sym.const, b.const)),
+              candidates.implied(sym.const) filter (b => todo(b) && !excludes(sym.const, b.const) && implies(sym.const, b.const))
+            )
 
           debug.patmat("eq axioms for: "+ sym.const)
           debug.patmat("excluded: "+ excluded)
@@ -745,6 +753,58 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
           (sym, implied, excluded)
         }
+      }
+
+      /** For a variable with many equality symbols (e.g. one per child of a large sealed type), the symbols `b`
+       *  for which `excludes(c, b.const)` or `implies(c, b.const)` can hold, in the order of `syms`, without
+       *  testing every pair:
+       *
+       *   - `excludes` needs one of the constants to be null, or both to be values;
+       *   - `implies` (other than for `c == b.const`, which isn't asked) needs `c` not to be null and `b.const`
+       *     to be a type `U`, and then the type `L` of `c` to conform to `U`. If `U` is a type ref to a class
+       *     other than the top and bottom classes (and `Singleton`), that class must be a base class of `L`,
+       *     unless `L` is a bottom type (or erroneous). So, index the symbols of such types `U` by their class,
+       *     and look up the base classes of `L`; the other types are candidates for every `c`.
+       */
+      private final class ImplicationCandidates(syms: List[Sym]) {
+        import global.definitions._
+        private[this] val symArray = syms.toArray
+        private[this] val nullOrValues = syms.filter(_.const.isValue) // `NullConst.isValue`
+        private[this] val nulls = syms.filter(_.const == NullConst)
+        private[this] val types = syms.filterNot(_.const.isValue)
+        // the indices of the types in `syms` keyed by class, used only for lookups
+        private[this] val byClass = new java.util.HashMap[global.Symbol, mutable.ArrayBuffer[Int]]
+        private[this] val unkeyed = mutable.ArrayBuffer.empty[Int]
+        foreachWithIndex(syms) { (b, i) =>
+          if (!b.const.isValue) b.const.tp.dealias match {
+            case global.TypeRef(_, cls, _) if cls.isClass && !cls.isRefinementClass &&
+              cls != AnyClass && cls != AnyValClass && cls != ObjectClass && cls != SingletonClass && cls != NothingClass && cls != NullClass =>
+              byClass.computeIfAbsent(cls, _ => mutable.ArrayBuffer.empty[Int]) += i
+            case _ =>
+              unkeyed += i
+          }
+        }
+
+        def excluded(c: Const): List[Sym] =
+          if (c == NullConst) syms else if (c.isValue) nullOrValues else nulls
+
+        def implied(c: Const): List[Sym] =
+          if (c == NullConst) Nil
+          else {
+            val lower = if (c.isValue) c.wideTp else c.tp
+            val baseClasses = lower.baseClasses
+            if (lower.isWildcard || lower.isErroneous || baseClasses.contains(NothingClass) || baseClasses.contains(NullClass)) types
+            else {
+              // the indices of `unkeyed` and of each class are ascending, so only sort if more than one contributes
+              val indices = new mutable.ArrayBuffer[Int]
+              var sources = 0
+              def add(is: mutable.ArrayBuffer[Int]): Unit = if ((is ne null) && is.nonEmpty) { indices ++= is; sources += 1 }
+              add(unkeyed)
+              baseClasses.foreach(bc => add(byClass.get(bc)))
+              if (sources > 1) indices.sortInPlace()
+              indices.iterator.map(symArray(_)).toList
+            }
+          }
       }
 
       // accessing after calling registerNull will result in inconsistencies
