@@ -314,6 +314,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaUtilMap
     definitions.JavaUtilHashMap
     definitions.JavaRecordClass
+    definitions.JdkValueBasedAnnot
     definitions.ByNameParamClass
     definitions.JavaRepeatedParamClass
     definitions.RepeatedParamClass

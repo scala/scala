@@ -1,0 +1,6 @@
+t13196b.scala:7: warning: Suspicious `synchronized` call on value-based class `LocalDate`
+  def localDate(d: java.time.LocalDate) = d.synchronized {} // warn
+                                            ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

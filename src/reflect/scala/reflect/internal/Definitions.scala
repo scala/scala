@@ -421,6 +421,15 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaUtilMap             = requiredClass[java.util.Map[_, _]]
     lazy val JavaUtilHashMap         = requiredClass[java.util.HashMap[_, _]]
     lazy val JavaRecordClass         = getClassIfDefined("java.lang.Record")
+    // JEP 390. ct.sym (`-release`) lacks the class, its classfiles refer to `jdk.internal.ValueBased+Annotation`
+    // instead. Like javac, use a synthetic symbol in that case.
+    lazy val JdkValueBasedAnnot: ClassSymbol = getClassIfDefined("jdk.internal.ValueBased") match {
+      case c: ClassSymbol => c
+      case _ =>
+        val c = NoSymbol.newClassSymbol(TypeName("jdk.internal.ValueBased"), NoPosition, JAVA | JAVA_ANNOTATION | INTERFACE | ABSTRACT)
+        c.setInfo(ClassInfoType(List(ObjectTpe, JavaAnnotationClass.tpe), newScope, c)).markAllCompleted()
+    }
+    final val JdkValueBasedAnnotCtSymName = "jdk.internal.ValueBased+Annotation"
 
     lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyTpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))

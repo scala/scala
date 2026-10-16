@@ -1876,8 +1876,13 @@ abstract class RefChecks extends Transform {
       if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
 
-      if (name == nme.synchronized_ && isBoxedValueClass(qual.tpe.typeSymbol))
-        refchecksWarning(tree.pos, s"Suspicious `synchronized` call involving boxed primitive `${qual.tpe.typeSymbol.name}`", WarningCategory.LintUniversalMethods)
+      if (name == nme.synchronized_) {
+        val cls = qual.tpe.typeSymbol
+        // JEP 390. Boxed primitives are annotated only on JDK 16+; BoxedUnit is not annotated.
+        def isValueBased = isBoxedValueClass(cls) || cls.hasAnnotation(JdkValueBasedAnnot)
+        if (isValueBased)
+          refchecksWarning(tree.pos, s"Suspicious `synchronized` call on value-based class `${cls.name}`", WarningCategory.LintUniversalMethods)
+      }
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
