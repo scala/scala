@@ -192,6 +192,8 @@ abstract class BackendUtils extends PerRunInit {
         } else if (isStore(ins)) {
           val vi = ins.asInstanceOf[VarInsnNode]
           writtenLocals += vi.`var`
+        } else if (ins.getOpcode == IINC) {
+          writtenLocals += ins.asInstanceOf[IincInsnNode].`var`
         }
         result add cloned
         map += ((ins, cloned))

@@ -771,7 +771,10 @@ abstract class Inliner {
           if (varInstruction.getOpcode == ASTORE) refLocals += varInstruction.`var`
         }
       case iinc: IincInsnNode =>
-        iinc.`var` += localVarShift
+        if (iinc.`var` < calleeParamLocals.length)
+          iinc.`var` = calleeParamLocals(iinc.`var`)
+        else
+          iinc.`var` += localVarShift
       case _ =>
     }
 
