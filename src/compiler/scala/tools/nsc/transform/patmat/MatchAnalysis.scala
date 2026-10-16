@@ -481,8 +481,10 @@ trait MatchAnalysis extends MatchApproximation {
         val (eqAxiomsOk, symbolicCasesOk) = removeVarEq(propsCasesOk, modelNull = true)
         val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
-        val prefix = mutable.ArrayBuffer[Prop]()
-        prefix += eqAxioms
+        // case i is reachable if `eqAxioms /\ !case_0 /\ ... /\ !case_i-1 /\ case_i` is satisfiable;
+        // the prefix grows by one conjunct per case, which is converted to CNF only once
+        val solver = incrementalSolver(eqAxioms :: symbolicCasesFail ::: symbolicCasesOk)
+        solver.addToPrefix(eqAxioms)
 
         var prefixRest = symbolicCasesFail
         var current = symbolicCasesOk
@@ -500,10 +502,9 @@ trait MatchAnalysis extends MatchApproximation {
           prefixRest = prefixRest.tail
           if (prefixRest.isEmpty) reachable = true
           else {
-            prefix += prefHead
+            solver.addToPrefix(prefHead)
             current = current.tail
-            val and = And((current.head +: prefix).toIndexedSeq: _*)
-            reachable = hasModel(eqFreePropToSolvable(and))
+            reachable = solver.hasModelWith(current.head)
           }
         }
 
