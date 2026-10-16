@@ -308,26 +308,6 @@ trait Solving extends Logic {
     }
 
     def eqFreePropToSolvable(p: Prop): Solvable = {
-
-      def doesFormulaExceedSize(p: Prop): Boolean = {
-        p match {
-          case And(ops) =>
-            if (ops.size > AnalysisBudget.maxFormulaSize) {
-              true
-            } else {
-              ops.exists(doesFormulaExceedSize)
-            }
-          case Or(ops)  =>
-            if (ops.size > AnalysisBudget.maxFormulaSize) {
-              true
-            } else {
-              ops.exists(doesFormulaExceedSize)
-            }
-          case Not(a)   => doesFormulaExceedSize(a)
-          case _        => false
-        }
-      }
-
       val simplified = simplify(p)
       if (doesFormulaExceedSize(simplified)) {
         throw AnalysisBudget.formulaSizeExceeded
@@ -356,6 +336,75 @@ trait Solving extends Logic {
           //assert(copied == cnfs.length, "")
           new Solvable(cnfs.flatten[Clause](_.cnf, reflect.classTag[Clause]), cnfs.head.symbolMapping)
         case simplified => cnfFor(simplified)
+      }
+    }
+
+    /** Using the same identity as `eqFreePropToSolvable`, CNF(P1 /\ ... /\ PN) == CNF(P1) ++ ... ++ CNF(PN),
+     *  provided that the conversions share the symbol mapping and the numbering of Tseitin variables.
+     *  Unlike `eqFreePropToSolvable(And(prefix :+ p))`, this does not simplify across conjuncts, but the
+     *  result is equisatisfiable. Duplicate conjuncts are dropped and counted once against the budget,
+     *  as `simplify` would.
+     */
+    def incrementalSolver(allProps: Iterable[Prop]): IncrementalSolver = new IncrementalSolver {
+      private val symbolMapping = new SymbolMapping(gatherSymbols(And.create(allProps)))
+      private val cnfExtractor = new AlreadyInCNF(symbolMapping)
+      private val cnfTransformer = new TransformToCnf(symbolMapping)
+      // only used for membership; clauses are added in the order of the (linked) conjuncts
+      private val prefixConjuncts = mutable.HashSet[Prop]()
+      private val prefix = ArrayBuffer[Clause]()
+
+      // the unit clause for `constTrue` is emitted on first use, but every query must include it
+      cnfTransformer.constTrue
+      prefix ++= cnfTransformer.buildCnf
+
+      private def conjuncts(p: Prop): Iterable[Prop] = simplify(p) match {
+        case And(ps) => ps
+        case True    => Nil
+        case p       => p :: Nil
+      }
+      private def cnfFor(p: Prop): Array[Clause] = {
+        if (doesFormulaExceedSize(p)) throw AnalysisBudget.formulaSizeExceeded
+        p match {
+          case cnfExtractor.ToCnf(solvable) => solvable.cnf
+          case p                            => cnfTransformer.apply(p).cnf
+        }
+      }
+      private def checkSize(n: Int): Unit =
+        if (n > AnalysisBudget.maxFormulaSize) throw AnalysisBudget.formulaSizeExceeded
+
+      def addToPrefix(p: Prop): Unit =
+        conjuncts(p).foreach { c =>
+          if (prefixConjuncts.add(c)) {
+            checkSize(prefixConjuncts.size)
+            prefix ++= cnfFor(c)
+          }
+        }
+
+      def hasModelWith(p: Prop): Boolean = {
+        val extra = conjuncts(p).iterator.filterNot(prefixConjuncts).toList.distinct
+        checkSize(prefixConjuncts.size + extra.size)
+        val clauses = ArrayBuffer.from(prefix)
+        extra.foreach(c => clauses ++= cnfFor(c))
+        hasModel(Solvable(clauses.toArray, symbolMapping))
+      }
+    }
+
+    private def doesFormulaExceedSize(p: Prop): Boolean = {
+      p match {
+        case And(ops) =>
+          if (ops.size > AnalysisBudget.maxFormulaSize) {
+            true
+          } else {
+            ops.exists(doesFormulaExceedSize)
+          }
+        case Or(ops)  =>
+          if (ops.size > AnalysisBudget.maxFormulaSize) {
+            true
+          } else {
+            ops.exists(doesFormulaExceedSize)
+          }
+        case Not(a)   => doesFormulaExceedSize(a)
+        case _        => false
       }
     }
   }
