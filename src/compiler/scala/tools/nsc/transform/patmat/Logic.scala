@@ -463,18 +463,14 @@ trait Logic extends Debugging {
           else addAxiom(symForStaticTp)
         }
 
+        lazy val inGroupedDomains = v.groupedDomains.map(Logic.membership)
         v.implications foreach { case (sym, implied, excluded) =>
           // when sym is true, what must hold...
           implied  foreach (impliedSym  => addAxiom(Or(Not(sym), impliedSym)))
           // ... and what must not?
           excluded foreach {
             excludedSym =>
-              val exclusive = v.groupedDomains.exists {
-                domain => domain.contains(sym) && domain.contains(excludedSym)
-              }
-
-              // TODO: populate `v.exclusiveDomains` with `Set`s from the start, and optimize to:
-              // val exclusive = v.exclusiveDomains.exists { inDomain => inDomain(sym) && inDomain(excludedSym) }
+              val exclusive = inGroupedDomains.exists { inDomain => inDomain(sym) && inDomain(excludedSym) }
               if (!exclusive)
                 addAxiom(Or(Not(sym), Not(excludedSym)))
           }
@@ -545,6 +541,14 @@ object Logic {
       super.addAll(xs)
     }
   }
+
+  /** A membership test for `s`. The domains are `ListSet`s, for a deterministic iteration order, but
+   *  `ListSet#contains` is linear, and the analysis tests membership for pairs of a variable's equality
+   *  symbols. Above a small size (e.g. a Java enum or a sealed trait with many case objects), look up in
+   *  a hashed copy instead, which is never iterated.
+   */
+  def membership[A](s: Set[A]): A => Boolean =
+    if (s.sizeIs > 16) scala.collection.immutable.HashSet.from(s) else s
 
   object LogicLinkedHashSet extends IterableFactory[LogicLinkedHashSet] {
     override def from[A](source: IterableOnce[A]): LogicLinkedHashSet[A] = Growable.from(empty[A], source)
@@ -684,12 +688,13 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *  NOTE: V = 1 does not preclude V = Int, or V = Any, it could be said to preclude
          *        V = String, but we don't model that.
          */
-        // the domain lookups are linear in the size of a `ListSet`, so test them last,
-        // as this is called for every pair of equality symbols
+        // this is called for every pair of equality symbols, so test domain membership last
+        // and in a hashed copy of a large domain
+        lazy val inDomain = domain.map(Logic.membership)
         def excludes(a: Const, b: Const): Boolean = {
           val eitherIsNull  = a == NullConst || b == NullConst
           val bothAreValues = a.isValue && b.isValue
-          (eitherIsNull || bothAreValues) && (a != b) && domain.exists(d => d(a) && d(b))
+          (eitherIsNull || bothAreValues) && (a != b) && inDomain.exists(d => d(a) && d(b))
         }
 
           // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
