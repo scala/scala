@@ -556,7 +556,14 @@ trait MatchAnalysis extends MatchApproximation {
 
     // exhaustivity
 
-    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
+    // A case that only binds variables, without a guard (`case _`, `case x`), matches any value: its proposition is
+    // `True`, so `matchFails` (below) simplifies to `False`, which has no models, and there is no counter-example.
+    private def isIrrefutableCase(treeMakers: List[TreeMaker]): Boolean = treeMakers.forall {
+      case SubstOnlyTreeMaker(_, _) | BodyTreeMaker(_, _) => true
+      case _                                              => false
+    }
+
+    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info) || cases.exists(isIrrefutableCase)) Nil else {
       debug.patmat("exhaustiveness analysis")
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
