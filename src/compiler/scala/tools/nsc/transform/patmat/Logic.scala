@@ -96,9 +96,9 @@ trait Logic extends Debugging {
       def mayBeNull: Boolean
 
       // compute the domain and return it (call registerNull first!)
-      def domainSyms: Option[Set[Sym]]
+      def domainSyms: Option[collection.Set[Sym]]
 
-      def groupedDomains: List[Set[Sym]]
+      def groupedDomains: List[collection.Set[Sym]]
 
       // the symbol for this variable being equal to its statically known type
       // (only available if registerEquality has been called for that type before)
@@ -463,14 +463,13 @@ trait Logic extends Debugging {
           else addAxiom(symForStaticTp)
         }
 
-        lazy val inGroupedDomains = v.groupedDomains.map(Logic.membership)
         v.implications foreach { case (sym, implied, excluded) =>
           // when sym is true, what must hold...
           implied  foreach (impliedSym  => addAxiom(Or(Not(sym), impliedSym)))
           // ... and what must not?
           excluded foreach {
             excludedSym =>
-              val exclusive = inGroupedDomains.exists { inDomain => inDomain(sym) && inDomain(excludedSym) }
+              val exclusive = v.groupedDomains.exists { domain => domain(sym) && domain(excludedSym) }
               if (!exclusive)
                 addAxiom(Or(Not(sym), Not(excludedSym)))
           }
@@ -542,14 +541,6 @@ object Logic {
     }
   }
 
-  /** A membership test for `s`. The domains are `ListSet`s, for a deterministic iteration order, but
-   *  `ListSet#contains` is linear, and the analysis tests membership for pairs of a variable's equality
-   *  symbols. Above a small size (e.g. a Java enum or a sealed trait with many case objects), look up in
-   *  a hashed copy instead, which is never iterated.
-   */
-  def membership[A](s: Set[A]): A => Boolean =
-    if (s.sizeIs > 16) scala.collection.immutable.HashSet.from(s) else s
-
   object LogicLinkedHashSet extends IterableFactory[LogicLinkedHashSet] {
     override def from[A](source: IterableOnce[A]): LogicLinkedHashSet[A] = Growable.from(empty[A], source)
     override def empty[A]: LogicLinkedHashSet[A] = new LogicLinkedHashSet[A]
@@ -598,11 +589,14 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      lazy val domain: Option[Set[Const]] = {
+      // The domains are insertion-ordered (which determines the order of the axioms), with constant-time
+      // membership tests, which the analysis performs for pairs of equality symbols. They are not modified
+      // once computed.
+      lazy val domain: Option[collection.Set[Const]] = {
         val subConsts =
           enumerateSubtypes(staticTp, grouped = false)
           .headOption.map { tps =>
-          tps.to(scala.collection.immutable.ListSet).map { tp =>
+          tps.to(LogicLinkedHashSet).map { tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -612,19 +606,19 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val allConsts =
           if (mayBeNull) {
             registerEquality(NullConst)
-            subConsts map (_ + NullConst)
+            subConsts map (_ += NullConst)
           } else
             subConsts
 
         observed(); allConsts
       }
 
-      lazy val groupedDomains: List[Set[Sym]] = {
+      lazy val groupedDomains: List[collection.Set[Sym]] = {
         val subtypes = enumerateSubtypes(staticTp, grouped = true)
         subtypes.map {
           subTypes =>
-            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).to(scala.collection.immutable.ListSet)
-            if (mayBeNull) syms + symForEqualsTo(NullConst) else syms
+            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).to(LogicLinkedHashSet)
+            if (mayBeNull) syms += symForEqualsTo(NullConst) else syms
         }.filter(_.nonEmpty)
       }
 
@@ -689,12 +683,10 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *        V = String, but we don't model that.
          */
         // this is called for every pair of equality symbols, so test domain membership last
-        // and in a hashed copy of a large domain
-        lazy val inDomain = domain.map(Logic.membership)
         def excludes(a: Const, b: Const): Boolean = {
           val eitherIsNull  = a == NullConst || b == NullConst
           val bothAreValues = a.isValue && b.isValue
-          (eitherIsNull || bothAreValues) && (a != b) && inDomain.exists(d => d(a) && d(b))
+          (eitherIsNull || bothAreValues) && (a != b) && domain.exists(d => d(a) && d(b))
         }
 
           // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
@@ -756,7 +748,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       }
 
       // accessing after calling registerNull will result in inconsistencies
-      lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
+      lazy val domainSyms: Option[collection.Set[Sym]] = domain map { _ map symForEqualsTo }
 
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
