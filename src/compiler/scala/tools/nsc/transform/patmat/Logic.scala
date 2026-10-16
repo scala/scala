@@ -504,6 +504,18 @@ trait Logic extends Debugging {
 
     def eqFreePropToSolvable(f: Prop): Solvable
 
+    /** Decides satisfiability of `prefix /\ p` for a growing conjunction `prefix` of equality-free propositions,
+     *  converting each conjunct to CNF only once.
+     *  `allProps` must contain every proposition that will be added or queried, to determine the symbols.
+     */
+    def incrementalSolver(allProps: Iterable[Prop]): IncrementalSolver
+    trait IncrementalSolver {
+      // may throw an AnalysisBudget.Exception
+      def addToPrefix(p: Prop): Unit
+      // may throw an AnalysisBudget.Exception
+      def hasModelWith(p: Prop): Boolean
+    }
+
     type Model = Map[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
