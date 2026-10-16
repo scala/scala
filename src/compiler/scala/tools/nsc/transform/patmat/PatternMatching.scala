@@ -173,11 +173,27 @@ trait Interface extends ast.TreeDSL {
         if (from.isEmpty) EmptySubstitution else new Substitution(from, to)
     }
 
+    // Substitutions are composed with `>>` for each tree maker, and the composition mostly shares the `to` trees
+    // of its parts. Remember their types (for the match being translated), rather than typing them again for each
+    // composition, which made the analysis of a match quadratic in its number of cases.
+    // Only used for lookups, keyed by identity; allocated on first use.
+    private[this] var stableTypes: java.util.IdentityHashMap[Tree, Type] = null
+    private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
+    private def typedStableType(t: Tree): Type = {
+      if (stableTypes eq null) stableTypes = new java.util.IdentityHashMap[Tree, Type]()
+      val cached = stableTypes.get(t)
+      if (cached ne null) cached
+      else {
+        val tp = typedStable(t).tpe
+        stableTypes.put(t, tp)
+        tp
+      }
+    }
+
     class Substitution(val from: List[Symbol], val to: List[Tree]) {
       import global.{AstTransformer, Ident, NoType, TypeTree, SingleType}
 
-      private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
-      lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
+      lazy val toTypes: List[Type] = to map typedStableType
 
       // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
       // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
