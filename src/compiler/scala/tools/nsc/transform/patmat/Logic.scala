@@ -836,7 +836,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     // a literal constant becomes ConstantType(Constant(v)) when the type allows it (roughly, anyval + string + null)
     // equality between variables: SingleType(x) (note that pattern variables cannot relate to each other -- it's always patternVar == nonPatternVar)
     object Const {
-      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear() ; trees.clear()}
+      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear(); indexed = false; byName.clear(); others.clear(); trees.clear()}
 
       private[this] var _nextTypeId = 0
       def nextTypeId = {_nextTypeId += 1; _nextTypeId}
@@ -845,12 +845,42 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def nextValueId = {_nextValueId += 1; _nextValueId}
 
       private val uniques = new mutable.HashMap[Type, Const]
+      // The keys of `uniques`, partitioned to only compare a type ref to a class with the keys it may be `=:=` to.
+      // Type refs to classes are `=:=` only if the classes have the same name (`equalSymsAndPrefixes`: the symbols
+      // themselves may differ if the prefixes are unifiable), except that `Any` is `=:=` to the `Object` of Java
+      // signatures (`isSameTypeRef`), and that a type ref with a type variable prefix can be `=:=` to anything
+      // (`registerTypeSelection`). So index the type refs to classes other than those by the name of the class.
+      // Most matches have few constants, which are compared to each other faster than they are indexed, so the
+      // index is only built once there are more than `IndexAbove` keys.
+      private[this] final val IndexAbove = 16
+      private[this] var indexed = false
+      private val byName = new mutable.HashMap[global.Name, mutable.ArrayBuffer[Type]]
+      private val others = new mutable.ArrayBuffer[Type]
+      private def classRefName(tp: Type): global.Name = tp match {
+        case global.TypeRef(pre, sym, _) if sym.isClass && sym != AnyClass && sym != ObjectClass && !pre.isInstanceOf[global.TypeVar] => sym.name
+        case _ => null
+      }
+      private def index(tp: Type): Unit = {
+        val name = classRefName(tp)
+        if (name eq null) others += tp else byName.getOrElseUpdate(name, new mutable.ArrayBuffer[Type]) += tp
+      }
       private[TreesAndTypesDomain] def unique(tp: Type, mkFresh: => Const): Const =
         uniques.getOrElse(tp, {
           // normalize to increase the chance of structural equality and reduce the cost of =:=
           val normalized = tp.map(_.normalize)
           uniques.getOrElseUpdate(normalized, {
-            val const = uniques.keysIterator.find(_ =:= normalized).fold(mkFresh)(uniques)
+            val name = if (indexed) classRefName(normalized) else null
+            // all the keys that are `=:=` to `normalized` map to the same constant
+            val candidates =
+              if (name eq null) uniques.keysIterator
+              else byName.getOrElse(name, Nil).iterator ++ others.iterator
+            val const = candidates.find(_ =:= normalized).fold(mkFresh)(uniques)
+            if (indexed) index(normalized)
+            else if (uniques.size >= IndexAbove) {
+              indexed = true
+              uniques.keysIterator.foreach(index)
+              index(normalized)
+            }
             debug.patmat(s"unique const: ${tp -> const}")
             const
           })
