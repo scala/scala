@@ -63,15 +63,12 @@ jobs:
   spec:
     name: language spec
     if: github.repository == 'scala/scala'
-    # for Ruby 2.7, which the spec's Jekyll version needs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.7'
-          # newer versions don't support Ruby 2.7 (scala-dev#857)
-          bundler: '2.4.22'
+          ruby-version: '3.4'
           bundler-cache: true
       - run: bundle exec jekyll build -s spec/ -d build/spec
       - run: scripts/publish-spec.sh
