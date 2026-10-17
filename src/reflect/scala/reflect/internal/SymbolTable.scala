@@ -48,9 +48,7 @@ abstract class SymbolTable extends macros.Universe
                               with Printers
                               with Positions
                               with Importers
-                              with CapturedVariables
                               with StdAttachments
-                              with PrivateWithin
                               with pickling.Translations
                               with FreshNames
                               with Internals
@@ -74,6 +72,18 @@ abstract class SymbolTable extends macros.Universe
   final def paramString(tp: Type): String = typeDebugging.paramString(tp)
   final def typeParamsString(tp: Type): String = typeDebugging.typeParamsString(tp)
   final def debugString(tp: Type): String = typeDebugging.debugString(tp)
+
+  val capturedVariables: CapturedVariables { val self: SymbolTable.this.type } = new CapturedVariables { val self: SymbolTable.this.type = SymbolTable.this }
+  final def captureVariable(vble: Symbol): Unit = capturedVariables.captureVariable(vble)
+  final def referenceCapturedVariable(vble: Symbol): Tree = capturedVariables.referenceCapturedVariable(vble)
+  final def capturedVariableType(vble: Symbol): Type = capturedVariables.capturedVariableType(vble)
+  final def capturedVariableType(vble: Symbol, tpe: Type = NoType, erasedTypes: Boolean = false): Type = capturedVariables.capturedVariableType(vble, tpe, erasedTypes)
+
+  val packageAccessBoundaries: PrivateWithin { val self: SymbolTable.this.type } = new PrivateWithin { val self: SymbolTable.this.type = SymbolTable.this }
+  final def propagatePackageBoundary(c: java.lang.Class[_], syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(c, syms: _*)
+  final def propagatePackageBoundary(m: java.lang.reflect.Member, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(m, syms: _*)
+  final def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(jflags, syms: _*)
+  final def setPackageAccessBoundary(sym: Symbol): Symbol = packageAccessBoundaries.setPackageAccessBoundary(sym)
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats

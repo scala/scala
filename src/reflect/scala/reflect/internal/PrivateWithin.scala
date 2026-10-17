@@ -17,8 +17,9 @@ package internal
 import java.lang.{ Class => jClass }
 import java.lang.reflect.{ Member => jMember }
 
-trait PrivateWithin {
-  self: SymbolTable =>
+abstract class PrivateWithin {
+  val self: SymbolTable
+  import self._
 
   def propagatePackageBoundary(c: jClass[_], syms: Symbol*): Unit =
     propagatePackageBoundary(JavaAccFlags(c), syms: _*)
