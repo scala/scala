@@ -3511,6 +3511,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       childSet = childSet + sym
     }
+    def retainChildren(p: Symbol => Boolean): Unit = childSet = childSet.filter(p)
 
     def anonOrRefinementString = {
       if (hasCompleteInfo) {

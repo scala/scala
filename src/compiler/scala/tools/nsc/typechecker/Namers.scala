@@ -392,6 +392,15 @@ trait Namers extends MethodSynthesis {
           updatePosFlags(existing, tree.pos, tree.mods.flags)
           setPrivateWithin(tree, existing)
           clearRenamedCaseAccessors(existing)
+          // Children register themselves when their own source is compiled. A Scala sealed class only
+          // admits children from its own source file, which is being recompiled, so forget them all.
+          // A Java one may permit children from other files: forget those compiled in this run (they
+          // re-register if still children) and keep the others, which are assumed unchanged.
+          existing match {
+            case cls: ClassSymbol if !cls.isJava => cls.retainChildren(_ => false)
+            case cls: ClassSymbol => cls.retainChildren(!currentRun.compilesSourceOf(_))
+            case _ =>
+          }
           existing
         }
         else enterInScope(assignMemberSymbol(tree)) setFlag inConstructorFlag
