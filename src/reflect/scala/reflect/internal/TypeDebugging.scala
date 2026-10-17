@@ -16,9 +16,10 @@ package internal
 
 import util._
 
-trait TypeDebugging {
-  self: SymbolTable =>
+abstract class TypeDebugging {
+  val self: SymbolTable
 
+  import self._
   import definitions._
 
   /** There's a whole lot of implementation detail which is nothing but noise when
