@@ -30,9 +30,7 @@ abstract class SymbolTable extends macros.Universe
                               with Names
                               with Symbols
                               with Types
-                              with Variances
                               with Kinds
-                              with ExistentialsAndSkolems
                               with FlagSets
                               with Scopes
                               with Mirrors
@@ -49,7 +47,6 @@ abstract class SymbolTable extends macros.Universe
                               with Positions
                               with Importers
                               with StdAttachments
-                              with pickling.Translations
                               with FreshNames
                               with Internals
                               with Reporting
@@ -84,6 +81,25 @@ abstract class SymbolTable extends macros.Universe
   final def propagatePackageBoundary(m: java.lang.reflect.Member, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(m, syms: _*)
   final def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(jflags, syms: _*)
   final def setPackageAccessBoundary(sym: Symbol): Symbol = packageAccessBoundaries.setPackageAccessBoundary(sym)
+
+  val variances: Variances { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Variances
+  type VarianceValidator = variances.VarianceValidator
+  final def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance = variances.varianceInTypes(tps)(tparam)
+  final def varianceInType(tp: Type, considerUnchecked: Boolean = false)(tparam: Symbol): Variance = variances.varianceInType(tp, considerUnchecked)(tparam)
+
+  val existentialsAndSkolems: ExistentialsAndSkolems { val self: SymbolTable.this.type } = new ExistentialsAndSkolems { val self: SymbolTable.this.type = SymbolTable.this }
+  final def deriveFreshSkolems(tparams: List[Symbol]): List[Symbol] = existentialsAndSkolems.deriveFreshSkolems(tparams)
+  final def isRawParameter(sym: Symbol): Boolean = existentialsAndSkolems.isRawParameter(sym)
+  final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol)(creator: (List[Symbol], Type) => T): T = existentialsAndSkolems.existentialTransform(rawSyms, tp, rawOwner)(creator)
+  final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type = existentialsAndSkolems.packSymbols(hidden, tp, rawOwner)
+
+  val translations: pickling.Translations { val self: SymbolTable.this.type } = new pickling.Translations { val self: SymbolTable.this.type = SymbolTable.this }
+  final def isTreeSymbolPickled(code: Int): Boolean = translations.isTreeSymbolPickled(code)
+  final def isTreeSymbolPickled(tree: Tree): Boolean = translations.isTreeSymbolPickled(tree)
+  final def picklerTag(ref: AnyRef): Int = translations.picklerTag(ref)
+  final def picklerTag(sym: Symbol): Int = translations.picklerTag(sym)
+  final def picklerTag(tpe: Type): Int = translations.picklerTag(tpe)
+  final def picklerSubTag(tree: Tree): Int = translations.picklerSubTag(tree)
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats

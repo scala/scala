@@ -19,8 +19,9 @@ import PickleFormat._
 import scala.annotation.tailrec
 import util.shortClassOfInstance
 
-trait Translations {
-  self: SymbolTable =>
+abstract class Translations {
+  val self: SymbolTable
+  import self._
 
   def isTreeSymbolPickled(code: Int): Boolean = (code: @annotation.switch) match {
     case PACKAGEtree | CLASStree | MODULEtree | VALDEFtree | DEFDEFtree | TYPEDEFtree | LABELtree => true

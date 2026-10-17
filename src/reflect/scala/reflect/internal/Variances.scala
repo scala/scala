@@ -20,8 +20,9 @@ import scala.reflect.internal.util.ReusableInstance
 
 /** See comments at scala.reflect.internal.Variance.
  */
-trait Variances {
-  self: SymbolTable =>
+abstract class Variances {
+  val self: SymbolTable
+  import self._
 
   /** Used in Refchecks.
    *  TODO - eliminate duplication with varianceInType
