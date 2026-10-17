@@ -17,7 +17,9 @@ package internal
 import Flags._
 import util._
 
-trait ReificationSupport { self: SymbolTable =>
+abstract class ReificationSupport {
+  val self: SymbolTable
+  import self._
   import definitions._
 
   class ReificationSupportImpl extends ReificationSupportApi {
