@@ -99,13 +99,10 @@ trait Types
   def toStringRecursions_=(value: Int) = _toStringRecursions = value
   private[this] val _toStringSubjects = mutable.HashSet[Type]()
   def toStringSubjects = _toStringSubjects
-  protected def typeToString(tpe: Type): String = typeToStrings.typeToString(tpe)
 
   private[internal] val commonOwners: tpe.CommonOwners { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.CommonOwners
   type CommonOwnerMap = commonOwners.CommonOwnerMap
   protected[reflect] def commonOwnerMap: CommonOwnerMap = commonOwners.commonOwnerMapObj
-  protected[internal] def commonOwner(t: Type): Symbol = commonOwners.commonOwner(t)
-  protected[internal] def commonOwner(tps: List[Type]): Symbol = commonOwners.commonOwner(tps)
 
   val glbLubs: tpe.GlbLubs { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.GlbLubs
   /** Memo tables and recursion guards for one outermost `lub` or `glb`. Entries are only
@@ -420,7 +417,7 @@ trait Types
     /*
     def narrow: Type =
       if (phase.erasedTypes) this
-      else commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
+      else commonOwners.commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
     */
 
     /** Map to a singleton type which is a subtype of this type.
@@ -433,7 +430,7 @@ trait Types
     def narrow: Type =
       if (phase.erasedTypes) this
       else {
-        val cowner = commonOwner(this)
+        val cowner = commonOwners.commonOwner(this)
         refinedType(this :: Nil, cowner, EmptyScope, cowner.pos).narrow
       }
 
@@ -984,7 +981,7 @@ trait Types
     override final def toString: String = {
       // see comments to internal#Symbol.typeSignature for an explanation why this initializes
       if (!isCompilerUniverse) fullyInitializeType(this)
-      typeToString(this)
+      typeToStrings.typeToString(this)
     }
 
     /** Method to be implemented in subclasses.
@@ -4177,7 +4174,7 @@ trait Types
    */
   def intersectionType(tps: List[Type]): Type = tps match {
     case tp :: Nil  => tp
-    case _          => refinedType(tps, commonOwner(tps))
+    case _          => refinedType(tps, commonOwners.commonOwner(tps))
   }
   def intersectionTypeForLazyBaseType(tps: List[Type]) = tps match {
     case tp :: Nil  => tp
@@ -5190,7 +5187,7 @@ trait Types
                       capturedParamIds += 1
                       val capturedParamId = capturedParamIds
                       val bounds = if (hktParams.isEmpty) TypeBounds(g, l) else bindHK(TypeBounds(applyHK(g), applyHK(l)))
-                      val qvar = commonOwner(as).freshExistential("", capturedParamId) setInfo bounds
+                      val qvar = commonOwners.commonOwner(as).freshExistential("", capturedParamId) setInfo bounds
                       capturedParams += qvar
                       qvar.tpe
                     }

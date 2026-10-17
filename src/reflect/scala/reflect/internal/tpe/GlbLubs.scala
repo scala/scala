@@ -479,7 +479,7 @@ abstract class GlbLubs {
       val (ts, tparams)            = stripExistentialsAndTypeVars(ts0)
       val lubBaseTypes: List[Type] = lubList(ts, depth)
       val lubParents               = spanningTypes(lubBaseTypes)
-      val lubOwner                 = commonOwner(ts)
+      val lubOwner                 = commonOwners.commonOwner(ts)
       val lubBase                  = intersectionType(lubParents, lubOwner)
       val lubType =
         if (phase.erasedTypes || depth.isZero ) lubBase
@@ -652,7 +652,7 @@ abstract class GlbLubs {
     def glb1(ts0: List[Type]): Type = {
       try {
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-        val glbOwner = commonOwner(ts)
+        val glbOwner = commonOwners.commonOwner(ts)
         val ts1 = {
           val res = ListBuffer.empty[Type]
           def loop(ty: Type): Unit = ty match {
