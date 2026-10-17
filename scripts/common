@@ -1,10 +1,10 @@
 set -e
 
-# The scala/scala checkout directory (set by Jenkins, or `/home/travis/build/scala/scala` on travis)
+# The scala/scala checkout directory (set by Jenkins, or the current directory on GitHub Actions)
 WORKSPACE="${WORKSPACE-`pwd`}"
 
-# On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On travis, it's ~/.ivy2.
-if [ "$TRAVIS" = "true" ]; then
+# On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On GitHub Actions, it's ~/.ivy2.
+if [ "$GITHUB_ACTIONS" = "true" ]; then
   IVY2_DIR="$HOME/.ivy2"
 else
   IVY2_DIR="$WORKSPACE/.ivy2"
@@ -102,15 +102,13 @@ EOF
 }
 
 
-# https://github.com/travis-ci/docs-travis-ci-com/issues/949
-travis_fold_start() {
-  echo ""
-  echo -e "travis_fold:start:$1\033[33;1m$2\033[0m"
+# Collapsible sections in the GitHub Actions log; they can't be nested
+fold_start() {
+  echo "::group::$2"
 }
 
-travis_fold_end() {
-  echo -e "\ntravis_fold:end:$1\r"
-  echo ""
+fold_end() {
+  echo "::endgroup::"
 }
 
 
@@ -135,32 +133,35 @@ update() {
 #### sbt tools
 
 clearIvyCache() {
-  travis_fold_start clearIvy "Clearing ivy cache"
+  fold_start clearIvy "Clearing ivy cache"
   rm -fv $IVY2_DIR/exclude_classifiers $IVY2_DIR/exclude_classifiers.lock
   if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
   if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
-  travis_fold_end clearIvy
+  fold_end clearIvy
 }
 
-#### travis
+#### scala-dist
 
+# Builds the distribution packages for a nightly in scala-dist's workflow, without uploading them
 triggerScalaDist() {
   if [ "$publishToSonatype" = "yes" ]; then
     echo "Not triggering scala-dist: after sonatype migration to central repository, staged (but unreleased) builds are not available through any resolver."
   else
-    local jsonTemplate='{ "request": { "branch": "%s", "message": "Scala Dist %s", "config": { "before_install": "export version=%s mode=release scala_sha=%s" } } }'
-    local json=$(printf "$jsonTemplate" "$TRAVIS_BRANCH" "$SCALA_VER" "$SCALA_VER" "$TRAVIS_COMMIT")
+    local jsonTemplate='{ "ref": "%s", "inputs": { "version": "%s", "scala_sha": "%s", "mode": "release" } }'
+    local json=$(printf "$jsonTemplate" "$GITHUB_REF_NAME" "$SCALA_VER" "$GITHUB_SHA")
 
-    local curlStatus=$(curl \
-      -s -o /dev/null -w "%{http_code}" \
-      -H "Travis-API-Version: 3" \
-      -H "Authorization: token $TRAVIS_TOKEN" \
-      -H "Content-Type: application/json" \
+    # the response body, followed by the HTTP status on its own line
+    local response=$(curl \
+      -s -w "\n%{http_code}" \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer $SCALA_REPO_TOKEN" \
       -d "$json" \
-      https://api.travis-ci.com/repo/scala%2Fscala-dist/requests)
+      https://api.github.com/repos/scala/scala-dist/actions/workflows/dist.yml/dispatches)
+    local curlStatus=${response##*$'\n'}
 
-    [[ "$curlStatus" == "202" ]] || {
-      echo "failed to start job"
+    [[ "$curlStatus" == "204" ]] || {
+      echo "failed to start scala-dist's workflow: HTTP $curlStatus"
+      echo "${response%$'\n'*}"
       exit 1
     }
   fi
