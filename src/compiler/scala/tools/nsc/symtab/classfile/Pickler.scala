@@ -577,7 +577,7 @@ abstract class Pickler extends SubComponent {
       }
 
       def writeTreeBody(tree: Tree): Unit = {
-        writeNat(picklerSubTag(tree))
+        writeNat(translations.picklerSubTag(tree))
         if (!tree.isEmpty)
           writeTreeBodyTraverser traverse tree
       }
@@ -625,7 +625,7 @@ abstract class Pickler extends SubComponent {
       // The picklerTag method can't determine if it's an external symbol reference
       val tag = entry match {
         case sym: Symbol if isExternalSymbol(sym) => if (sym.isModuleClass) EXTMODCLASSref else EXTref
-        case _                                    => picklerTag(entry)
+        case _                                    => translations.picklerTag(entry)
       }
       writeNat(tag)
       writeByte(0) // reserve a place to record the number of bytes written

@@ -88,12 +88,6 @@ abstract class SymbolTable extends macros.Universe
   final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type = existentialsAndSkolems.packSymbols(hidden, tp, rawOwner)
 
   val translations: pickling.Translations { val self: SymbolTable.this.type } = new pickling.Translations { val self: SymbolTable.this.type = SymbolTable.this }
-  final def isTreeSymbolPickled(code: Int): Boolean = translations.isTreeSymbolPickled(code)
-  final def isTreeSymbolPickled(tree: Tree): Boolean = translations.isTreeSymbolPickled(tree)
-  final def picklerTag(ref: AnyRef): Int = translations.picklerTag(ref)
-  final def picklerTag(sym: Symbol): Int = translations.picklerTag(sym)
-  final def picklerTag(tpe: Type): Int = translations.picklerTag(tpe)
-  final def picklerSubTag(tree: Tree): Int = translations.picklerSubTag(tree)
 
   val kinds: Kinds { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Kinds
   type KindErrors = kinds.KindErrors
