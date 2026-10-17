@@ -118,7 +118,7 @@ object StandardScalaSettings {
   val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
     case SpecificScalaVersion(1, minor, _, _) => minor
     case SpecificScalaVersion(major, _, _, _) => major
-    case _ => 26
+    case _ => 27
   }
   val MaxSupportedTargetVersion = 8
   val DefaultTargetVersion = "8"
