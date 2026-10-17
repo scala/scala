@@ -72,9 +72,6 @@ abstract class SymbolTable extends macros.Universe
   final def capturedVariableType(vble: Symbol, tpe: Type = NoType, erasedTypes: Boolean = false): Type = capturedVariables.capturedVariableType(vble, tpe, erasedTypes)
 
   val packageAccessBoundaries: PrivateWithin { val self: SymbolTable.this.type } = new PrivateWithin { val self: SymbolTable.this.type = SymbolTable.this }
-  final def propagatePackageBoundary(c: java.lang.Class[_], syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(c, syms: _*)
-  final def propagatePackageBoundary(m: java.lang.reflect.Member, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(m, syms: _*)
-  final def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(jflags, syms: _*)
 
   val variances: Variances { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Variances
   type VarianceValidator = variances.VarianceValidator
