@@ -61,10 +61,27 @@ object AllocationTest {
     println(s"cost of tracking allocations - cost of $tpe = $cost")
     cost
   }
+
+  /** Whether the JVM uses compact object headers (JEP 519, the default from JDK 27), which are 4 bytes smaller. */
+  lazy val compactObjectHeaders: Boolean =
+    try ManagementFactory.getPlatformMXBean(classOf[com.sun.management.HotSpotDiagnosticMXBean]).getVMOption("UseCompactObjectHeaders").getValue.toBoolean
+    catch { case _: IllegalArgumentException => false }
+
+  private def objectHeaderSize: Int = if (compactObjectHeaders) 8 else 12
+  private def align(size: Int): Int = (size + 7) / 8 * 8
+
+  /** The size of an object whose fields take `fieldBytes`, assuming compressed oops. */
+  def objectSize(fieldBytes: Int): Int = align(objectHeaderSize + fieldBytes)
+
+  /** The size of an array of references, assuming compressed oops. */
+  def refArraySize(length: Int): Int = align(objectHeaderSize + 4 + 4 * length)
 }
 
 trait AllocationTest {
   import AllocationTest._
+
+  /** `classic` with the classic object header layout, `compact` with compact object headers. */
+  def sizeFor(classic: Long, compact: Long): Long = if (compactObjectHeaders) compact else classic
 
   /** Asserts whether it's expected for `a == b` to allocate memory. */
   def nonAllocatingEqual(expected: Boolean, a: AnyRef, b: AnyRef): Unit = {

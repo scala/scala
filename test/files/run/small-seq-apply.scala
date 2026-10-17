@@ -1,11 +1,13 @@
 
-object Sizes {
-  def list: Int = 24
-  def listBuffer: Int = 32
+import scala.tools.testkit.AllocationTest.{objectSize, refArraySize}
 
-  def refArray(length:Int): Int = (16 + (length+1) * 4) /8 * 8
-  def wrappedRefArray(length:Int): Int = refArray(length) + 16
-  def wrappedRefArrayIterator: Int = 24
+object Sizes {
+  def list: Int = objectSize(2 * 4)
+  def listBuffer: Int = objectSize(2 * 4 + 2 * 4 + 1)
+
+  def refArray(length: Int): Int = refArraySize(length)
+  def wrappedRefArray(length: Int): Int = refArray(length) + objectSize(4)
+  def wrappedRefArrayIterator: Int = objectSize(3 * 4)
 }
 
 object Test extends scala.tools.testkit.AllocationTest {
