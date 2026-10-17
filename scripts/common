@@ -108,6 +108,8 @@ fold_start() {
 }
 
 fold_end() {
+  # sbt's output can end without a newline, and the marker only counts at the start of a line
+  echo
   echo "::endgroup::"
 }
 
