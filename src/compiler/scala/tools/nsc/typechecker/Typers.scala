@@ -2700,9 +2700,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
       else packedTypes(casesTyped) match {
-        case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
+        case packed if glbLubs.sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
         case packed                             =>
-          val lub = weakLub(packed)
+          val lub = glbLubs.weakLub(packed)
           finish(casesTyped.map(adaptCase(_, mode, lub)), lub)
       }
     }
@@ -4897,9 +4897,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (scala/bug#6331)
         else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
           case tp :: _ if samePackedTypes     => finish(tp)
-          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+          case tpes if glbLubs.sameWeakLubAsLub(tpes) => finish(lub(tpes))
           case tpes                           =>
-            val lub = weakLub(tpes)
+            val lub = glbLubs.weakLub(tpes)
             treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
         }
       }
@@ -5980,9 +5980,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (isFullyDefined(pt))
             finish(pt)
           else block1 :: catches1 map (_.tpe.deconst) match {
-            case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+            case tpes if glbLubs.sameWeakLubAsLub(tpes) => finish(lub(tpes))
             case tpes                           =>
-              val lub      = weakLub(tpes)
+              val lub      = glbLubs.weakLub(tpes)
               val block2   = adapt(block1, mode, lub)
               val catches2 = catches1 map (adaptCase(_, mode, lub))
               treeCopy.Try(tree, block2, catches2, fin1) setType lub

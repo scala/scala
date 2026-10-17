@@ -20,7 +20,7 @@ import scala.annotation.tailrec
 import util.ReusableInstance
 import Variance._
 
-private[internal] abstract class GlbLubs {
+abstract class GlbLubs {
   val self: SymbolTable
   import self._
 
