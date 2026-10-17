@@ -40,7 +40,7 @@ import PartialFunction.{cond, condOpt}
  *  @author Paul Phillips
  */
 trait TypeDiagnostics extends splain.SplainDiagnostics {
-  _: Analyzer with StdAttachments =>
+  _: AbstractAnalyzer with StdAttachments =>
 
   import global._
   import definitions._

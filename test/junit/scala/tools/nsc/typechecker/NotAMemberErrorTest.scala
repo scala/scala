@@ -13,7 +13,7 @@ class NotAMemberErrorTest {
   class CountingGlobal(settings: Settings, reporter: StoreReporter) extends Global(settings, reporter) {
     var hintsComputed = 0
     @nowarn("cat=deprecation") // early initializer, as in Global.analyzer
-    override lazy val analyzer = new { val global: CountingGlobal.this.type = CountingGlobal.this } with Analyzer {
+    override lazy val analyzer = new { val global: CountingGlobal.this.type = CountingGlobal.this } with AbstractAnalyzer {
       override def linePrecedes(t1: global.Tree, t2: global.Tree): Boolean = {
         hintsComputed += 1
         super.linePrecedes(t1, t2)

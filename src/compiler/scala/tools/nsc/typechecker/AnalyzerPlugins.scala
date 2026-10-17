@@ -16,7 +16,7 @@ package typechecker
 /**
  *  @author Lukas Rytz
  */
-trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
+trait AnalyzerPlugins { self: AbstractAnalyzer with splain.SplainData =>
   import global._
 
   trait AnalyzerPlugin {

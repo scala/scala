@@ -24,7 +24,7 @@ import symtab.Flags._
  *  @author Martin Odersky
  */
 trait Infer extends Checkable {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._
