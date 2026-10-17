@@ -6085,7 +6085,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val id1 = typed1(id, mode, pt).asInstanceOf[Ident]
         // [Eugene] am I doing it right?
         val erasedTypes = phaseId(currentPeriod) >= currentRun.erasurePhase.id
-        val tpe = capturedVariableType(id.symbol, erasedTypes = erasedTypes)
+        val tpe = capturedVariables.capturedVariableType(id.symbol, erasedTypes = erasedTypes)
         treeCopy.ReferenceToBoxed(tree, id1) setType tpe
       }
 

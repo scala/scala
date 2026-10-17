@@ -157,7 +157,7 @@ trait GenTrees {
         }
         else if (!sym.isLocalToReifee) {
           if (sym.isVariable && sym.owner.isTerm) {
-            captureVariable(sym) // Note order dependency: captureVariable needs to come before reification here.
+            capturedVariables.captureVariable(sym) // Note order dependency: captureVariable needs to come before reification here.
             mirrorCall(nme.Select, mirrorBuildCall(nme.mkIdent, reify(sym)), reify(nme.elem))
           }
           else mirrorBuildCall(nme.mkIdent, reify(sym))

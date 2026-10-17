@@ -176,7 +176,7 @@ trait SymbolTables {
           // scala/bug#6204 don't reify signatures for incomplete symbols, because this might lead to cyclic reference errors
           val signature =
             if (sym.isInitialized) {
-              if (sym.isCapturedVariable) capturedVariableType(sym)
+              if (sym.isCapturedVariable) capturedVariables.capturedVariableType(sym)
               else if (isFreeTerm) sym.tpe
               else sym.info
             } else NoType
