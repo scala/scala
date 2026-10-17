@@ -18,6 +18,10 @@ import scala.collection.mutable.ArrayDeque
 import scala.reflect.internal.util.JavaClearable
 
 /** Defines the sub-components for the namer, packageobjects, and typer phases.
+ *
+ *  Instantiate it as an [[AbstractAnalyzer]]: the analyzer's parts are self-typed with that class, so that the
+ *  typechecker's calls to its analyzer are `invokevirtual` rather than `invokeinterface` (see there). The trait
+ *  remains, as the type through which compiler plugins and other clients refer to the analyzer.
  */
 trait Analyzer extends AnyRef
             with Contexts
@@ -36,7 +40,7 @@ trait Analyzer extends AnyRef
             with MacroAnnotationAttachments
             with AnalyzerPlugins
             with ImportTracking
-{
+{ self: AbstractAnalyzer =>
   val global : Global
   import global._
 
@@ -162,4 +166,22 @@ trait Analyzer extends AnyRef
       }
     }
   }
+}
+
+/** The class every [[Analyzer]] is instantiated as.
+ *
+ *  The typechecker reaches its analyzer through self types (`self: AbstractAnalyzer =>` in `Typers`, `Namers`,
+ *  `Contexts` ...): through `$outer` from `Typer`, `Namer` and `Context`, and through `this` in the traits'
+ *  methods. When the self type was the trait `Analyzer`, each such call was an `invokeinterface` on the last
+ *  interface in the analyzer's itable, which HotSpot's itable stubs scan linearly once a call site sees more than
+ *  two receiver classes, as it does when Scaladoc, the presentation compiler or macro toolboxes share the JVM with
+ *  the compiler. With a class as the self type the calls are `invokevirtual`.
+ *
+ *  `Analyzer` stays a trait so that code compiled against it, which refers to the analyzer as an `Analyzer`, keeps
+ *  linking. Code that instantiates its own `... with Analyzer` must now instantiate `... with AbstractAnalyzer`.
+ */
+abstract class AbstractAnalyzer extends Analyzer {
+  // Redeclared so that `global`, the analyzer member the typechecker uses most, is selected from the class:
+  // declared only in the trait, it is called with `invokeinterface Analyzer.global` even through a class-typed self.
+  val global: Global
 }

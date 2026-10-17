@@ -17,7 +17,7 @@ import scala.reflect.internal.Flags._
 import scala.reflect.runtime.ReflectionUtils
 
 trait MacroRuntimes extends JavaReflectionRuntimes {
-  self: scala.tools.nsc.typechecker.Analyzer =>
+  self: scala.tools.nsc.typechecker.AbstractAnalyzer =>
 
   import global._
   import definitions._

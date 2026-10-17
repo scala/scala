@@ -22,7 +22,7 @@ import scala.tools.nsc.symtab.Flags
  *
  *  @author  Iulian Dragos
  */
-abstract class Duplicators extends Analyzer {
+abstract class Duplicators extends AbstractAnalyzer {
   import global._
   import definitions._
 

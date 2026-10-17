@@ -512,8 +512,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   //
   // factory for phases: namer, packageobjects, typer
   lazy val analyzer =
-    if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
-    else new { val global: Global.this.type = Global.this } with Analyzer
+    if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with AbstractAnalyzer with MacroAnnotationNamers
+    else new { val global: Global.this.type = Global.this } with AbstractAnalyzer
 
   // phaseName = "superaccessors"
   object superAccessors extends {

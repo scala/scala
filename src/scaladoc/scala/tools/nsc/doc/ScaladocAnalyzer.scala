@@ -14,12 +14,12 @@ package scala.tools.nsc
 package doc
 
 import scala.tools.nsc.ast.parser.{BracePatch, SyntaxAnalyzer}
-import typechecker.Analyzer
+import typechecker.AbstractAnalyzer
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.doc.base.{CommentFactoryBase, LinkTo, MemberLookupBase}
 
-trait ScaladocAnalyzer extends Analyzer {
+trait ScaladocAnalyzer extends AbstractAnalyzer {
   val global : Global // generally, a ScaladocGlobal
   import global._
 
