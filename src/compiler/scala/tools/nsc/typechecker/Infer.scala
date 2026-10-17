@@ -977,7 +977,7 @@ trait Infer extends Checkable {
     }
 
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
-      checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
+      kinds.checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
         case (targ, tparam, kindErrors) =>
           kindErrors.errorMessage(targ, tparam)
       }
@@ -1567,7 +1567,7 @@ trait Infer extends Checkable {
         case _ =>
           checkWithinBounds(matchingLength.filter { alt =>
             isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) &&
-              kindsConform(alt.typeParams, argtypes, pre, alt.owner)
+              kinds.kindsConform(alt.typeParams, argtypes, pre, alt.owner)
           })
       }
     }

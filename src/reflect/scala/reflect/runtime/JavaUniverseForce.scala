@@ -169,11 +169,11 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.Scope
     this.EmptyScope
     this.Flag
-    this.KindErrors
-    this.Kind
-    this.ProperTypeKind
-    this.TypeConKind
-    this.inferKind
+    this.kinds.KindErrors
+    this.kinds.Kind
+    this.kinds.ProperTypeKind
+    this.kinds.TypeConKind
+    this.kinds.inferKind
     this.UnmappableTree
     this.ErrorType
     this.WildcardType

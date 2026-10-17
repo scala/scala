@@ -33,6 +33,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   import global._
   import definitions._
   import statistics._
+  import kinds.Kind
 
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode

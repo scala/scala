@@ -4891,7 +4891,7 @@ trait Types
             (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
         else if (symHi.isAbstractType)
           ((tpHi.bounds containsType tpLo) &&
-            kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+            kinds.kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
         else // we know `symHi.isAliasType` (see above)
           tpLo =:= tpHi
       }
