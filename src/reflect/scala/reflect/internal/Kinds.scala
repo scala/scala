@@ -17,8 +17,9 @@ package internal
 import scala.annotation.nowarn
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 
-trait Kinds {
-  self: SymbolTable =>
+abstract class Kinds {
+  val self: SymbolTable
+  import self._
 
   import definitions._
 

@@ -30,7 +30,6 @@ abstract class SymbolTable extends macros.Universe
                               with Names
                               with Symbols
                               with Types
-                              with Kinds
                               with FlagSets
                               with Scopes
                               with Mirrors
@@ -100,6 +99,20 @@ abstract class SymbolTable extends macros.Universe
   final def picklerTag(sym: Symbol): Int = translations.picklerTag(sym)
   final def picklerTag(tpe: Type): Int = translations.picklerTag(tpe)
   final def picklerSubTag(tree: Tree): Int = translations.picklerSubTag(tree)
+
+  val kinds: Kinds { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Kinds
+  type KindErrors = kinds.KindErrors
+  final lazy val KindErrors: kinds.KindErrors.type = kinds.KindErrors
+  final def NoKindErrors: KindErrors = kinds.NoKindErrors
+  final def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean = kinds.kindsConform(tparams, targs, pre, owner)
+  final def checkKindBounds0(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol, explainErrors: Boolean): List[(Type, Symbol, KindErrors)] = kinds.checkKindBounds0(tparams, targs, pre, owner, explainErrors)
+  type Kind = kinds.Kind
+  final lazy val Kind: kinds.Kind.type = kinds.Kind
+  type ProperTypeKind = kinds.ProperTypeKind
+  final lazy val ProperTypeKind: kinds.ProperTypeKind.type = kinds.ProperTypeKind
+  type TypeConKind = kinds.TypeConKind
+  final lazy val TypeConKind: kinds.TypeConKind.type = kinds.TypeConKind
+  final lazy val inferKind: kinds.inferKind.type = kinds.inferKind
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats
