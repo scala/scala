@@ -15,8 +15,7 @@ package reflect
 package internal
 package tpe
 
-private[internal] abstract class CommonOwners {
-  val self: SymbolTable
+private[internal] final class CommonOwners[U <: SymbolTable with Singleton](val self: U) {
   import self._
 
   /** The most deeply nested owner that contains all the symbols

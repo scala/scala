@@ -19,8 +19,7 @@ import PickleFormat._
 import scala.annotation.tailrec
 import util.shortClassOfInstance
 
-abstract class Translations {
-  val self: SymbolTable
+final class Translations[U <: SymbolTable with Singleton](val self: U) {
   import self._
 
   def isTreeSymbolPickled(code: Int): Boolean = (code: @annotation.switch) match {

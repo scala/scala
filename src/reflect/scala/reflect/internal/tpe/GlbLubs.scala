@@ -20,8 +20,7 @@ import scala.annotation.tailrec
 import util.ReusableInstance
 import Variance._
 
-abstract class GlbLubs {
-  val self: SymbolTable
+final class GlbLubs[U <: SymbolTable with Singleton](val self: U) {
   import self._
 
   import definitions._

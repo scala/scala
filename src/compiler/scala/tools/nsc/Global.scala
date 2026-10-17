@@ -200,9 +200,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Called by computePhaseDescriptors to compute phase order. */
   def computePhaseAssembly(): List[SubComponent] =
-    (new { val self: Global.this.type = Global.this } with PhaseAssembly).computePhaseAssembly(phasesSet)
+    new PhaseAssembly[Global.this.type](this).computePhaseAssembly(phasesSet)
 
-  val docCommentsSupport: DocComments { val self: Global.this.type } = new { val self: Global.this.type = Global.this } with DocComments
+  val docCommentsSupport: DocComments[Global.this.type] = new DocComments[Global.this.type](this)
   final def docComments: mutable.WeakHashMap[Symbol, DocComment] = docCommentsSupport.docComments
   type DocComment = docCommentsSupport.DocComment
   final lazy val DocComment: docCommentsSupport.DocComment.type = docCommentsSupport.DocComment

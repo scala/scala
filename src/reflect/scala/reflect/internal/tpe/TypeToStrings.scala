@@ -15,8 +15,7 @@ package reflect
 package internal
 package tpe
 
-private[internal] abstract class TypeToStrings {
-  val self: SymbolTable
+private[internal] final class TypeToStrings[U <: SymbolTable with Singleton](val self: U) {
   import self._
 
   /** The maximum number of recursions allowed in toString

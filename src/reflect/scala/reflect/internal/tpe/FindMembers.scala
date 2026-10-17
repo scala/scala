@@ -17,8 +17,7 @@ import util.ReusableInstance
 import Flags._
 import scala.runtime.Statics.releaseFence
 
-abstract class FindMembers {
-  val self: SymbolTable
+final class FindMembers[U <: SymbolTable with Singleton](val self: U) {
   import self._
   import statistics._
 

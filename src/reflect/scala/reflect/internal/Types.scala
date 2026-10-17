@@ -93,18 +93,18 @@ trait Types
   import definitions._
   import statistics._
 
-  private[internal] val typeToStrings: tpe.TypeToStrings { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.TypeToStrings
+  private[internal] val typeToStrings: tpe.TypeToStrings[Types.this.type] = new tpe.TypeToStrings[Types.this.type](this)
   private[this] var _toStringRecursions = 0
   def toStringRecursions = _toStringRecursions
   def toStringRecursions_=(value: Int) = _toStringRecursions = value
   private[this] val _toStringSubjects = mutable.HashSet[Type]()
   def toStringSubjects = _toStringSubjects
 
-  private[internal] val commonOwners: tpe.CommonOwners { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.CommonOwners
+  private[internal] val commonOwners: tpe.CommonOwners[Types.this.type] = new tpe.CommonOwners[Types.this.type](this)
   type CommonOwnerMap = commonOwners.CommonOwnerMap
   protected[reflect] def commonOwnerMap: CommonOwnerMap = commonOwners.commonOwnerMapObj
 
-  val glbLubs: tpe.GlbLubs { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.GlbLubs
+  val glbLubs: tpe.GlbLubs[Types.this.type] = new tpe.GlbLubs[Types.this.type](this)
   /** Memo tables and recursion guards for one outermost `lub` or `glb`. Entries are only
    *  valid within that call: they may be in-progress placeholders (`Any` / `Nothing`) and
    *  were computed at the current phase.
@@ -140,7 +140,7 @@ trait Types
   final def glb(ts: List[Type]): Type = glbLubs.glb(ts)
   protected[internal] final def glb(ts: List[Type], depth: Depth): Type = glbLubs.glb(ts, depth)
 
-  private[internal] val findMembers: tpe.FindMembers { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.FindMembers
+  private[internal] val findMembers: tpe.FindMembers[Types.this.type] = new tpe.FindMembers[Types.this.type](this)
   private[reflect] type FindMembers = findMembers.FindMembers
   private[scala] type HasMember = findMembers.HasMember
   private[reflect] final def findMemberInstance: ReusableInstance[findMembers.FindMember] = findMembers.findMemberInstance

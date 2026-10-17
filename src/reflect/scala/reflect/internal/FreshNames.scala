@@ -17,8 +17,7 @@ package internal
 import scala.reflect.internal.util.FreshNameCreator
 import scala.util.matching.Regex
 
-abstract class FreshNames {
-  val self: SymbolTable
+final class FreshNames[U <: SymbolTable with Singleton](val self: U) {
   import self._
   // scala/bug#6879 Keeps track of counters that are supposed to be globally unique
   //         as opposed to traditional freshers that are unique to compilation units.

@@ -16,8 +16,7 @@ package internal
 
 import util._
 
-abstract class TypeDebugging {
-  val self: SymbolTable
+final class TypeDebugging[U <: SymbolTable with Singleton](val self: U) {
 
   import self._
   import definitions._

@@ -17,8 +17,7 @@ package internal
 /** Additions to the type checker that can be added at
  *  run time.  Typically these are added by
  *  compiler plugins. */
-abstract class AnnotationCheckers {
-  val self: SymbolTable
+final class AnnotationCheckers[U <: SymbolTable with Singleton](val self: U) {
   import self._
 
 

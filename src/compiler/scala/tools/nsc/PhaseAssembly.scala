@@ -19,8 +19,7 @@ import scala.util.chaining._
 
 /** Sorts the global phasesSet according to SubComponent constraints.
  */
-abstract class PhaseAssembly {
-  val self: Global
+final class PhaseAssembly[U <: Global with Singleton](val self: U) {
   import self._
 
   /** Called by Global#computePhaseDescriptors to compute phase order.
