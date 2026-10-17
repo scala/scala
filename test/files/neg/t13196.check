@@ -1,0 +1,18 @@
+t13196.scala:8: warning: Suspicious `synchronized` call on value-based class `Integer`
+  def literal = 451.synchronized {} // warn
+                    ^
+t13196.scala:10: warning: Suspicious `synchronized` call on value-based class `Integer`
+  def boxed(x: Integer) = x.synchronized {} // warn
+                            ^
+t13196.scala:12: warning: Suspicious `synchronized` call on value-based class `BoxedUnit`
+  def unit(u: BoxedUnit) = u.synchronized {} // warn
+                             ^
+t13196.scala:14: warning: Suspicious `synchronized` call on value-based class `LocalDate`
+  def localDate(d: LocalDate) = d.synchronized {} // warn
+                                  ^
+t13196.scala:16: warning: Suspicious `synchronized` call on value-based class `Optional`
+  def optional(o: java.util.Optional[String]) = o.synchronized {} // warn
+                                                  ^
+error: No warnings can be incurred under -Werror.
+5 warnings
+1 error
