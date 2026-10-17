@@ -1458,8 +1458,3 @@ addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.sca
 
 // aliases to projects to prevent name clashes
 def testP = test
-
-{
-  scala.build.TravisOutput.installIfOnTravis()
-  Nil
-}

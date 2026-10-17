@@ -1,10 +1,10 @@
-# To build the spec on Travis CI
+# To build the spec on GitHub Actions
 source "https://rubygems.org"
 
-gem "jekyll", "3.9.3"
+gem "jekyll", "3.10.0"
 gem "rouge"
-gem "redcarpet", "3.6.0"
+gem "redcarpet", "3.6.1"
 
-# we use redcarpet not kramdown, but current jekyll complains
-# if this isn't present?!
-gem 'kramdown-parser-gfm'
+# no longer default gems since Ruby 3.4, but jekyll's safe_yaml and liquid need them
+gem "base64"
+gem "bigdecimal"

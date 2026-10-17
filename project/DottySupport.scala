@@ -23,7 +23,7 @@ object TastySupport {
 /** Settings needed to compile with Dotty,
  *  Only active when sbt is started with `sbt -Dscala.build.compileWithDotty=true`
  *  This is currently only used to check that the standard library compiles with
- *  Dotty in .travis.yml.
+ *  Dotty in .github/workflows/validate.yml.
  */
 object DottySupport {
   val dottyVersion = TastySupport.supportedTASTyRelease

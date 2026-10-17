@@ -16,7 +16,7 @@ We aim to track the configuration GitHub Pages uses but differences may arise as
 
 ## Building
 
-Travis CI builds the spec automatically after every merged pull release and publishes to https://www.scala-lang.org/files/archive/spec/2.13/.
+GitHub Actions builds the spec automatically after every merged pull request and publishes it to https://www.scala-lang.org/files/archive/spec/2.13/.
 
 To preview locally, run the following commands in the root of your checkout scala/scala:
 `bundle install` to install Jekyll and `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` to start it,

@@ -6,11 +6,11 @@ scalacOptions ++= Seq(
   "-Werror",
   "-Wconf:msg=IntegrationTest .* is deprecated:s,msg=itSettings .* is deprecated:s")
 
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.20.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.21.0"
 
 libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bndlib" % "6.1.0"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.6")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.2.1")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
