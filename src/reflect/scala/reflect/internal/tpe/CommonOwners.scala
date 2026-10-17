@@ -15,8 +15,9 @@ package reflect
 package internal
 package tpe
 
-private[internal] trait CommonOwners {
-  self: SymbolTable =>
+private[internal] abstract class CommonOwners {
+  val self: SymbolTable
+  import self._
 
   /** The most deeply nested owner that contains all the symbols
     *  of thistype or prefixless typerefs/singletype occurrences in given type.
@@ -35,9 +36,7 @@ private[internal] trait CommonOwners {
       if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
     }
 
-  protected def commonOwnerMap: CommonOwnerMap = commonOwnerMapObj
-
-  protected class CommonOwnerMap extends TypeCollector[Symbol](null) {
+  class CommonOwnerMap extends TypeCollector[Symbol](null) {
     def clear(): Unit = { result = null }
 
     private def register(sym: Symbol): Unit = {
@@ -56,5 +55,5 @@ private[internal] trait CommonOwners {
     }
   }
 
-  private lazy val commonOwnerMapObj = new CommonOwnerMap
+  private[internal] lazy val commonOwnerMapObj = new CommonOwnerMap
 }
