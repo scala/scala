@@ -59,7 +59,7 @@ class ParserTest extends BytecodeTesting {
     val unit = new CompilationUnit(src)
     val codePos = rangePos(src, 0, 0, code.length)
     val doc = DocComment(code, pos = codePos)
-    for (UseCase(DocComment(_,p2,_),_,p1) <- doc.useCases)
+    for (docCommentsSupport.UseCase(DocComment(_,p2,_),_,p1) <- doc.useCases)
       List(p1, p2).foreach(p => assertTrue(s"$codePos must include $p", codePos.includes(p)))
     assertTrue(run.reporting.allConditionalWarnings.isEmpty)
     run.reporting.reportSuspendedMessages(unit)

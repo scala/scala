@@ -957,7 +957,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private def forceDocComment(sym: Symbol, unit: RichCompilationUnit): Unit = {
     unit.body foreachPartial {
       case DocDef(comment, defn) if defn.symbol == sym =>
-        fillDocComment(defn.symbol, comment)
+        docCommentsSupport.fillDocComment(defn.symbol, comment)
         EmptyTree
       case _: ValOrDefDef =>
         EmptyTree
@@ -978,7 +978,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         if (mirror eq NoSymbol)
           ("", "", NoPosition)
         else {
-          (expandedDocComment(mirror, site), rawDocComment(mirror), docCommentPos(mirror))
+          (docCommentsSupport.expandedDocComment(mirror, site), docCommentsSupport.rawDocComment(mirror), docCommentsSupport.docCommentPos(mirror))
         }
       }
     }

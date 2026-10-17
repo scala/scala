@@ -53,7 +53,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private val superConstructorCalls: mutable.HashMap[Symbol, collection.Map[Symbol, Symbol]] = perRunCaches.newMap()
 
   // allows override of the behavior of the resetTyper method w.r.t comments
-  def resetDocComments() = clearDocComments()
+  def resetDocComments() = docCommentsSupport.clearDocComments()
 
   def resetTyper(): Unit = {
     //println("resetTyper called")

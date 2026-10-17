@@ -204,17 +204,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   val docCommentsSupport: DocComments { val self: Global.this.type } = new { val self: Global.this.type = Global.this } with DocComments
   final def docComments: mutable.WeakHashMap[Symbol, DocComment] = docCommentsSupport.docComments
-  final def clearDocComments(): Unit = docCommentsSupport.clearDocComments()
-  final def rawDocComment(sym: Symbol): String = docCommentsSupport.rawDocComment(sym)
-  final def docCommentPos(sym: Symbol): Position = docCommentsSupport.docCommentPos(sym)
-  final def fillDocComment(sym: Symbol, comment: DocComment): Unit = docCommentsSupport.fillDocComment(sym, comment)
-  final def expandedDocComment(sym: Symbol, site: Symbol, docStr: String = ""): String = docCommentsSupport.expandedDocComment(sym, site, docStr)
-  final def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = docCommentsSupport.useCases(sym, site)
-  final def lookupVariable(vble: String, site: Symbol): Option[String] = docCommentsSupport.lookupVariable(vble, site)
   type DocComment = docCommentsSupport.DocComment
   final lazy val DocComment: docCommentsSupport.DocComment.type = docCommentsSupport.DocComment
-  type UseCase = docCommentsSupport.UseCase
-  final lazy val UseCase: docCommentsSupport.UseCase.type = docCommentsSupport.UseCase
 
   // Components for collecting and generating output
 
