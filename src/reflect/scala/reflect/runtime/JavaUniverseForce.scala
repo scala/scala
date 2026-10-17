@@ -169,11 +169,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.Scope
     this.EmptyScope
     this.Flag
-    this.kinds.KindErrors
-    this.kinds.Kind
-    this.kinds.ProperTypeKind
-    this.kinds.TypeConKind
-    this.kinds.inferKind
     this.UnmappableTree
     this.ErrorType
     this.WildcardType
@@ -556,5 +551,13 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     erasure.verifiedJavaErasure
     erasure.boxingErasure
     erasure.boxing3Erasure
+    typeDebugging.noPrint
+    typeDebugging.typeDebug
+    kinds.KindErrors
+    kinds.Kind
+    kinds.ProperTypeKind
+    kinds.TypeConKind
+    kinds.inferKind
+    freshNames.FreshNameExtractor
   }
 }
