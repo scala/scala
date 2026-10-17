@@ -82,13 +82,6 @@ abstract class SymbolTable extends macros.Universe
   type AnnotationChecker = annotationCheckerSupport.AnnotationChecker
   final def addAnnotationChecker(checker: AnnotationChecker): Unit = annotationCheckerSupport.addAnnotationChecker(checker)
   final def removeAllAnnotationCheckers(): Unit = annotationCheckerSupport.removeAllAnnotationCheckers()
-  final def annotationsConform(tp1: Type, tp2: Type): Boolean = annotationCheckerSupport.annotationsConform(tp1, tp2)
-  final def annotationsLub(tpe: Type, ts: List[Type]): Type = annotationCheckerSupport.annotationsLub(tpe, ts)
-  final def adaptBoundsToAnnotations(bounds: List[TypeBounds], tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = annotationCheckerSupport.adaptBoundsToAnnotations(bounds, tparams, targs)
-  final def addAnnotations(tree: Tree, tpe: Type): Type = annotationCheckerSupport.addAnnotations(tree, tpe)
-  final def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = annotationCheckerSupport.canAdaptAnnotations(tree, mode, pt)
-  final def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = annotationCheckerSupport.adaptAnnotations(tree, mode, pt)
-  final def adaptTypeOfReturn(tree: Tree, pt: Type, default: => Type): Type = annotationCheckerSupport.adaptTypeOfReturn(tree, pt, default)
 
   val freshNames: FreshNames { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with FreshNames
   // default fresh name creator used to abstract over currentUnit.fresh and runtime fresh name creator

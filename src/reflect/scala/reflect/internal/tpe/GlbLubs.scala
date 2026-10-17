@@ -281,7 +281,7 @@ private[internal] abstract class GlbLubs {
     else if (tps forall isNumericValueType)
       numericLub(tps)
     else if (tps.exists(!_.annotations.isEmpty))
-      annotationsLub(lub(tps map (_.withoutAnnotations)), tps)
+      annotationCheckerSupport.annotationsLub(lub(tps map (_.withoutAnnotations)), tps)
     else
       lub(tps)
   )
@@ -463,7 +463,7 @@ private[internal] abstract class GlbLubs {
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(glb(ts map (_.lowerBound), depth), lub(ts map (_.upperBound), depth))
       case ts @ AnnotatedType(annots, tpe) :: rest =>
-        annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
+        annotationCheckerSupport.annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
         lubResults get ((depth, ts)) match {
           case Some(lubType) =>

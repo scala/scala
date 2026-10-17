@@ -5037,7 +5037,7 @@ trait Types
 
     if (targs.exists(!_.annotations.isEmpty)){
       var bounds = mapList(tparams)(instantiatedBound)
-      bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
+      bounds = annotationCheckerSupport.adaptBoundsToAnnotations(bounds, tparams, targs)
       (bounds corresponds targs)(_ containsType _)
     } else
       (tparams corresponds targs){ (tparam, targ) =>

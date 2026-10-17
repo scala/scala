@@ -148,8 +148,8 @@ trait TypeComparers {
 
   // @pre: at least one argument has annotations
   private def sameAnnotatedTypes(tp1: Type, tp2: Type) = (
-       annotationsConform(tp1, tp2)
-    && annotationsConform(tp2, tp1)
+       annotationCheckerSupport.annotationsConform(tp1, tp2)
+    && annotationCheckerSupport.annotationsConform(tp2, tp1)
     && (tp1.withoutAnnotations =:= tp2.withoutAnnotations)
   )
   // We flush out any AnnotatedTypes before calling isSameType2 because
@@ -370,7 +370,7 @@ trait TypeComparers {
 
   private def isSubType1(tp1: Type, tp2: Type, depth: Depth): Boolean = typeRelationPreCheck(tp1, tp2) match {
     case state if state.isKnown                                                  => state.booleanValue
-    case _ if tp1.isInstanceOf[AnnotatedType] || tp2.isInstanceOf[AnnotatedType] => annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
+    case _ if tp1.isInstanceOf[AnnotatedType] || tp2.isInstanceOf[AnnotatedType] => annotationCheckerSupport.annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
     case _                                                                       => isSubType2(tp1, tp2, depth)
   }
 
@@ -457,7 +457,7 @@ trait TypeComparers {
       || (if (isNoArgStaticClassTypeRef(tp1) && isNoArgStaticClassTypeRef(tp2))
             tp1.typeSymbolDirect.isNonBottomSubClass(tp2.typeSymbolDirect) // OPT faster than comparing eta-expanded types
           else
-            isSub(tp1.withoutAnnotations, tp2.withoutAnnotations) && annotationsConform(tp1, tp2)
+            isSub(tp1.withoutAnnotations, tp2.withoutAnnotations) && annotationCheckerSupport.annotationsConform(tp1, tp2)
          )
     )
   }
@@ -509,7 +509,7 @@ trait TypeComparers {
         }
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
-          annotationsConform(tp1, tp2)
+          annotationCheckerSupport.annotationsConform(tp1, tp2)
       case tp2: ProtoType => tp2.isMatchedBy(tp1, depth)
       case tv2 @ TypeVar(_, constr2) =>
         tp1 match {
@@ -532,7 +532,7 @@ trait TypeComparers {
       case pt: ProtoType => pt.canMatch(tp2, depth)
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
-          annotationsConform(tp1, tp2)
+          annotationCheckerSupport.annotationsConform(tp1, tp2)
       case tv @ TypeVar(_,_) =>
         tv.registerBound(tp2, isLowerBound = false)
       case ExistentialType(_, _) => // TODO: fast initial try for tp1 and tp2 both existentials? (first try instantiating tp2's existentials to tp1's skolems?)
