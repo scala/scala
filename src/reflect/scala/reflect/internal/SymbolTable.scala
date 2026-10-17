@@ -61,9 +61,6 @@ abstract class SymbolTable extends macros.Universe
   val typeDebugging: TypeDebugging { val self: SymbolTable.this.type } = new TypeDebugging { val self: SymbolTable.this.type = SymbolTable.this }
   final val noPrint: typeDebugging.noPrint.type = typeDebugging.noPrint
   final val typeDebug: typeDebugging.typeDebug.type = typeDebugging.typeDebug
-  final def paramString(tp: Type): String = typeDebugging.paramString(tp)
-  final def typeParamsString(tp: Type): String = typeDebugging.typeParamsString(tp)
-  final def debugString(tp: Type): String = typeDebugging.debugString(tp)
 
   val capturedVariables: CapturedVariables { val self: SymbolTable.this.type } = new CapturedVariables { val self: SymbolTable.this.type = SymbolTable.this }
 

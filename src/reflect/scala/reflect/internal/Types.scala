@@ -2961,7 +2961,7 @@ trait Types
 
     //Format (a: A)(b: B)(implicit c: C, d: D): E
     override def safeToString = {
-      s"${paramString(this)}${
+      s"${typeDebugging.paramString(this)}${
         resultType match { case _: MethodType => "" case _ => ": "}
       }$resultType"
     }
@@ -3067,7 +3067,7 @@ trait Types
 
     override def isHigherKinded = !typeParams.isEmpty
 
-    override def safeToString = typeParamsString(this) + resultType
+    override def safeToString = typeDebugging.typeParamsString(this) + resultType
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbolsAtOwner(typeParams, owner)
@@ -3548,7 +3548,7 @@ trait Types
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
-      //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
+      //println("addLoBound: "+(safeToString, typeDebugging.debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
         undoLog record this
         constr.addLoBound(tp, isNumericBound)
@@ -3557,7 +3557,7 @@ trait Types
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // assert(tp != this)
-      //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
+      //println("addHiBound: "+(safeToString, typeDebugging.debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
         undoLog record this
         constr.addHiBound(tp, isNumericBound)
@@ -3599,7 +3599,7 @@ trait Types
      *  If isNumericBound is true, the subtype check is performed with weak_<:< instead of <:<.
      */
     def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
-      // println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
+      // println("regBound: "+(safeToString, typeDebugging.debugString(tp), isLowerBound)) //@MDEBUG
       if (isLowerBound) assert(tp != this, "Lower bound of this type")
 
       // side effect: adds the type to upper or lower bounds
@@ -3755,7 +3755,7 @@ trait Types
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
-//      println("regTypeEq: "+(safeToString, debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (instValid) "IV" else "")) //@MDEBUG
+//      println("regTypeEq: "+(safeToString, typeDebugging.debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (instValid) "IV" else "")) //@MDEBUG
       def checkIsSameType(tp: Type) = (
         if (typeVarLHS) inst =:= tp
         else            tp   =:= inst
@@ -4038,7 +4038,7 @@ trait Types
 
   abstract class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
     override def safeToString =
-      (if (typeParams.isEmpty) "" else typeParamsString(this)) + super.safeToString
+      (if (typeParams.isEmpty) "" else typeDebugging.typeParamsString(this)) + super.safeToString
   }
 
 // Creators ---------------------------------------------------------------
@@ -4235,7 +4235,7 @@ trait Types
       case tv@TypeVar(_, _)                               => tv.applyArgs(args)
       case AnnotatedType(annots, underlying)              => AnnotatedType(annots, appliedType(underlying, args))
       case ErrorType | WildcardType                       => tycon
-      case _                                              => abort(debugString(tycon))
+      case _                                              => abort(typeDebugging.debugString(tycon))
     }
   }
 
