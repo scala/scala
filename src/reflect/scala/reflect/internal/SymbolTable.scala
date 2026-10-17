@@ -75,10 +75,6 @@ abstract class SymbolTable extends macros.Universe
   final def varianceInType(tp: Type, considerUnchecked: Boolean = false)(tparam: Symbol): Variance = variances.varianceInType(tp, considerUnchecked)(tparam)
 
   val existentialsAndSkolems: ExistentialsAndSkolems { val self: SymbolTable.this.type } = new ExistentialsAndSkolems { val self: SymbolTable.this.type = SymbolTable.this }
-  final def deriveFreshSkolems(tparams: List[Symbol]): List[Symbol] = existentialsAndSkolems.deriveFreshSkolems(tparams)
-  final def isRawParameter(sym: Symbol): Boolean = existentialsAndSkolems.isRawParameter(sym)
-  final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol)(creator: (List[Symbol], Type) => T): T = existentialsAndSkolems.existentialTransform(rawSyms, tp, rawOwner)(creator)
-  final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type = existentialsAndSkolems.packSymbols(hidden, tp, rawOwner)
 
   val translations: pickling.Translations { val self: SymbolTable.this.type } = new pickling.Translations { val self: SymbolTable.this.type = SymbolTable.this }
 

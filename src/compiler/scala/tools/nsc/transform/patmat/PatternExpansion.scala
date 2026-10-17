@@ -142,7 +142,7 @@ trait PatternExpansion {
           if (extractedBinder != NoSymbol) fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder)))
           else fun.tpe
 
-        packSymbols(appliedToExtractedBinder.paramss.flatten, appliedToExtractedBinder.finalResultType)
+        existentialsAndSkolems.packSymbols(appliedToExtractedBinder.paramss.flatten, appliedToExtractedBinder.finalResultType)
       }
 
     private def resultOfGetInMonad(arg: Symbol = unapplySelector) =

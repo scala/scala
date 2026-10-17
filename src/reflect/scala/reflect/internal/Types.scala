@@ -3745,7 +3745,7 @@ trait Types
         )
 
         case skolems =>
-          val existential = existentialTransform(skolems, tp)(existentialAbstraction(_, _, flipVariance = !isLowerBound))
+          val existential = existentialsAndSkolems.existentialTransform(skolems, tp)(existentialAbstraction(_, _, flipVariance = !isLowerBound))
           // `isRelatable(existential)` defends against F-bounds. We've added one layer of existential abstraction to remove
           // skolems that occur immediately in the underlying type `tp`. If after this transformation, the type still
           // contains skolems from another level, it could be F-bounded, and we give up to avoid looping.
