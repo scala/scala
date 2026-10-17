@@ -753,15 +753,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // Re-try typing (applying to implicit args) without expected type. Add in 53d98e7d42 to
                 // for better error message (scala/bug#2180, https://www.scala-lang.org/old/node/3453.html)
                 val resetTree = resetAttrs(original)
-                resetTree match {
-                  case treeInfo.Applied(fun, _, _) =>
-                    if (fun.symbol != null && fun.symbol.isError)
-                      // scala/bug#9041 Without this, we leak error symbols past the typer!
-                      // because the fallback typechecking notices the error-symbol,
-                      // refuses to re-attempt typechecking, and presumes that someone
-                      // else was responsible for issuing the related type error!
-                      fun.setSymbol(NoSymbol)
-                }
                 debuglog(s"fallback on implicits: $tree/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
                 // work during fallback typechecking below.
