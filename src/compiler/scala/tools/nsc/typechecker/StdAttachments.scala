@@ -137,6 +137,11 @@ trait StdAttachments {
    */
   def hasSuperArgs(tree: Tree): Boolean = superArgs(tree).nonEmpty
 
+  /** Marks the receiver `qual` of `qual.asInstanceOf[T]` with the cast's type argument, so that a call to a
+   *  signature polymorphic method in `qual` gets result type `T` instead of `Object`.
+   */
+  case class PolymorphicSignatureCastAttachment(targ: Tree)
+
   /** @see markMacroImplRef
    */
   case object MacroImplRefAttachment

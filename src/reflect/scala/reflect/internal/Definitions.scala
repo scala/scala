@@ -1879,15 +1879,17 @@ trait Definitions extends api.StandardDefinitions {
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
 
-      def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
-        val owner = sym.safeOwner
-        (owner == MethodHandleClass || owner == VarHandleClass) && {
+      private lazy val polymorphicSignatureMethods: Set[Symbol] =
+        (MethodHandleClass.info.decls.toList ++ VarHandleClass.info.decls.toList).filter { sym =>
           sym.hasAnnotation(NativeAttr) && (sym.paramss match {
             case List(List(p)) => definitions.isJavaRepeatedParamType(p.info)
             case _ => false
           })
-        }
-      }
+        }.toSet
+
+      lazy val polymorphicSignatureNames: Set[Name] = polymorphicSignatureMethods.map(_.name)
+
+      def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && polymorphicSignatureMethods(sym)
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
 
