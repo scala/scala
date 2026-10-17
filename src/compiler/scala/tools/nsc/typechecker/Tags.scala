@@ -14,7 +14,7 @@ package scala.tools.nsc
 package typechecker
 
 trait Tags {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

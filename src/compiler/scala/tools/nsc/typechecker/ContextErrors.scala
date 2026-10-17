@@ -26,7 +26,7 @@ import scala.tools.nsc.util.stackTraceString
 import scala.util.control.{ControlThrowable, NonFatal}
 
 trait ContextErrors extends splain.SplainErrors {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

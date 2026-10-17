@@ -15,7 +15,7 @@ package typechecker
 package splain
 
 trait SplainDiagnostics extends splain.SplainFormatting {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
 

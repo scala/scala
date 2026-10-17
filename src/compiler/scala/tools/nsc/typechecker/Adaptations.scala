@@ -23,7 +23,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  @author  Paul Phillips
  */
 trait Adaptations {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

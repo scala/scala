@@ -42,7 +42,7 @@ import Mode._
  * }}}
  */
 trait PatternTypers {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._
