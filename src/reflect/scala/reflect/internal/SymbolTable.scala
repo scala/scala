@@ -56,8 +56,7 @@ abstract class SymbolTable extends macros.Universe
   final val FixedMirrorTypeCreator: StdCreators.FixedMirrorTypeCreator.type = StdCreators.FixedMirrorTypeCreator
 
   val reificationSupport: ReificationSupport { val self: SymbolTable.this.type } = new ReificationSupport { val self: SymbolTable.this.type = SymbolTable.this }
-  type ReificationSupportImpl = reificationSupport.ReificationSupportImpl
-  val build: ReificationSupportImpl = reificationSupport.build
+  val build: reificationSupport.ReificationSupportImpl = reificationSupport.build
 
   val typeDebugging: TypeDebugging { val self: SymbolTable.this.type } = new TypeDebugging { val self: SymbolTable.this.type = SymbolTable.this }
   final val noPrint: typeDebugging.noPrint.type = typeDebugging.noPrint
@@ -76,7 +75,6 @@ abstract class SymbolTable extends macros.Universe
   final def propagatePackageBoundary(c: java.lang.Class[_], syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(c, syms: _*)
   final def propagatePackageBoundary(m: java.lang.reflect.Member, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(m, syms: _*)
   final def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*): Unit = packageAccessBoundaries.propagatePackageBoundary(jflags, syms: _*)
-  final def setPackageAccessBoundary(sym: Symbol): Symbol = packageAccessBoundaries.setPackageAccessBoundary(sym)
 
   val variances: Variances { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Variances
   type VarianceValidator = variances.VarianceValidator
@@ -100,7 +98,6 @@ abstract class SymbolTable extends macros.Universe
   val kinds: Kinds { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Kinds
   type KindErrors = kinds.KindErrors
   final lazy val KindErrors: kinds.KindErrors.type = kinds.KindErrors
-  final def NoKindErrors: KindErrors = kinds.NoKindErrors
   final def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean = kinds.kindsConform(tparams, targs, pre, owner)
   final def checkKindBounds0(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol, explainErrors: Boolean): List[(Type, Symbol, KindErrors)] = kinds.checkKindBounds0(tparams, targs, pre, owner, explainErrors)
   type Kind = kinds.Kind
@@ -120,7 +117,6 @@ abstract class SymbolTable extends macros.Universe
   final def removeAllAnnotationCheckers(): Unit = annotationCheckerSupport.removeAllAnnotationCheckers()
   final def annotationsConform(tp1: Type, tp2: Type): Boolean = annotationCheckerSupport.annotationsConform(tp1, tp2)
   final def annotationsLub(tpe: Type, ts: List[Type]): Type = annotationCheckerSupport.annotationsLub(tpe, ts)
-  final def annotationsGlb(tpe: Type, ts: List[Type]): Type = annotationCheckerSupport.annotationsGlb(tpe, ts)
   final def adaptBoundsToAnnotations(bounds: List[TypeBounds], tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = annotationCheckerSupport.adaptBoundsToAnnotations(bounds, tparams, targs)
   final def addAnnotations(tree: Tree, tpe: Type): Type = annotationCheckerSupport.addAnnotations(tree, tpe)
   final def canAdaptAnnotations(tree: Tree, mode: Mode, pt: Type): Boolean = annotationCheckerSupport.canAdaptAnnotations(tree, mode, pt)

@@ -138,22 +138,17 @@ trait Types
   def globalGlbDepth: Depth = _globalGlbDepth
   def globalGlbDepth_=(value: Depth): Unit = _globalGlbDepth = value
 
-  final def lubList(ts: List[Type], depth: Depth): List[Type] = glbLubs.lubList(ts, depth)
-  final def spanningTypes(ts: List[Type]): List[Type] = glbLubs.spanningTypes(ts)
   final def sameWeakLubAsLub(tps: List[Type]): Boolean = glbLubs.sameWeakLubAsLub(tps)
   final def weakLub(tps: List[Type]): Type = glbLubs.weakLub(tps)
-  final def numericLub(ts: List[Type]): Type = glbLubs.numericLub(ts)
   final def lub(ts: List[Type]): Type = glbLubs.lub(ts)
   protected[internal] final def lub(ts: List[Type], depth: Depth): Type = glbLubs.lub(ts, depth)
-  final def GlbFailure: Throwable = glbLubs.GlbFailure
   final def glb(ts: List[Type]): Type = glbLubs.glb(ts)
   protected[internal] final def glb(ts: List[Type], depth: Depth): Type = glbLubs.glb(ts, depth)
 
   private[internal] val findMembers: tpe.FindMembers { val self: Types.this.type } = new { val self: Types.this.type = Types.this } with tpe.FindMembers
   private[reflect] type FindMembers = findMembers.FindMembers
-  private[reflect] type FindMember = findMembers.FindMember
   private[scala] type HasMember = findMembers.HasMember
-  private[reflect] final def findMemberInstance: ReusableInstance[FindMember] = findMembers.findMemberInstance
+  private[reflect] final def findMemberInstance: ReusableInstance[findMembers.FindMember] = findMembers.findMemberInstance
 
   private[this] var explainSwitch = false
   @unused private final val emptySymbolSet = Set.empty[Symbol]

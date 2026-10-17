@@ -203,24 +203,18 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     (new { val self: Global.this.type = Global.this } with PhaseAssembly).computePhaseAssembly(phasesSet)
 
   val docCommentsSupport: DocComments { val self: Global.this.type } = new { val self: Global.this.type = Global.this } with DocComments
-  final def cookedDocComments: mutable.HashMap[Symbol, String] = docCommentsSupport.cookedDocComments
   final def docComments: mutable.WeakHashMap[Symbol, DocComment] = docCommentsSupport.docComments
   final def clearDocComments(): Unit = docCommentsSupport.clearDocComments()
   final def rawDocComment(sym: Symbol): String = docCommentsSupport.rawDocComment(sym)
   final def docCommentPos(sym: Symbol): Position = docCommentsSupport.docCommentPos(sym)
   final def fillDocComment(sym: Symbol, comment: DocComment): Unit = docCommentsSupport.fillDocComment(sym, comment)
-  final def replaceInheritDocToInheritdoc(docStr: String): String = docCommentsSupport.replaceInheritDocToInheritdoc(docStr)
-  final def cookedDocComment(sym: Symbol, docStr: String = ""): String = docCommentsSupport.cookedDocComment(sym, docStr)
   final def expandedDocComment(sym: Symbol, site: Symbol, docStr: String = ""): String = docCommentsSupport.expandedDocComment(sym, site, docStr)
   final def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = docCommentsSupport.useCases(sym, site)
-  final def merge(src: String, dst: String, sym: Symbol, copyFirstPara: Boolean = false): String = docCommentsSupport.merge(src, dst, sym, copyFirstPara)
-  final def expandInheritdoc(parent: String, child: String, sym: Symbol): String = docCommentsSupport.expandInheritdoc(parent, child, sym)
   final def lookupVariable(vble: String, site: Symbol): Option[String] = docCommentsSupport.lookupVariable(vble, site)
   type DocComment = docCommentsSupport.DocComment
   final lazy val DocComment: docCommentsSupport.DocComment.type = docCommentsSupport.DocComment
   type UseCase = docCommentsSupport.UseCase
   final lazy val UseCase: docCommentsSupport.UseCase.type = docCommentsSupport.UseCase
-  type ExpansionLimitExceeded = docCommentsSupport.ExpansionLimitExceeded
 
   // Components for collecting and generating output
 

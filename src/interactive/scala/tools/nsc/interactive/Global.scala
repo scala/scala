@@ -42,7 +42,7 @@ import scala.util.control.ControlThrowable
 trait CommentPreservingTypers extends Typers {
   self: Analyzer =>
 
-  override def resetDocComments() = global.cookedDocComments.clear()
+  override def resetDocComments() = global.docCommentsSupport.cookedDocComments.clear()
 }
 
 trait InteractiveAnalyzer extends Analyzer {
