@@ -19,15 +19,16 @@ import scala.util.chaining._
 
 /** Sorts the global phasesSet according to SubComponent constraints.
  */
-trait PhaseAssembly {
-  this: Global =>
+abstract class PhaseAssembly {
+  val self: Global
+  import self._
 
   /** Called by Global#computePhaseDescriptors to compute phase order.
    *
    *  The phases to assemble are provided by `phasesSet`, which must contain
    *  an `initial` phase. If no phase is `terminal`, then `global.terminal` is added.
    */
-  def computePhaseAssembly(): List[SubComponent] = {
+  def computePhaseAssembly(phasesSet: mutable.Set[SubComponent]): List[SubComponent] = {
     require(phasesSet.exists(phase => phase.initial || phase.phaseName == DependencyGraph.Parser), "Missing initial phase")
     if (!phasesSet.exists(phase => phase.terminal || phase.phaseName == DependencyGraph.Terminal)) {
       phasesSet.add(terminal)

@@ -22,7 +22,9 @@ import scala.tools.nsc.Reporting.WarningCategory
 /*
  *  @author  Martin Odersky
  */
-trait DocComments { self: Global =>
+abstract class DocComments {
+  val self: Global
+  import self._
 
   val cookedDocComments = mutable.HashMap[Symbol, String]()
 
