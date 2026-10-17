@@ -50,8 +50,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.compat
     this.treeBuild
     this.FreshNameExtractor
-    this.FixedMirrorTreeCreator
-    this.FixedMirrorTypeCreator
     this.CompoundTypeTreeOriginalAttachment
     this.SAMFunction
     this.DelambdafyTarget

@@ -51,7 +51,6 @@ abstract class SymbolTable extends macros.Universe
                               with Importers
                               with CapturedVariables
                               with StdAttachments
-                              with StdCreators
                               with ReificationSupport
                               with PrivateWithin
                               with pickling.Translations
@@ -61,6 +60,11 @@ abstract class SymbolTable extends macros.Universe
 {
 
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
+
+  type FixedMirrorTreeCreator = StdCreators.FixedMirrorTreeCreator
+  final val FixedMirrorTreeCreator: StdCreators.FixedMirrorTreeCreator.type = StdCreators.FixedMirrorTreeCreator
+  type FixedMirrorTypeCreator = StdCreators.FixedMirrorTypeCreator
+  final val FixedMirrorTypeCreator: StdCreators.FixedMirrorTypeCreator.type = StdCreators.FixedMirrorTypeCreator
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats
