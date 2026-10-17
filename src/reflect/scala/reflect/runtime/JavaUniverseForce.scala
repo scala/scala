@@ -49,7 +49,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.perRunCaches
     this.compat
     this.treeBuild
-    this.FreshNameExtractor
     this.CompoundTypeTreeOriginalAttachment
     this.SAMFunction
     this.DelambdafyTarget
