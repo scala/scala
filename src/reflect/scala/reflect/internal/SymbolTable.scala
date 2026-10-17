@@ -81,7 +81,6 @@ abstract class SymbolTable extends macros.Universe
   val freshNames: FreshNames { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with FreshNames
   // default fresh name creator used to abstract over currentUnit.fresh and runtime fresh name creator
   def currentFreshNameCreator: FreshNameCreator
-  final def globalFreshNameCreator: FreshNameCreator = freshNames.globalFreshNameCreator
   final def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX)(implicit creator: FreshNameCreator): TermName = freshNames.freshTermName(prefix)(creator)
   final def freshTypeName(prefix: String)(implicit creator: FreshNameCreator): TypeName = freshNames.freshTypeName(prefix)(creator)
   type FreshNameExtractor = freshNames.FreshNameExtractor
