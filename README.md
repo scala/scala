@@ -228,7 +228,7 @@ You may also want to check out the following resources:
 
 # Scala CI
 
-[![Build Status](https://travis-ci.com/scala/scala.svg?branch=2.13.x)](https://travis-ci.com/scala/scala)
+[![Build Status](https://github.com/scala/scala/actions/workflows/ci.yml/badge.svg?branch=2.13.x)](https://github.com/scala/scala/actions/workflows/ci.yml?query=branch%3A2.13.x)
 
 Once you submit a PR your commits will be automatically tested by the Scala CI.
 
@@ -241,8 +241,6 @@ If you see a spurious failure on Jenkins, you can post `/rebuild` as a PR commen
 The [scabot README](https://github.com/scala/scabot) lists all available commands.
 
 If you'd like to test your patch before having everything polished for review,
-you can have Travis CI build your branch (make sure you have a fork and have Travis CI
-enabled for branch builds on it first, and then push your branch).  Also
 feel free to submit a draft PR. In case your draft branch contains
 a large number of commits (that you didn't clean up / squash yet for review),
 consider adding `[ci: last-only]` to the PR title. That way only the last commit
