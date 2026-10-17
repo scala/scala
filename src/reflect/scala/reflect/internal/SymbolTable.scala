@@ -50,11 +50,6 @@ abstract class SymbolTable extends macros.Universe
 
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
-  type FixedMirrorTreeCreator = StdCreators.FixedMirrorTreeCreator
-  final val FixedMirrorTreeCreator: StdCreators.FixedMirrorTreeCreator.type = StdCreators.FixedMirrorTreeCreator
-  type FixedMirrorTypeCreator = StdCreators.FixedMirrorTypeCreator
-  final val FixedMirrorTypeCreator: StdCreators.FixedMirrorTypeCreator.type = StdCreators.FixedMirrorTypeCreator
-
   val reificationSupport: ReificationSupport { val self: SymbolTable.this.type } = new ReificationSupport { val self: SymbolTable.this.type = SymbolTable.this }
   val build: reificationSupport.ReificationSupportImpl = reificationSupport.build
 
