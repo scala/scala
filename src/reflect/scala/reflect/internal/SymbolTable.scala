@@ -71,8 +71,6 @@ abstract class SymbolTable extends macros.Universe
 
   val variances: Variances { val self: SymbolTable.this.type } = new { val self: SymbolTable.this.type = SymbolTable.this } with Variances
   type VarianceValidator = variances.VarianceValidator
-  final def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance = variances.varianceInTypes(tps)(tparam)
-  final def varianceInType(tp: Type, considerUnchecked: Boolean = false)(tparam: Symbol): Variance = variances.varianceInType(tp, considerUnchecked)(tparam)
 
   val existentialsAndSkolems: ExistentialsAndSkolems { val self: SymbolTable.this.type } = new ExistentialsAndSkolems { val self: SymbolTable.this.type = SymbolTable.this }
 
