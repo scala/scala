@@ -18,6 +18,7 @@ import scala.collection.mutable
 import java.lang.ref.{WeakReference => jWeakRef}
 import scala.ref.{WeakReference => sWeakRef}
 import java.util.IdentityHashMap
+import scala.reflect.internal.Depth
 
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
