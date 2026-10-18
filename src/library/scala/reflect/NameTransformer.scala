@@ -66,24 +66,29 @@ object NameTransformer {
    *  @param name the string to encode
    *  @return     the string with all recognized opchars replaced with their encoding
    */
-  def encode(name: String): String = {
-    var buf: StringBuilder = null
+  def encode(name: String): String = encode(name: CharSequence).toString
+
+  /** As `encode(String)`, but returns `name` itself when no encoding is needed,
+   *  sparing callers that hold the characters elsewhere from first creating a `String`.
+   */
+  private[scala] def encode(name: CharSequence): CharSequence = {
+    var buf: java.lang.StringBuilder = null
     val len = name.length()
     var i = 0
     while (i < len) {
       val c = name charAt i
       if (c < nops && (op2code(c.toInt) ne null)) {
         if (buf eq null) {
-          buf = new StringBuilder()
-          buf.append(name.substring(0, i))
+          buf = new java.lang.StringBuilder()
+          buf.append(name, 0, i)
         }
         buf.append(op2code(c.toInt))
       /* Handle glyphs that are not valid Java/JVM identifiers */
       }
       else if (!Character.isJavaIdentifierPart(c)) {
         if (buf eq null) {
-          buf = new StringBuilder()
-          buf.append(name.substring(0, i))
+          buf = new java.lang.StringBuilder()
+          buf.append(name, 0, i)
         }
         buf.append("$u")
         appendHex4(buf, c)
@@ -100,7 +105,7 @@ object NameTransformer {
    *
    *  The result is '0'-padded if necessary.
    */
-  private def appendHex4(buf: StringBuilder, c: Char): Unit = {
+  private def appendHex4(buf: java.lang.StringBuilder, c: Char): Unit = {
     var x = c.toInt
     var j = 0
     while (j != 4) {

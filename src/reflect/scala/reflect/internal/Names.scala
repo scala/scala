@@ -484,9 +484,8 @@ trait Names extends api.Names {
 
     /** Replace operator symbols by corresponding \$op_name. */
     def encode: ThisNameType = {
-      val str = toString
-      val res = NameTransformer.encode(str)
-      if (res == str) thisName else newName(res)
+      val res = NameTransformer.encode(this: CharSequence)
+      if (res eq this) thisName else newName(res.toString)
     }
 
     /** Replace \$op_name by corresponding operator symbol. */
