@@ -2041,23 +2041,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def filter(cond: Symbol => Boolean): Symbol =
       if (isOverloaded) {
-        var changed = false
-        var alts0: List[Symbol] = alternatives
-        var alts1: List[Symbol] = Nil
-
-        while (!alts0.isEmpty) {
-          if (cond(alts0.head))
-            alts1 ::= alts0.head
-          else
-            changed = true
-
-          alts0 = alts0.tail
-        }
-
-        if (!changed) this
-        else if (alts1.isEmpty) NoSymbol
-        else if (alts1.tail.isEmpty) alts1.head
-        else owner.newOverloaded(info.prefix, alts1.reverse)
+        // List.filter returns the original list without allocating when all elements satisfy `cond`,
+        // and otherwise shares the longest satisfying suffix.
+        val alts = alternatives
+        val filtered = alts.filter(cond)
+        if (filtered eq alts) this
+        else if (filtered.isEmpty) NoSymbol
+        else if (filtered.tail.isEmpty) filtered.head
+        else owner.newOverloaded(info.prefix, filtered)
       }
       else if (cond(this)) this
       else NoSymbol
