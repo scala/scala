@@ -225,14 +225,10 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.dropIllegalStarTypes
     this.wildcardExtrapolation
     this.SubstSymMap
-    this.IsDependentCollector
     this.ApproximateDependentMap
     this.identityTypeMap
     this.typeVarToOriginMap
-    this.ErroneousCollector
     this.adaptToNewRunMap
-    this.UnrelatableCollector
-    this.IsRelatableCollector
     this.SubTypePair
     this.SymbolKind
     this.NoSymbol

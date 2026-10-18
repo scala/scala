@@ -17,6 +17,7 @@ package tpe
 
 import scala.collection.mutable, mutable.ListBuffer
 import scala.annotation.tailrec
+import util.ReusableInstance
 import Variance._
 
 private[internal] trait GlbLubs {
@@ -192,10 +193,12 @@ private[internal] trait GlbLubs {
   }
 
   // OPT: hoist allocation of the collector and lambda out of the loop in partition
-  private val isWildCardOrNonGroundTypeVarCollector = new FindTypeCollector( {
+  private[this] val isWildCardOrNonGroundTypeVar: Type => Boolean = {
     case tv: TypeVar => !tv.isGround
     case t => t.isWildcard
-  })
+  }
+  private[this] val isWildCardOrNonGroundTypeVarCollectorInstance: ReusableInstance[FindTypeCollector] =
+    ReusableInstance(new FindTypeCollector(isWildCardOrNonGroundTypeVar), enabled = isCompilerUniverse)
 
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
   private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
@@ -227,7 +230,9 @@ private[internal] trait GlbLubs {
 
     // The order here matters because type variables and wildcards can act both as subtypes and supertypes.
     val sorted = {
-      val (wilds, ts1) = partitionConserve(ts)(isWildCardOrNonGroundTypeVarCollector.collect(_).isDefined)
+      val (wilds, ts1) = isWildCardOrNonGroundTypeVarCollectorInstance.using { collector =>
+        partitionConserve(ts)(collector.collect(_).isDefined)
+      }
       ts1 ::: wilds
     }
     if (sorted.lengthCompare(5) > 0) loop(sorted, Nil)
@@ -458,7 +463,9 @@ private[internal] trait GlbLubs {
     *  The counter breaks this recursion after two calls.
     *  If the recursion is broken, no member is added to the glb.
     */
-  private[this] var globalGlbDepth = Depth.Zero
+  private[this] var _globalGlbDepth = Depth.Zero
+  def globalGlbDepth: Depth = _globalGlbDepth
+  def globalGlbDepth_=(value: Depth): Unit = _globalGlbDepth = value
   private final val globalGlbLimit = Depth(2)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */

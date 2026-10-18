@@ -67,6 +67,10 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def subsametypeRecursions = _subsametypeRecursions.get
   override def subsametypeRecursions_=(value: Int) = _subsametypeRecursions.set(value)
 
+  private lazy val _globalGlbDepth = mkThreadLocalStorage(Depth.Zero)
+  override def globalGlbDepth = _globalGlbDepth.get
+  override def globalGlbDepth_=(value: Depth) = _globalGlbDepth.set(value)
+
   private lazy val _pendingSubTypes = mkThreadLocalStorage(new mutable.HashSet[SubTypePair])
   override def pendingSubTypes = _pendingSubTypes.get
 
