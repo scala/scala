@@ -68,6 +68,9 @@ jobs:
     if: github.repository == 'scala/scala'
     runs-on: ubuntu-latest
     environment: publish-${{ github.ref_name }}
+    # rsync from an older run must not finish after a newer one
+    concurrency:
+      group: spec-${{ github.ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
