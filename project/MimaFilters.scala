@@ -62,6 +62,16 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubTermSymbol"),
     ProblemFilters.exclude[NewMixinForwarderProblem]("scala.reflect.runtime.SynchronizedSymbols.newStubSymbol"),
+
+    // scala/bug#13202: lub/glb memo tables grouped into one holder, a single thread-local in the private[reflect] trait SynchronizedTypes
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.reflect.runtime.SynchronizedTypes.lubResults"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.reflect.runtime.SynchronizedTypes.glbResults"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.lubGlbCaches"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.lubGlbCaches_="),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.lubGlbCaches"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.lubGlbCaches_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.lubGlbCaches"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.lubGlbCaches_="),
   )
 
   override val buildSettings = Seq(
