@@ -121,7 +121,7 @@ trait FindMembers {
               sym.rawflags & phaseFlagMask
             else
               sym.flags(phaseFlagMask)
-          val meetsRequirements = (flags & required) == required
+          val meetsRequirements = (flags & required) == required && (!findAll || admitsName(sym.name))
           if (meetsRequirements) {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
@@ -155,6 +155,9 @@ trait FindMembers {
       }
       deferredSeen
     }
+
+    /* Should members with this name be considered when finding all members? */
+    protected def admitsName(name: Name): Boolean = true
 
     /* Should this symbol be returned immediately as the sole result? */
     protected def shortCircuit(sym: Symbol): Boolean
@@ -226,9 +229,11 @@ trait FindMembers {
     }
   }
 
-  private[reflect] final class FindMembers(tpe0: Type, excludedFlags0: Long, requiredFlags0: Long)
+  private[reflect] final class FindMembers(tpe0: Type, excludedFlags0: Long, requiredFlags0: Long, nameFilter: Name => Boolean)
     extends FindMemberBase[Scope]() {
     init(tpe0, nme.ANYname, excludedFlags0, requiredFlags0)
+
+    override protected def admitsName(name: Name): Boolean = (nameFilter eq null) || nameFilter(name)
 
     private[this] var _membersScope: Scope   = null
     private def membersScope: Scope = {

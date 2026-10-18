@@ -598,6 +598,9 @@ trait Types
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: Scope = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
 
+    /** The members of `nonPrivateMembers` whose names satisfy `nameFilter`, in the same order */
+    private[internal] def nonPrivateMembersNamed(nameFilter: Name => Boolean): Scope = findMembers(BridgeAndPrivateFlags, 0, nameFilter)
+
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
@@ -1006,8 +1009,13 @@ trait Types
      * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
      *
      */
-    def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
-      def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
+    def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = findMembers(excludedFlags, requiredFlags, null)
+
+    /** As `findMembers`, but only considering members whose name satisfies `nameFilter`.
+     *  The result is the same as filtering the result of `findMembers` by name, including its order.
+     */
+    private[internal] def findMembers(excludedFlags: Long, requiredFlags: Long, nameFilter: Name => Boolean): Scope = {
+      def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags, nameFilter).apply()
       if (this.isGround) findMembersInternal
       else suspendingTypeVars(typeVarsInTypeRev(this))(findMembersInternal)
     }
