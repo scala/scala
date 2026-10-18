@@ -323,7 +323,8 @@ private[internal] trait GlbLubs {
     // gets, replaces and restores only its own holder. A universe used concurrently must do
     // the same; making `inUse` volatile would not help, as the maps would still be shared.
     val saved = lubGlbCaches
-    if (saved.inUse) {
+    if (LubProbe.legacy) try body finally saved.clear()
+    else if (saved.inUse) {
       val fresh = new LubGlbCaches
       fresh.inUse = true
       lubGlbCaches = fresh
@@ -341,6 +342,7 @@ private[internal] trait GlbLubs {
     case _        =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
+      if (LubProbe.enabled) LubProbe.enter("lub", ts, lubResults.size, glbResults.size)
       try withLubGlbCaches {
         val res = lub(ts, lubDepth(ts))
         // If the number of unapplied type parameters in all incoming
@@ -356,6 +358,7 @@ private[internal] trait GlbLubs {
           res
       }
       finally {
+        if (LubProbe.enabled) LubProbe.exit()
         if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
@@ -378,10 +381,13 @@ private[internal] trait GlbLubs {
       case ts =>
         lubResults get ((depth, ts)) match {
           case Some(lubType) =>
+            if (LubProbe.enabled) LubProbe.hit("lub", ("lub", depth, ts))
             lubType
           case None =>
             lubResults((depth, ts)) = AnyTpe
+            if (LubProbe.enabled) LubProbe.placeholder(("lub", depth, ts))
             val res = if (depth.isNegative) AnyTpe else lub1(ts)
+            if (LubProbe.enabled) LubProbe.result("lub", ("lub", depth, ts), lubResults.contains((depth, ts)))
             lubResults((depth, ts)) = res
             res
         }
@@ -506,9 +512,11 @@ private[internal] trait GlbLubs {
     case ts0 =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
+      if (LubProbe.enabled) LubProbe.enter("glb", ts0, lubResults.size, glbResults.size)
       try withLubGlbCaches {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
+        if (LubProbe.enabled) LubProbe.exit()
         if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
@@ -536,10 +544,13 @@ private[internal] trait GlbLubs {
       case ts =>
         glbResults get ((depth, ts)) match {
           case Some(glbType) =>
+            if (LubProbe.enabled) LubProbe.hit("glb", ("glb", depth, ts))
             glbType
           case _ =>
             glbResults((depth, ts)) = NothingTpe
+            if (LubProbe.enabled) LubProbe.placeholder(("glb", depth, ts))
             val res = if (depth.isNegative) NothingTpe else glb1(ts)
+            if (LubProbe.enabled) LubProbe.result("glb", ("glb", depth, ts), glbResults.contains((depth, ts)))
             glbResults((depth, ts)) = res
             res
         }
