@@ -51,8 +51,9 @@ trait FindMembers {
 
     // Main entry point
     def apply(): T = {
-      if (settings.areStatisticsEnabled) statistics.incCounter(findMemberCount)
-      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, findMemberNanos) else null
+      val findAll = name == nme.ANYname
+      if (settings.areStatisticsEnabled) statistics.incCounter(if (findAll) findMembersCount else findMemberCount)
+      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, if (findAll) findMembersNanos else findMemberNanos) else null
       try searchConcreteThenDeferred
       finally if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
     }
@@ -102,6 +103,9 @@ trait FindMembers {
 
       val findAll = name == nme.ANYname
 
+      // The number of decls visited, and of potential members among them, for statistics
+      var visited, considered = 0
+
       val phaseFlagMask = phase.flagMask
       val fastFlags = (phaseFlagMask & ~InitialFlags) == 0
 
@@ -110,6 +114,7 @@ trait FindMembers {
         val decls = currentBaseClass.info.decls
         var entry = if (findAll) decls.elems else decls.lookupEntry(name)
         while (entry ne null) {
+          visited += 1
           val sym = entry.sym
           val flags =
             if (fastFlags)
@@ -121,6 +126,7 @@ trait FindMembers {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
             if (!isExcluded && isPotentialMember(sym, flags, selectorClass, currentBaseClass, seenFirstNonRefinementClass, refinementClasses)) {
+              considered += 1
               if (shortCircuit(sym)) return false
               else addMemberIfNew(sym)
             } else if (excl == DEFERRED) {
@@ -142,6 +148,10 @@ trait FindMembers {
           seenFirstNonRefinementClass = true // only inherit privates of refinement parents after this point
 
         bcs = bcs.tail
+      }
+      if (settings.areStatisticsEnabled) {
+        statistics.incCounter(if (findAll) findMembersDeclCount else findMemberDeclCount, visited)
+        statistics.incCounter(if (findAll) findMembersCandidateCount else findMemberCandidateCount, considered)
       }
       deferredSeen
     }
