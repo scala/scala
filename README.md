@@ -155,8 +155,8 @@ The last step is required to resolve modules (scala-xml, scala-partest, etc). It
 assumes that the module releases for the current `starr` work (in terms of binary
 compatibility) with the local starr that you published locally. A full bootstrap
 requires re-building the all the modules. On our CI this is handled by the
-[bootstrap](scripts/jobs/integrate/bootstrap) script, but it (currently) cannot
-be easily executed locally.
+steps in [bootstrap_fun](scripts/bootstrap_fun), which the Publish workflow runs,
+but they (currently) cannot be easily executed locally.
 
 ### IDE setup
 
