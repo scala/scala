@@ -25,7 +25,7 @@ trait TypingTransformers {
   import global._
 
   protected def newRootLocalTyper(unit: CompilationUnit): analyzer.Typer = if (phase.erasedTypes)
-    erasure.newTyper(erasure.rootContextPostTyper(unit, EmptyTree)).asInstanceOf[analyzer.Typer]
+    erasure.erasureAnalyzer.newTyper(erasure.erasureAnalyzer.rootContextPostTyper(unit, EmptyTree)).asInstanceOf[analyzer.Typer]
   else // TODO: AM: should some phases use a regular rootContext instead of a post-typer one??
     analyzer.newTyper(analyzer.rootContextPostTyper(unit, EmptyTree))
 

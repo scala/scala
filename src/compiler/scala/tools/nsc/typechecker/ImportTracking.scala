@@ -21,7 +21,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 /** Track import clauses and usages for -Wunused:imports reporting.
  */
-trait ImportTracking { self: Analyzer =>
+trait ImportTracking { self: AbstractAnalyzer =>
   import global._
 
   // Associate info with info at import keyword, plus owner for warning filtering. `import a.x, b.x` -> `(b, a, owner)`

@@ -14,7 +14,7 @@ package scala.tools.nsc
 package typechecker
 
 trait StdAttachments {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
 
@@ -201,7 +201,7 @@ trait StdAttachments {
 
 // imported from scalamacros/paradise
 trait MacroAnnotationAttachments {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import scala.collection.mutable

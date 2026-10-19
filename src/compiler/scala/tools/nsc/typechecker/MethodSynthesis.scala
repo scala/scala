@@ -20,7 +20,7 @@ import symtab.Flags._
  *  Namer and Typer.
  */
 trait MethodSynthesis {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

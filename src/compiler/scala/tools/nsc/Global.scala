@@ -511,9 +511,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // I only changed analyzer.
   //
   // factory for phases: namer, packageobjects, typer
-  lazy val analyzer =
-    if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
-    else new { val global: Global.this.type = Global.this } with Analyzer
+  // The type is declared so that the erased result type is still Analyzer, which
+  // precompiled callers such as the sbt compiler bridge link against.
+  lazy val analyzer: Analyzer { val global: Global.this.type } =
+    if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with AbstractAnalyzer with MacroAnnotationNamers
+    else new { val global: Global.this.type = Global.this } with AbstractAnalyzer
 
   // phaseName = "superaccessors"
   object superAccessors extends {
