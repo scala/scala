@@ -289,11 +289,51 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
-  private[this] val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
-  def lubResults = _lubResults
+  /** Memo tables and recursion guards for one top-level `lub` or `glb`. Entries are only
+   *  valid within that call: they may be in-progress placeholders (`Any` / `Nothing`) and
+   *  were computed at the current phase.
+   */
+  final class LubGlbCaches {
+    val lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+    val glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+    var inUse = false
+    def clear(): Unit = { lubResults.clear(); glbResults.clear() }
+  }
+  private[this] var _lubGlbCaches = new LubGlbCaches
+  def lubGlbCaches: LubGlbCaches = _lubGlbCaches
+  def lubGlbCaches_=(caches: LubGlbCaches): Unit = _lubGlbCaches = caches
 
-  private[this] val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
-  def glbResults = _glbResults
+  def lubResults = lubGlbCaches.lubResults
+  def glbResults = lubGlbCaches.glbResults
+
+  /** Run a top-level `lub` or `glb` with caches private to it.
+   *
+   *  A top-level `lub`/`glb` can be re-entered while another one is in progress, e.g. when
+   *  forcing the info of a member runs a lazy type completer that typechecks code. The nested
+   *  call must neither observe the outer call's recursion guards (it would return `Any` or
+   *  `Nothing`) nor discard them when it finishes, so it gets fresh caches.
+   *
+   *  Entries left behind by `lub`/`glb` calls with explicit depth made outside of any top-level
+   *  call are discarded on entry (scala/bug#6437).
+   */
+  private def withLubGlbCaches[T](body: => T): T = {
+    // Single-threaded only: `inUse` and the maps are plain fields, so a holder must never be
+    // visible to two threads. The compiler universe is single-threaded; runtime reflection
+    // (`SynchronizedTypes`) overrides `lubGlbCaches` with thread-local storage, so each thread
+    // gets, replaces and restores only its own holder. A universe used concurrently must do
+    // the same; making `inUse` volatile would not help, as the maps would still be shared.
+    val saved = lubGlbCaches
+    if (saved.inUse) {
+      val fresh = new LubGlbCaches
+      fresh.inUse = true
+      lubGlbCaches = fresh
+      try body finally lubGlbCaches = saved
+    } else {
+      saved.clear()
+      saved.inUse = true
+      try body finally { saved.inUse = false; saved.clear() }
+    }
+  }
 
   def lub(ts: List[Type]): Type = ts match {
     case Nil      => NothingTpe
@@ -301,7 +341,7 @@ private[internal] trait GlbLubs {
     case _        =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try {
+      try withLubGlbCaches {
         val res = lub(ts, lubDepth(ts))
         // If the number of unapplied type parameters in all incoming
         // types is consistent, and the lub does not match that, return
@@ -316,8 +356,6 @@ private[internal] trait GlbLubs {
           res
       }
       finally {
-        lubResults.clear()
-        glbResults.clear()
         if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
@@ -468,11 +506,9 @@ private[internal] trait GlbLubs {
     case ts0 =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try {
+      try withLubGlbCaches {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
-        lubResults.clear()
-        glbResults.clear()
         if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       }
   }
