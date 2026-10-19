@@ -82,17 +82,17 @@ class SmallMapTest extends AllocationTest {
 
   @Test def map1Allocating(): Unit = {
     val test = new Map.Map1("k1", "v1")
-    exactAllocates(48, ignoreEqualCheck = true)(iterator(test))
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume(iterator(test))), "k1" -> "v1")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume(iterator(test).drop(1))))
+    exactAllocates(sizeFor(48, 32), ignoreEqualCheck = true)(iterator(test))
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume(iterator(test))), "k1" -> "v1")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume(iterator(test).drop(1))))
 
-    exactAllocates(24, ignoreEqualCheck = true)(keysIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test))), "k1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))))
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(keysIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test))), "k1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))))
 
-    exactAllocates(24, ignoreEqualCheck = true)(valuesIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))))
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(valuesIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))))
   }
 
 
@@ -109,23 +109,23 @@ class SmallMapTest extends AllocationTest {
 
   @Test def map2Allocating(): Unit = {
     val test = new Map.Map2("k1", "v1", "k2", "v2")
-    exactAllocates(24, ignoreEqualCheck = true)(iterator(test))
-    assertResult(exactAllocates(56, ignoreEqualCheck = true)(consume(iterator(test))), "k1" -> "v1", "k2" -> "v2")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test))), "k1" -> "v1")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2" -> "v2")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test).drop(1))), "k2" -> "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(iterator(test))
+    assertResult(exactAllocates(sizeFor(56, 32), ignoreEqualCheck = true)(consume(iterator(test))), "k1" -> "v1", "k2" -> "v2")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test))), "k1" -> "v1")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2" -> "v2")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test).drop(1))), "k2" -> "v2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(keysIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(keysIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(valuesIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(valuesIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
   }
   @Test def map2Behaviour(): Unit = {
     val test = new Map.Map2("k1", "v1", "k2", "v2")
@@ -133,23 +133,23 @@ class SmallMapTest extends AllocationTest {
   }
   @Test def map3Allocating(): Unit = {
     val test = new Map.Map3("k1", "v1", "k2", "v2", "k3", "v3")
-    exactAllocates(24, ignoreEqualCheck = true)(iterator(test))
-    assertResult(exactAllocates(80, ignoreEqualCheck = true)(consume(iterator(test))),"k1"-> "v1", "k2"-> "v2", "k3"-> "v3")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test))),"k1"-> "v1")
-    assertResult(exactAllocates(56, ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2"-> "v2", "k3"-> "v3")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test).drop(1))), "k2"-> "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(iterator(test))
+    assertResult(exactAllocates(sizeFor(80, 48), ignoreEqualCheck = true)(consume(iterator(test))),"k1"-> "v1", "k2"-> "v2", "k3"-> "v3")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test))),"k1"-> "v1")
+    assertResult(exactAllocates(sizeFor(56, 32), ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2"-> "v2", "k3"-> "v3")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test).drop(1))), "k2"-> "v2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(keysIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2", "k3")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2", "k3")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(keysIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2", "k3")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2", "k3")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(valuesIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2", "v3")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2", "v3")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(valuesIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2", "v3")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2", "v3")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
   }
   @Test def map3Behaviour(): Unit = {
     val test = new Map.Map3("k1", "v1", "k2", "v2", "k3", "v3")
@@ -157,23 +157,23 @@ class SmallMapTest extends AllocationTest {
   }
   @Test def map4Allocating(): Unit = {
     val test = new Map.Map4("k1", "v1", "k2", "v2", "k3", "v3", "k4", "v4")
-    exactAllocates(24, ignoreEqualCheck = true)(iterator(test))
-    assertResult(exactAllocates(104, ignoreEqualCheck = true)(consume(iterator(test))), "k1"-> "v1", "k2"-> "v2", "k3"-> "v3", "k4"-> "v4")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test))), "k1"-> "v1")
-    assertResult(exactAllocates(80, ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2"-> "v2", "k3"-> "v3", "k4"-> "v4")
-    assertResult(exactAllocates(32, ignoreEqualCheck = true)(consume1(iterator(test).drop(1))),"k2"-> "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(iterator(test))
+    assertResult(exactAllocates(sizeFor(104, 64), ignoreEqualCheck = true)(consume(iterator(test))), "k1"-> "v1", "k2"-> "v2", "k3"-> "v3", "k4"-> "v4")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test))), "k1"-> "v1")
+    assertResult(exactAllocates(sizeFor(80, 48), ignoreEqualCheck = true)(consume(iterator(test).drop(1))), "k2"-> "v2", "k3"-> "v3", "k4"-> "v4")
+    assertResult(exactAllocates(sizeFor(32, 16), ignoreEqualCheck = true)(consume1(iterator(test).drop(1))),"k2"-> "v2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(keysIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2", "k3", "k4")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2", "k3", "k4")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(keysIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test))), "k1", "k2", "k3", "k4")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test))), "k1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(keysIterator(test).drop(1))), "k2", "k3", "k4")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(keysIterator(test).drop(1))), "k2")
 
-    exactAllocates(24, ignoreEqualCheck = true)(valuesIterator(test))
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2", "v3", "v4")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2", "v3", "v4")
-    assertResult(exactAllocates(8, ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
+    exactAllocates(sizeFor(24, 16), ignoreEqualCheck = true)(valuesIterator(test))
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test))), "v1", "v2", "v3", "v4")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test))), "v1")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume(valuesIterator(test).drop(1))), "v2", "v3", "v4")
+    assertResult(exactAllocates(sizeFor(8, 0), ignoreEqualCheck = true)(consume1(valuesIterator(test).drop(1))), "v2")
   }
   @Test def map4Behaviour(): Unit = {
     val test = new Map.Map4("k1", "v1", "k2", "v2", "k3", "v3", "k4", "v4")
