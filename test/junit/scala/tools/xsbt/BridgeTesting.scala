@@ -26,6 +26,10 @@ class BridgeTesting {
 
   def mkCompiler: CompilerBridge = new CompilerBridge()
 
+  def mkCallback: TestCallback = new TestCallback
+
+  def compilerOptions: List[String] = List("-usejavacp", "-deprecation")
+
   def mkConsole: InteractiveConsoleBridgeFactory = new InteractiveConsoleBridgeFactory()
 
   def mkScaladoc: ScaladocBridge = new ScaladocBridge()
@@ -48,7 +52,7 @@ class BridgeTesting {
   def compileSrcss(baseDir: Path, reporter: XReporter, srcss: List[List[String]]): (List[VirtualFile], TestCallback) = {
     val targetDir = baseDir / "target"
     Files.createDirectory(targetDir)
-    val analysisCallback = new TestCallback
+    val analysisCallback = mkCallback
     val filess = for ((sourceGroup, groupId) <- srcss.zipWithIndex) yield {
       val files = sourceGroup.zipWithIndex map {
         case (src, i) => new StringVirtualFile(s"Test-$groupId-$i.scala", src)
@@ -57,7 +61,7 @@ class BridgeTesting {
       compiler.run(
         sources = files.toArray,
         changes = emptyChanges,
-        options = Array("-usejavacp", "-deprecation", "-cp", targetDir.getAbsolutePath),
+        options = (compilerOptions ++ List("-cp", targetDir.getAbsolutePath)).toArray,
         output = new TestOutput(targetDir),
         callback = analysisCallback,
         delegate = reporter,
