@@ -1208,7 +1208,8 @@ trait Namers extends MethodSynthesis {
             val okChild =
               if (psym.isJava)
                 psym.attachments.get[PermittedSubclassSymbols] match {
-                  case Some(permitted) => permitted.permits.exists(_ == clazz)
+                  // javac checks Java subclasses, typechecking `permits` while completing one could cycle
+                  case Some(permitted) => clazz.isJava || permitted.symbols.contains(clazz)
                   case _ => sameSourceFile
                 }
               else
@@ -1293,9 +1294,7 @@ trait Namers extends MethodSynthesis {
 
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
       cdef.getAndRemoveAttachment[PermittedSubclasses].foreach { permitted =>
-        clazz.updateAttachment[PermittedSubclassSymbols] {
-          PermittedSubclassSymbols(permitted.permits.map(typer.typed(_, Mode.NOmode).symbol))
-        }
+        clazz.updateAttachment(new PermittedSubclassSymbols(permitted.permits, t => enteringTyper(typer.typed(t, Mode.NOmode).symbol)))
       }
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).

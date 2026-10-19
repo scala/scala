@@ -2697,8 +2697,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def initChildren(sym: Symbol): Unit =
         if (sym.isJava && sym.isSealed)
           sym.attachments.get[PermittedSubclassSymbols] match {
-            case Some(PermittedSubclassSymbols(permits)) =>
-              for (child <- permits if child.isJava)
+            case Some(permitted) =>
+              for (child <- permitted.symbols if child.isJava)
                 initChildren(child.initialize)
             case _ =>
               val seen = mutable.HashSet.empty[Symbol]
@@ -5564,7 +5564,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             handleMissing
           }
           else {
-            if ((sym ne NoSymbol) && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
+            if (sym.isTerm && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
               // Rewrites "qual.name ..." to "{ val lhs = qual ; lhs.name ... }" in cases where
               // qual is not stable and name has a method type which depends on its prefix. If
               // this is the case then hoisting qual out as a stable val means that members of
