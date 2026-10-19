@@ -96,9 +96,9 @@ trait Logic extends Debugging {
       def mayBeNull: Boolean
 
       // compute the domain and return it (call registerNull first!)
-      def domainSyms: Option[Set[Sym]]
+      def domainSyms: Option[collection.Set[Sym]]
 
-      def groupedDomains: List[Set[Sym]]
+      def groupedDomains: List[collection.Set[Sym]]
 
       // the symbol for this variable being equal to its statically known type
       // (only available if registerEquality has been called for that type before)
@@ -469,12 +469,7 @@ trait Logic extends Debugging {
           // ... and what must not?
           excluded foreach {
             excludedSym =>
-              val exclusive = v.groupedDomains.exists {
-                domain => domain.contains(sym) && domain.contains(excludedSym)
-              }
-
-              // TODO: populate `v.exclusiveDomains` with `Set`s from the start, and optimize to:
-              // val exclusive = v.exclusiveDomains.exists { inDomain => inDomain(sym) && inDomain(excludedSym) }
+              val exclusive = v.groupedDomains.exists { domain => domain(sym) && domain(excludedSym) }
               if (!exclusive)
                 addAxiom(Or(Not(sym), Not(excludedSym)))
           }
@@ -503,6 +498,18 @@ trait Logic extends Debugging {
     }
 
     def eqFreePropToSolvable(f: Prop): Solvable
+
+    /** Decides satisfiability of `prefix /\ p` for a growing conjunction `prefix` of equality-free propositions,
+     *  converting each conjunct to CNF only once.
+     *  `allProps` must contain every proposition that will be added or queried, to determine the symbols.
+     */
+    def incrementalSolver(allProps: Iterable[Prop]): IncrementalSolver
+    trait IncrementalSolver {
+      // may throw an AnalysisBudget.Exception
+      def addToPrefix(p: Prop): Unit
+      // may throw an AnalysisBudget.Exception
+      def hasModelWith(p: Prop): Boolean
+    }
 
     type Model = Map[Sym, Boolean]
     val EmptyModel: Model
@@ -582,11 +589,14 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      lazy val domain: Option[Set[Const]] = {
+      // The domains are insertion-ordered (which determines the order of the axioms), with constant-time
+      // membership tests, which the analysis performs for pairs of equality symbols. They are not modified
+      // once computed.
+      lazy val domain: Option[collection.Set[Const]] = {
         val subConsts =
           enumerateSubtypes(staticTp, grouped = false)
           .headOption.map { tps =>
-          tps.to(scala.collection.immutable.ListSet).map { tp =>
+          tps.to(LogicLinkedHashSet).map { tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -596,19 +606,19 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val allConsts =
           if (mayBeNull) {
             registerEquality(NullConst)
-            subConsts map (_ + NullConst)
+            subConsts map (_ += NullConst)
           } else
             subConsts
 
         observed(); allConsts
       }
 
-      lazy val groupedDomains: List[Set[Sym]] = {
+      lazy val groupedDomains: List[collection.Set[Sym]] = {
         val subtypes = enumerateSubtypes(staticTp, grouped = true)
         subtypes.map {
           subTypes =>
-            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).to(scala.collection.immutable.ListSet)
-            if (mayBeNull) syms + symForEqualsTo(NullConst) else syms
+            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).to(LogicLinkedHashSet)
+            if (mayBeNull) syms += symForEqualsTo(NullConst) else syms
         }.filter(_.nonEmpty)
       }
 
@@ -672,11 +682,11 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *  NOTE: V = 1 does not preclude V = Int, or V = Any, it could be said to preclude
          *        V = String, but we don't model that.
          */
+        // this is called for every pair of equality symbols, so test domain membership last
         def excludes(a: Const, b: Const): Boolean = {
-          val bothInDomain  = domain exists (d => d(a) && d(b))
           val eitherIsNull  = a == NullConst || b == NullConst
           val bothAreValues = a.isValue && b.isValue
-          bothInDomain && (eitherIsNull || bothAreValues) && (a != b)
+          (eitherIsNull || bothAreValues) && (a != b) && domain.exists(d => d(a) && d(b))
         }
 
           // if(r) debug.patmat("excludes    : "+(a, a.tp, b, b.tp))
@@ -720,12 +730,20 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           override def hashCode = a.hashCode ^ b.hashCode
         }
 
+        val candidates = if (equalitySyms.lengthIs > 16) new ImplicationCandidates(equalitySyms) else null
+
         equalitySyms map { sym =>
           // if we've already excluded the pair at some point (-A \/ -B), then don't exclude the symmetric one (-B \/ -A)
           // (nor the positive implications -B \/ A, or -A \/ B, which would entail the equality axioms falsifying the whole formula)
-          val todo = equalitySyms filterNot (b => (b.const == sym.const) || excludedPair(ExcludedPair(b.const, sym.const)))
-          val (excluded, notExcluded) = partitionConserve(todo)(b => excludes(sym.const, b.const))
-          val implied = notExcluded filter (b => implies(sym.const, b.const))
+          def todo(b: Sym) = (b.const != sym.const) && !excludedPair(ExcludedPair(b.const, sym.const))
+          val (excluded, implied) =
+            if (candidates eq null) {
+              val (excluded, notExcluded) = partitionConserve(equalitySyms filter todo)(b => excludes(sym.const, b.const))
+              (excluded, notExcluded filter (b => implies(sym.const, b.const)))
+            } else (
+              candidates.excluded(sym.const) filter (b => todo(b) && excludes(sym.const, b.const)),
+              candidates.implied(sym.const) filter (b => todo(b) && !excludes(sym.const, b.const) && implies(sym.const, b.const))
+            )
 
           debug.patmat("eq axioms for: "+ sym.const)
           debug.patmat("excluded: "+ excluded)
@@ -737,8 +755,60 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         }
       }
 
+      /** For a variable with many equality symbols (e.g. one per child of a large sealed type), the symbols `b`
+       *  for which `excludes(c, b.const)` or `implies(c, b.const)` can hold, in the order of `syms`, without
+       *  testing every pair:
+       *
+       *   - `excludes` needs one of the constants to be null, or both to be values;
+       *   - `implies` (other than for `c == b.const`, which isn't asked) needs `c` not to be null and `b.const`
+       *     to be a type `U`, and then the type `L` of `c` to conform to `U`. If `U` is a type ref to a class
+       *     other than the top and bottom classes (and `Singleton`), that class must be a base class of `L`,
+       *     unless `L` is a bottom type (or erroneous). So, index the symbols of such types `U` by their class,
+       *     and look up the base classes of `L`; the other types are candidates for every `c`.
+       */
+      private final class ImplicationCandidates(syms: List[Sym]) {
+        import global.definitions._
+        private[this] val symArray = syms.toArray
+        private[this] val nullOrValues = syms.filter(_.const.isValue) // `NullConst.isValue`
+        private[this] val nulls = syms.filter(_.const == NullConst)
+        private[this] val types = syms.filterNot(_.const.isValue)
+        // the indices of the types in `syms` keyed by class, used only for lookups
+        private[this] val byClass = new java.util.HashMap[global.Symbol, mutable.ArrayBuffer[Int]]
+        private[this] val unkeyed = mutable.ArrayBuffer.empty[Int]
+        foreachWithIndex(syms) { (b, i) =>
+          if (!b.const.isValue) b.const.tp.dealias match {
+            case global.TypeRef(_, cls, _) if cls.isClass && !cls.isRefinementClass &&
+              cls != AnyClass && cls != AnyValClass && cls != ObjectClass && cls != SingletonClass && cls != NothingClass && cls != NullClass =>
+              byClass.computeIfAbsent(cls, _ => mutable.ArrayBuffer.empty[Int]) += i
+            case _ =>
+              unkeyed += i
+          }
+        }
+
+        def excluded(c: Const): List[Sym] =
+          if (c == NullConst) syms else if (c.isValue) nullOrValues else nulls
+
+        def implied(c: Const): List[Sym] =
+          if (c == NullConst) Nil
+          else {
+            val lower = if (c.isValue) c.wideTp else c.tp
+            val baseClasses = lower.baseClasses
+            if (lower.isWildcard || lower.isErroneous || baseClasses.contains(NothingClass) || baseClasses.contains(NullClass)) types
+            else {
+              // the indices of `unkeyed` and of each class are ascending, so only sort if more than one contributes
+              val indices = new mutable.ArrayBuffer[Int]
+              var sources = 0
+              def add(is: mutable.ArrayBuffer[Int]): Unit = if ((is ne null) && is.nonEmpty) { indices ++= is; sources += 1 }
+              add(unkeyed)
+              baseClasses.foreach(bc => add(byClass.get(bc)))
+              if (sources > 1) indices.sortInPlace()
+              indices.iterator.map(symArray(_)).toList
+            }
+          }
+      }
+
       // accessing after calling registerNull will result in inconsistencies
-      lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
+      lazy val domainSyms: Option[collection.Set[Sym]] = domain map { _ map symForEqualsTo }
 
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
@@ -766,7 +836,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     // a literal constant becomes ConstantType(Constant(v)) when the type allows it (roughly, anyval + string + null)
     // equality between variables: SingleType(x) (note that pattern variables cannot relate to each other -- it's always patternVar == nonPatternVar)
     object Const {
-      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear() ; trees.clear()}
+      def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear(); indexed = false; byName.clear(); others.clear(); trees.clear()}
 
       private[this] var _nextTypeId = 0
       def nextTypeId = {_nextTypeId += 1; _nextTypeId}
@@ -775,12 +845,42 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def nextValueId = {_nextValueId += 1; _nextValueId}
 
       private val uniques = new mutable.HashMap[Type, Const]
+      // The keys of `uniques`, partitioned to only compare a type ref to a class with the keys it may be `=:=` to.
+      // Type refs to classes are `=:=` only if the classes have the same name (`equalSymsAndPrefixes`: the symbols
+      // themselves may differ if the prefixes are unifiable), except that `Any` is `=:=` to the `Object` of Java
+      // signatures (`isSameTypeRef`), and that a type ref with a type variable prefix can be `=:=` to anything
+      // (`registerTypeSelection`). So index the type refs to classes other than those by the name of the class.
+      // Most matches have few constants, which are compared to each other faster than they are indexed, so the
+      // index is only built once there are more than `IndexAbove` keys.
+      private[this] final val IndexAbove = 16
+      private[this] var indexed = false
+      private val byName = new mutable.HashMap[global.Name, mutable.ArrayBuffer[Type]]
+      private val others = new mutable.ArrayBuffer[Type]
+      private def classRefName(tp: Type): global.Name = tp match {
+        case global.TypeRef(pre, sym, _) if sym.isClass && sym != AnyClass && sym != ObjectClass && !pre.isInstanceOf[global.TypeVar] => sym.name
+        case _ => null
+      }
+      private def index(tp: Type): Unit = {
+        val name = classRefName(tp)
+        if (name eq null) others += tp else byName.getOrElseUpdate(name, new mutable.ArrayBuffer[Type]) += tp
+      }
       private[TreesAndTypesDomain] def unique(tp: Type, mkFresh: => Const): Const =
         uniques.getOrElse(tp, {
           // normalize to increase the chance of structural equality and reduce the cost of =:=
           val normalized = tp.map(_.normalize)
           uniques.getOrElseUpdate(normalized, {
-            val const = uniques.keysIterator.find(_ =:= normalized).fold(mkFresh)(uniques)
+            val name = if (indexed) classRefName(normalized) else null
+            // all the keys that are `=:=` to `normalized` map to the same constant
+            val candidates =
+              if (name eq null) uniques.keysIterator
+              else byName.getOrElse(name, Nil).iterator ++ others.iterator
+            val const = candidates.find(_ =:= normalized).fold(mkFresh)(uniques)
+            if (indexed) index(normalized)
+            else if (uniques.size >= IndexAbove) {
+              indexed = true
+              uniques.keysIterator.foreach(index)
+              index(normalized)
+            }
             debug.patmat(s"unique const: ${tp -> const}")
             const
           })
