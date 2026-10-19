@@ -933,7 +933,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       if (emitSource)
         mirrorClass.visitSource("" + cunit.source, null /* SourceDebugExtension */)
 
-      val ssa = getAnnotPickle(bType.internalName, moduleClass.companionSymbol)
+      // Not `companionSymbol`, which looks in the package's scope; see `PicklePhase.apply`.
+      val ssa = getAnnotPickle(bType.internalName, moduleClass.sourceModule)
       mirrorClass.visitAttribute(if (ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(mirrorClass, moduleClass.annotations ++ ssa)
 
