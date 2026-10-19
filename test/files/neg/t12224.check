@@ -1,0 +1,9 @@
+Test_2.scala:4: warning: class ChildScala must implement startInWriteAction: the JVM does not select the default method (calling it throws AbstractMethodError).
+No implementation found for abstract declaration
+def startInWriteAction(): Boolean (defined in trait BaseIntermediateJava_1)
+which overrides the default method in trait BaseRootJava_1
+class ChildScala extends BaseIntermediateJava_1 {
+      ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

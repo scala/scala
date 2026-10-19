@@ -25,7 +25,7 @@ import scala.util.chaining._
  *  @author Martin Odersky
  */
 trait Namers extends MethodSynthesis {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._
@@ -50,6 +50,10 @@ trait Namers extends MethodSynthesis {
     case Template(_, _, _) => true
     case Import(_, _)      => isTemplateContext(ctx.outer)
     case _                 => false
+  }
+
+  private object javaConstantFolder extends javac.JavaConstantFolder {
+    val global: Namers.this.global.type = Namers.this.global
   }
 
   private class NormalNamer(context: Context) extends Namer(context)
@@ -392,6 +396,15 @@ trait Namers extends MethodSynthesis {
           updatePosFlags(existing, tree.pos, tree.mods.flags)
           setPrivateWithin(tree, existing)
           clearRenamedCaseAccessors(existing)
+          // Children register themselves when their own source is compiled. A Scala sealed class only
+          // admits children from its own source file, which is being recompiled, so forget them all.
+          // A Java one may permit children from other files: forget those compiled in this run (they
+          // re-register if still children) and keep the others, which are assumed unchanged.
+          existing match {
+            case cls: ClassSymbol if !cls.isJava => cls.retainChildren(_ => false)
+            case cls: ClassSymbol => cls.retainChildren(!currentRun.compilesSourceOf(_))
+            case _ =>
+          }
           existing
         }
         else enterInScope(assignMemberSymbol(tree)) setFlag inConstructorFlag
@@ -1195,7 +1208,8 @@ trait Namers extends MethodSynthesis {
             val okChild =
               if (psym.isJava)
                 psym.attachments.get[PermittedSubclassSymbols] match {
-                  case Some(permitted) => permitted.permits.exists(_ == clazz)
+                  // javac checks Java subclasses, typechecking `permits` while completing one could cycle
+                  case Some(permitted) => clazz.isJava || permitted.symbols.contains(clazz)
                   case _ => sameSourceFile
                 }
               else
@@ -1280,9 +1294,11 @@ trait Namers extends MethodSynthesis {
 
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
       cdef.getAndRemoveAttachment[PermittedSubclasses].foreach { permitted =>
-        clazz.updateAttachment[PermittedSubclassSymbols] {
-          PermittedSubclassSymbols(permitted.permits.map(typer.typed(_, Mode.NOmode).symbol))
-        }
+        clazz.updateAttachment(new PermittedSubclassSymbols(permitted.permits, { t =>
+          val sub = enteringTyper(typer.typed(t, Mode.NOmode).symbol)
+          if (sub.isClass) clazz.addChild(sub)
+          sub
+        }))
       }
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
@@ -1785,11 +1801,47 @@ trait Namers extends MethodSynthesis {
         } else {
           val tptTyped = typer.typedType(tpt)
           context.unit.transformed(tpt) = tptTyped
-          tptTyped.tpe
+          vdef.attachments.get[JavaConstantInitializer] match {
+            case Some(JavaConstantInitializer(expr)) =>
+              vdef.removeAttachment[JavaConstantInitializer]
+              javaConstantType(expr, tptTyped.tpe)
+            case _ => tptTyped.tpe
+          }
         }
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
       pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
     }
+
+    /** The type of a Java `final` field of type `declared` with initializer `expr`: a constant type
+     *  if `expr` is a constant expression, as for a field read from a classfile with a `ConstantValue`.
+     */
+    private def javaConstantType(expr: Tree, declared: Type): Type =
+      if (!(isPrimitiveValueType(declared) || declared.typeSymbol == StringClass)) declared
+      else {
+        def resolve(ref: Tree): Constant =
+          try typer.silent(_.typed(ref.duplicate, EXPRmode, WildcardType)) match {
+            case SilentResultValue(typed) => typed.tpe match {
+              case ConstantType(c) => c
+              case _               => null
+            }
+            case _ => null
+          } catch {
+            // fields whose initializers refer to each other, which javac does not treat as constants either
+            case _: CyclicReference => null
+          }
+        javaConstantFolder(expr, resolve) match {
+          case null  => declared
+          case const =>
+            // assignment conversion (JLS 5.2), e.g. an `int` constant to a `byte` field if it is in range.
+            // Unlike Scala, Java allows widening an `int` or `long` to `float` or `double` with loss of precision.
+            val converted = declared.typeSymbol match {
+              case FloatClass if const.isNumeric && const.tag <= FloatTag => Constant(const.floatValue)
+              case DoubleClass if const.isNumeric                          => Constant(const.doubleValue)
+              case _                                                       => const.convertTo(declared)
+            }
+            if (converted == null) declared else ConstantType(converted)
+        }
+      }
 
     // Pretend we're an erroneous symbol, for now, so that we match while finding the overridden symbol,
     // but are not considered during implicit search.

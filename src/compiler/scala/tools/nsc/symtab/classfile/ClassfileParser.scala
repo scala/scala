@@ -920,12 +920,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case tpnme.PermittedSubclassesATTR =>
           sym.setFlag(SEALED)
           val numberOfClasses = u2()
-          numberOfClasses times {
-            val k = pool.getClassSymbol(u2())
-            completer match {
-              case ctc: ClassTypeCompleter => ctc.permittedSubclasses ::= k   // sym.addChild(k)
-              case _ =>
-            }
+          val permits = List.fill(numberOfClasses)(pool.getClassSymbol(u2()))
+          sym.updateAttachment(new PermittedSubclassSymbols(permits.map(Ident(_)), _.symbol))
+          completer match {
+            case ctc: ClassTypeCompleter => ctc.permittedSubclasses = permits.reverse
+            case _ =>
           }
 
         case _ =>
@@ -1319,9 +1318,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       sym.setInfo(info)
       // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
       if (!sym.hasJavaEnumFlag)
-        for (k <- permittedSubclasses)
-          if (k.parentSymbols.contains(sym))
-            sym.addChild(k)
+        // we used to filter for direct parents here, which caused cycles (scala/bug#13176). but that was
+        // unnecessary, permitted subclasses are direct subclasses (JLS 8.1.6)
+        permittedSubclasses.foreach(sym.addChild)
     }
   }
 

@@ -112,8 +112,12 @@ abstract class TreeBuilder {
    *        val catchFn = catchExpr
    *        if (catchFn isDefinedAt x) catchFn(x) else throw x
    *    }
+   *
+   *  Called by the typer, which passes its own `fresh` (shadowing `unit.fresh`, which would
+   *  be `currentUnit.fresh` for `global.treeBuilder`) so that the names don't depend on
+   *  which unit triggered type checking of the enclosing method.
    */
-  def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
+  def makeCatchFromExpr(catchExpr: Tree)(implicit fresh: FreshNameCreator): CaseDef = {
     val binder   = freshTermName()
     val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
     val catchDef = ValDef(Modifiers(ARTIFACT), freshTermName("catchExpr$"), TypeTree(), catchExpr)
@@ -132,7 +136,7 @@ abstract class TreeBuilder {
   /** Creates tree representing:
    *    { case x: Throwable => catchExpr(x) }
    */
-  def makeCatchFromFunc(catchFn: Tree): CaseDef = {
+  def makeCatchFromFunc(catchFn: Tree)(implicit fresh: FreshNameCreator): CaseDef = {
     val binder = freshTermName()
     val pat    = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
     val body   = atPos(catchFn.pos.makeTransparent)(Block(

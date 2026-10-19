@@ -69,6 +69,63 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testTryCatchExprFreshName(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |package demo
+          |
+          |class a {
+          |  def handler: PartialFunction[Throwable, String] = { case _: RuntimeException => "" }
+          |  def x = try "" catch handler
+          |  def y = try "" catch handler
+          |}
+          |
+      """.stripMargin),
+      source("b.scala",
+      """
+        |package demo
+        |
+        |class b {
+        |  def test(): Unit = {
+        |    new a().y
+        |  }
+        |}
+      """.stripMargin)
+
+    )
+    test(List(code))
+  }
+
+  @Test def testQuasiquoteFreshNameOrder(): Unit = {
+    def code = List[SourceFile](
+      source("p.scala",
+        """
+          |package demo
+          |
+          |import scala.reflect.macros.whitebox
+          |
+          |class P(val c: whitebox.Context) {
+          |  import c.universe._
+          |  def p1(f: Tree): Tree = q"$f(_)"
+          |  def p2(f: Tree): Tree = q"$f(_, _, _, _, _, _, _, _)"
+          |}
+      """.stripMargin),
+      source("q.scala",
+        """
+          |package demo
+          |
+          |import scala.reflect.macros.whitebox
+          |
+          |class Q(val c: whitebox.Context) {
+          |  import c.universe._
+          |  def pack(cons: Tree): Tree = q"$cons(_, _)"
+          |}
+      """.stripMargin)
+    )
+    test(List(code))
+  }
+
   @Test def testReify(): Unit = {
     def code = List[SourceFile](
       source("a.scala",
@@ -385,6 +442,38 @@ class DeterminismTest {
           |}
         """.stripMargin),
       source("b.scala", "object O extends J[java.io.FileNotFoundException]; class C extends J[java.io.IOException]")
+    )
+    test(List(code))
+  }
+
+  @Test def testJavaConstantExpression(): Unit = {
+    // A reference to a Java constant variable is inlined whether the Java class is parsed from source
+    // or loaded from a classfile, where it has a `ConstantValue` attribute.
+    def code = List[SourceFile](
+      source("J.java",
+        """
+          |public class J {
+          |  public static final int SIZE = 4;
+          |  public static final int NUM_BYTES = SIZE * 1024;
+          |}
+        """.stripMargin),
+      source("b.scala", "class C { def f = new Array[Byte](J.NUM_BYTES) }")
+    )
+    test(List(code))
+  }
+
+  @Test def testLubParentOrder(): Unit = {
+    // The parents of the inferred lub `Zed with Abe`, and hence its erasure, don't depend on whether
+    // the traits are entered from source (in declaration order) or from the classpath.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |trait Zed
+          |trait Abe
+          |class S extends Zed with Abe
+          |class T extends Abe with Zed
+        """.stripMargin),
+      source("b.scala", "class U { def f(b: Boolean) = if (b) new S else new T }")
     )
     test(List(code))
   }

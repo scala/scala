@@ -21,7 +21,7 @@ import symtab.Flags._
  *
  *  @author  Martin Odersky
  */
-trait EtaExpansion { self: Analyzer =>
+trait EtaExpansion { self: AbstractAnalyzer =>
   import global._
 
   /** Expand partial method application `p.f(es_1)...(es_n)`.

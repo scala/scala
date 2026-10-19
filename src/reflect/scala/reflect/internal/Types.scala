@@ -294,7 +294,7 @@ trait Types
     def isError: Boolean = typeSymbol.isError || termSymbol.isError
 
     /** Is this type produced as a repair for an error? */
-    def isErroneous: Boolean = ErroneousCollector.collect(this)
+    def isErroneous: Boolean = erroneousCollectorInstance.using(_.collect(this))
 
     /** Can this type only be subtyped by bottom types?
      *  This is assessed to be the case if the class is final,
@@ -597,6 +597,9 @@ trait Types
 
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: Scope = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
+
+    /** The members of `nonPrivateMembers` whose names satisfy `nameFilter`, in the same order */
+    private[internal] def nonPrivateMembersNamed(nameFilter: Name => Boolean): Scope = findMembers(BridgeAndPrivateFlags, 0, nameFilter)
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
@@ -1006,8 +1009,13 @@ trait Types
      * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
      *
      */
-    def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
-      def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
+    def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = findMembers(excludedFlags, requiredFlags, null)
+
+    /** As `findMembers`, but only considering members whose name satisfies `nameFilter`.
+     *  The result is the same as filtering the result of `findMembers` by name, including its order.
+     */
+    private[internal] def findMembers(excludedFlags: Long, requiredFlags: Long, nameFilter: Name => Boolean): Scope = {
+      def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags, nameFilter).apply()
       if (this.isGround) findMembersInternal
       else suspendingTypeVars(typeVarsInTypeRev(this))(findMembersInternal)
     }
@@ -2886,7 +2894,7 @@ trait Types
 
     private[this] var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
-      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
+      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(isDependentCollectorInstance.using(_.collect(resultType.dealias)))
       toBoolean(isdepmeth)
     }
 
@@ -3715,20 +3723,22 @@ trait Types
       registerBound(HasTypeMember(sym.name.toTypeName, tp), isLowerBound = false)
     }
 
-    private def unrelatable(tp: Type): List[TypeSkolem] = {
-      UnrelatableCollector.barLevel = level
-      UnrelatableCollector.collect(tp)
-    }
+    private def unrelatable(tp: Type): List[TypeSkolem] =
+      unrelatableCollectorInstance.using { collector =>
+        collector.barLevel = level
+        collector.collect(tp)
+      }
 
 
     /** Can this variable be related in a constraint to type `tp`?
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
       */
-    def isRelatable(tp: Type): Boolean = {
-      IsRelatableCollector.barLevel = level
-      IsRelatableCollector.collect(tp)
-    }
+    def isRelatable(tp: Type): Boolean =
+      isRelatableCollectorInstance.using { collector =>
+        collector.barLevel = level
+        collector.collect(tp)
+      }
 
     override def normalize: Type = (
       if (instValid) inst
@@ -5427,6 +5437,10 @@ trait TypesStats {
   val nestedLubCount      = newCounter   ("#all lubs/glbs")
   val findMemberCount     = newCounter   ("#findMember ops")
   val findMembersCount    = newCounter   ("#findMembers ops")
+  val findMemberDeclCount  = newCounter  ("#decls visited by findMember")
+  val findMembersDeclCount = newCounter  ("#decls visited by findMembers")
+  val findMemberCandidateCount  = newCounter("#potential members considered by findMember")
+  val findMembersCandidateCount = newCounter("#potential members considered by findMembers")
   val noMemberCount       = newSubCounter("  of which not found", findMemberCount)
   val multMemberCount     = newSubCounter("  of which multiple overloaded", findMemberCount)
   val typerNanos          = newTimer     ("time spent typechecking", "typer")

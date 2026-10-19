@@ -663,6 +663,23 @@ abstract class RefChecks extends Transform {
       }
       printMixinOverrideErrors()
 
+      // A deferred member re-declaring an inherited concrete one forms no overriding pair above
+      // (concrete members override deferred ones), so it is not checked. Scala 3 checks it as an
+      // override and rejects a `def` re-declaring a `val`, or re-declaring a final member.
+      if (currentRun.isScala3 && !typesOnly)
+        for (decl <- clazz.info.decls if decl.isTerm && decl.isDeferred && !decl.isSynthetic) {
+          // not `allOverriddenSymbols`, which drops concrete symbols for a deferred member
+          val reDeclared = clazz.ancestors.flatMap(bc => decl.matchingSymbol(bc, clazz.thisType).alternatives)
+          for (other <- reDeclared if !other.isDeferred) {
+            def warn(msg: String) =
+              runReporting.warning(decl.pos, s"$msg\n${infoStringWithLocation(other)}\n" +
+                "Scala 3 checks an abstract member that re-declares a concrete one as an override.",
+                WarningCategory.Scala3Migration, decl)
+            if (other.isEffectivelyFinal) warn("cannot override final member:")
+            else if (other.isStable && !decl.isStable) warn("stable, immutable value required to override:")
+          }
+        }
+
       // Verifying a concrete class has nothing unimplemented.
       if (clazz.isConcreteClass && !typesOnly) {
         val abstractErrors = ListBuffer.empty[String]
@@ -859,9 +876,33 @@ abstract class RefChecks extends Transform {
             checkNoAbstractDecls(bc.superClass)
         }
 
+        // 4. Check that concrete classes implement the abstract methods of Java interfaces that
+        // re-declare a default method of a superinterface. Java treats the re-declaration as
+        // overriding the default (JLS 9.4.1), so the JVM selects the abstract method and a call
+        // throws AbstractMethodError, but by (2) the default counts as the implementation
+        // (scala/bug#12224). javac and Scala 3 reject the class; 2.13 warns, and rejects it under
+        // -Xsource:3.
+        def checkNoReabstractedJavaDefaults(): Unit =
+          for (bc <- clazz.info.baseClasses if bc.isJavaDefined && bc.isTrait; decl <- bc.info.decls) {
+            if (decl.isDeferred && decl.isMethod && !ignoreDeferred(decl)) {
+              val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
+              if (impl != NoSymbol && impl.owner != bc && impl.owner.isTrait && bc.isSubClass(impl.owner)) {
+                val msg = s"No implementation found for abstract declaration\n" +
+                          s"${infoString(decl)}\n" +
+                          s"which overrides the default method in ${impl.owner}"
+                if (currentRun.isScala3) abstractClassError(msg)
+                else runReporting.warning(clazz.pos,
+                  s"$clazz must implement ${decl.name}: the JVM does not select the default method " +
+                  s"(calling it throws AbstractMethodError).\n$msg", WarningCategory.Other, clazz)
+              }
+            }
+          }
+
         checkNoAbstractMembers()
         if (abstractErrors.isEmpty)
           checkNoAbstractDecls(clazz)
+        if (abstractErrors.isEmpty)
+          checkNoReabstractedJavaDefaults()
 
         if (abstractErrors.nonEmpty)
           reporter.error(clazz.pos, abstractErrorMessage)

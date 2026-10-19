@@ -66,6 +66,24 @@ trait TreeAndTypeAnalysis extends Debugging {
     tp <:< tpImpliedNormalizedToAny
   }
 
+  /** A hash code consistent with `equivalentTree`: equivalent trees have the same hash */
+  def equivalenceHash(t: Tree): Int = t match {
+    case Select(qual, _)      => equivalenceHash(qual) * 31 + t.symbol.##
+    case Ident(_)             => t.symbol.## + 1
+    case Literal(c)           => c.## + 2
+    case This(_)              => t.symbol.## + 3
+    case Apply(fun, args)     => args.foldLeft(equivalenceHash(fun) + 4)((h, a) => h * 31 + equivalenceHash(a))
+    case TypeApply(fun, args) => args.foldLeft(equivalenceHash(fun) + 5)((h, a) => h * 31 + equivalenceHash(a))
+    case TypeTree()           => 6
+    case _                    => System.identityHashCode(t) // not equivalent to any tree
+  }
+
+  /** Whether `equivalentTree(t, u)` may hold for some tree `u` */
+  def mayBeEquivalent(t: Tree): Boolean = t match {
+    case Select(_, _) | Ident(_) | Literal(_) | This(_) | Apply(_, _) | TypeApply(_, _) | TypeTree() => true
+    case _                                                                                          => false
+  }
+
   def equivalentTree(a: Tree, b: Tree): Boolean = (a, b) match {
     case (Select(qual1, _), Select(qual2, _))             => equivalentTree(qual1, qual2) && a.symbol == b.symbol
     case (Ident(_), Ident(_))                             => a.symbol == b.symbol
@@ -205,6 +223,24 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       override def toString = s"T${id}C($prop)"
     }
 
+    /** Elements keyed by a tree, with a lookup modulo `equivalentTree` that has the result of a linear search
+     *  in insertion order, indexed by `equivalenceHash`. It is never iterated. An element whose tree isn't
+     *  equivalent to any tree (not even to itself) can't be found, so it isn't kept.
+     */
+    final class EquivalentTrees[A](key: A => Tree) {
+      private[this] val buckets = new java.util.HashMap[Integer, mutable.ArrayBuffer[A]]
+      def find(t: Tree): Option[A] = {
+        val bucket = buckets.get(equivalenceHash(t))
+        if (bucket eq null) None else bucket.find(a => equivalentTree(key(a), t))
+      }
+      def +=(a: A): this.type = {
+        val t = key(a)
+        if (mayBeEquivalent(t))
+          buckets.computeIfAbsent(equivalenceHash(t), _ => new mutable.ArrayBuffer[A](2)).addOne(a)
+        this
+      }
+    }
+
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     class TreeMakersToProps(val root: Symbol) {
       prepareNewAnalysis() // reset hash consing for Var and Const
@@ -224,8 +260,10 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
       private val pointsToBound  = mutable.HashSet(root)
-      private val trees          = mutable.HashSet.empty[Tree]
-      private val extractBinders = mutable.HashMap.empty[Tree, Symbol]
+      // indexed for lookups modulo `equivalentTree`: each tree is added only if no equivalent one was found,
+      // so at most one element is equivalent to a given tree (as `equivalentTree` is transitive)
+      private val trees          = new EquivalentTrees[Tree](identity)
+      private val extractBinders = new EquivalentTrees[(Tree, Symbol)](_._1)
 
       // the substitution that renames variables to variables in pointsToBound
       private var normalize: Substitution  = EmptySubstitution
@@ -241,7 +279,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
       // hashconsing trees (modulo value-equality)
       def unique(t: Tree, tpOverride: Type = NoType): Tree =
-        trees find (a => equivalentTree(a, t)) match {
+        trees find t match {
           case Some(orig) =>
             // debug.patmat("unique: "+ (t eq orig, orig))
             orig
@@ -274,11 +312,9 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
           tm match {
             case x @ ExtractorTreeMaker(_, None, binder) =>
               val extractor = accumSubst(normalize(x.extractor))
-              extractBinders.collectFirst {
-                case (t, reuseBinder) if equivalentTree(t, extractor) => reuseBinder
-              } match {
-                case Some(reuseBinder) => normalize >>= Substitution(binder, binderToUniqueTree(reuseBinder))
-                case None              => extractBinders(extractor) = binder
+              extractBinders.find(extractor) match {
+                case Some((_, reuseBinder)) => normalize >>= Substitution(binder, binderToUniqueTree(reuseBinder))
+                case None                   => extractBinders += ((extractor, binder))
               }
             case _ =>
           }
@@ -307,7 +343,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 
           val okSubst = Substitution(unboundFrom.toList, unboundTo.toList) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
           foreach2(okSubst.from, okSubst.to){(f, t) =>
-            if (pointsToBound.exists(sym => t.exists(_.symbol == sym)) || tm.isInstanceOf[ExtractorTreeMaker])
+            if (tm.isInstanceOf[ExtractorTreeMaker] || t.exists(t1 => pointsToBound(t1.symbol)))
               pointsToBound += f
           }
           // debug.patmat("pointsToBound: "+ pointsToBound)
@@ -481,8 +517,10 @@ trait MatchAnalysis extends MatchApproximation {
         val (eqAxiomsOk, symbolicCasesOk) = removeVarEq(propsCasesOk, modelNull = true)
         val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
-        val prefix = mutable.ArrayBuffer[Prop]()
-        prefix += eqAxioms
+        // case i is reachable if `eqAxioms /\ !case_0 /\ ... /\ !case_i-1 /\ case_i` is satisfiable;
+        // the prefix grows by one conjunct per case, which is converted to CNF only once
+        val solver = incrementalSolver(eqAxioms :: symbolicCasesFail ::: symbolicCasesOk)
+        solver.addToPrefix(eqAxioms)
 
         var prefixRest = symbolicCasesFail
         var current = symbolicCasesOk
@@ -500,10 +538,9 @@ trait MatchAnalysis extends MatchApproximation {
           prefixRest = prefixRest.tail
           if (prefixRest.isEmpty) reachable = true
           else {
-            prefix += prefHead
+            solver.addToPrefix(prefHead)
             current = current.tail
-            val and = And((current.head +: prefix).toIndexedSeq: _*)
-            reachable = hasModel(eqFreePropToSolvable(and))
+            reachable = solver.hasModelWith(current.head)
           }
         }
 
@@ -519,7 +556,14 @@ trait MatchAnalysis extends MatchApproximation {
 
     // exhaustivity
 
-    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
+    // A case that only binds variables, without a guard (`case _`, `case x`), matches any value: its proposition is
+    // `True`, so `matchFails` (below) simplifies to `False`, which has no models, and there is no counter-example.
+    private def isIrrefutableCase(treeMakers: List[TreeMaker]): Boolean = treeMakers.forall {
+      case SubstOnlyTreeMaker(_, _) | BodyTreeMaker(_, _) => true
+      case _                                              => false
+    }
+
+    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info) || cases.exists(isIrrefutableCase)) Nil else {
       debug.patmat("exhaustiveness analysis")
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,

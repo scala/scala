@@ -1,0 +1,38 @@
+# integration/2.13.x, built 2026-10-19T23:42:25Z by build-integration from manifest.toml
+
+base	upstream/2.13.x	eacc8b7d11d1ded37c6b326b1c93c7aa0f392a92
+
+scala#11290	refs/pull/11290/head	ba292b840f21481912fcc89468b40996bf0ce090	clean
+scala#11291	refs/pull/11291/head	97e877e63712cab195236e74f705df6f52ae944a	rerere
+scala#11295	refs/pull/11295/head	46ec35485d2fbee08ead7c0c437b65c933f4a2fc	clean
+scala#11313	refs/pull/11313/head	21a86a58ccb7b16346e1669f8ab0f1db17d4383b	clean
+scala#11314	refs/pull/11314/head	0d19f86b5d2e71cdebcff09a77bbba8f1ec8e5a4	rerere
+scala#11319	refs/pull/11319/head	21ec56202fd77ec85271203c8eb007b4c6739fc7	clean
+rz-scala#165	refs/pull/165/head	bc5d02008782b88aea33002159bb679815a257f2	rerere
+fixup-11313-11314	fixups/11313-11314-depth-import.patch	880ba29c98f006fde1160e032c98ba0050d88a59	applied
+scala#11315	refs/pull/11315/head	9e0789c8b1a350581bca51f1b08842305f5a445f	clean
+rz-scala#136	refs/pull/136/head	d17d90a240b413ee9265a527faee162365ff08e3	clean
+rz-scala#137	refs/pull/137/head	cef2c3d3bf5dfc2ad048f4ee05e4e4cc9252294f	clean
+scala#11306	refs/pull/11306/head	70c7077a38e3cd6384badb88119a6ff42d58ef4c	clean
+rz-scala#147	refs/pull/147/head	b74d56e43c3a14e6e03ad0a3770a3485eebdf0e5	clean
+rz-scala#142	refs/pull/142/head	5aaa9c09b1822e54b75f15b5de57cc27790fdff5	clean
+rz-scala#156	refs/pull/156/head	8bcd79b374a5e4ea6d6db48fc700093816a9aef5	clean
+rz-scala#158	refs/pull/158/head	d26c125f2a51d8fcb857b403d901514403270a82	clean
+fixup-11306-158	fixups/11306-158-abstract-analyzer.patch	37e54ceea8c2b26d8ad5eda899056be2fac990fa	applied
+rz-scala#159	refs/pull/159/head	9954508a3a9b2a7b75c0cc16bdd0f495148282b3	clean
+rz-scala#141	refs/pull/141/head	83fbdf280b22a8ff1ba076e612757faf2d97858b	clean
+rz-scala#140	refs/pull/140/head	d4390dc9924248e005430800afbb9bd4dbfeb9eb	clean
+pkgobj-shadow-pickle	fixups/pkgobj-shadow-pickle.patch	74051052c11b111973012d57a05e282fafa4ec91	applied
+scala#11298	refs/pull/11298/head	28c0bc4aa4c04221f559b048443403be02bf7748	clean
+java-sealed-classfile-permits	fixups/java-sealed-classfile-permits.patch	3e9ab3364b50351071330cfadaffec7437a8ec18	applied
+
+# excluded
+rz-scala#40..#133	old performance and WIP experiments
+rz-scala#134	same branch as scala#11287
+rz-scala#135	blocked on a zinc release: needs compiler-interface 1.12.2 (AnalysisCallback4), not yet published
+scala#11307	the same branch as rz-scala#142
+rz-scala#138	superseded by scala#11306
+rz-scala#150	an alternative to scala#11306 (Analyzer as a class)
+scala#11312	CI red
+rz-scala#139	CI wiring only
+rz-scala#144..#157	plans, surveys, benchmarks for the record, experiments, and red or stacked drafts (#144-#146, #148, #149, #151, #153-#155, #157)

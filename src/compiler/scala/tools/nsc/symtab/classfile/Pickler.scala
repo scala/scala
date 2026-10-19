@@ -70,6 +70,20 @@ abstract class Pickler extends SubComponent {
 
     @nowarn("cat=lint-nonlocal-return")
     def apply(unit: CompilationUnit): Unit = {
+      // Find companions among the unit's top-level definitions rather than with `companionSymbol`, which looks
+      // in the package's scope. `openPackageModule` unlinks a top-level definition from that scope if the package
+      // object defines or inherits a member of the same name, and the pickle of its companion would omit it.
+      val topLevelDefs: List[Symbol] = {
+        def collect(tree: Tree): List[Symbol] = tree match {
+          case PackageDef(_, stats)                      => stats.flatMap(collect)
+          case ClassDef(_, _, _, _) | ModuleDef(_, _, _) => tree.symbol :: Nil
+          case _                                         => Nil
+        }
+        collect(unit.body)
+      }
+      def companionOf(sym: Symbol): Symbol =
+        topLevelDefs.find(other => other.owner == sym.owner && other.isModule != sym.isModule && other.name.toTermName == sym.name.toTermName).getOrElse(NoSymbol)
+
       def pickle(tree: Tree): Unit = {
         tree match {
           case PackageDef(_, stats) =>
@@ -79,7 +93,7 @@ abstract class Pickler extends SubComponent {
             def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
             if (shouldPickle(sym)) {
               def pickle(noPrivates: Boolean, writeToSymData: Boolean, writeToSigFile: Boolean): Unit = {
-                val companion = sym.companionSymbol.filter(_.owner == sym.owner).filter(shouldPickle) // exclude companionship between package- and package object-owned symbols.
+                val companion = companionOf(sym).filter(shouldPickle)
                 val pickle = Pickler.this.pickle(sym, companion, noPrivates)
                 if (writeToSymData) {
                   currentRun.symData(sym) = pickle
