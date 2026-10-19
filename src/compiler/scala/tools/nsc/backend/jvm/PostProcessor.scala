@@ -147,6 +147,9 @@ abstract class PostProcessor extends PerRunInit {
    * types. This operation is used for computing stack map frames.
    */
   final class ClassWriterWithBTypeLub(flags: Int) extends ClassWriter(flags) {
+    // ASM's default limits guard against untrusted class files; we only write our own (see neg/inlineMaxSize)
+    setComputeLimits(Int.MaxValue, Long.MaxValue)
+
     /**
      * This method is invoked by asm during classfile writing when computing stack map frames.
      *
