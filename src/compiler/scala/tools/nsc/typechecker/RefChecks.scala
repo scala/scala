@@ -663,6 +663,23 @@ abstract class RefChecks extends Transform {
       }
       printMixinOverrideErrors()
 
+      // A deferred member re-declaring an inherited concrete one forms no overriding pair above
+      // (concrete members override deferred ones), so it is not checked. Scala 3 checks it as an
+      // override and rejects a `def` re-declaring a `val`, or re-declaring a final member.
+      if (currentRun.isScala3 && !typesOnly)
+        for (decl <- clazz.info.decls if decl.isTerm && decl.isDeferred && !decl.isSynthetic) {
+          // not `allOverriddenSymbols`, which drops concrete symbols for a deferred member
+          val reDeclared = clazz.ancestors.flatMap(bc => decl.matchingSymbol(bc, clazz.thisType).alternatives)
+          for (other <- reDeclared if !other.isDeferred) {
+            def warn(msg: String) =
+              runReporting.warning(decl.pos, s"$msg\n${infoStringWithLocation(other)}\n" +
+                "Scala 3 checks an abstract member that re-declares a concrete one as an override.",
+                WarningCategory.Scala3Migration, decl)
+            if (other.isEffectivelyFinal) warn("cannot override final member:")
+            else if (other.isStable && !decl.isStable) warn("stable, immutable value required to override:")
+          }
+        }
+
       // Verifying a concrete class has nothing unimplemented.
       if (clazz.isConcreteClass && !typesOnly) {
         val abstractErrors = ListBuffer.empty[String]
