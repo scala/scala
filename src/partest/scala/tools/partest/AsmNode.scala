@@ -30,6 +30,7 @@ sealed trait AsmNode[+T] {
   def characteristics = f"$name%15s $desc%-30s$accessString$sigString"
   def erasedCharacteristics = f"$name%15s $desc%-30s$accessString"
 
+  @annotation.nowarn("cat=deprecation") // deprecated on JDK 27
   private def accessString     = if (access == 0) "" else " " + Modifier.toString(access)
   private def sigString        = if (signature == null) "" else " " + signature
   override def toString        = characteristics
