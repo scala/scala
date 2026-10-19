@@ -1,0 +1,7 @@
+Test_2.scala:4: error: class ChildScala needs to be abstract.
+No implementation found for abstract declaration
+def startInWriteAction(): Boolean (defined in trait BaseIntermediateJava_1)
+which overrides the default method in trait BaseRootJava_1
+class ChildScala extends BaseIntermediateJava_1 {
+      ^
+1 error
