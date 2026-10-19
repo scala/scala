@@ -24,6 +24,8 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  */
 abstract class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V]) {
   computeMaxLocalsMaxStack(methodNode)
+  // ASM's default limits guard against untrusted class files; we only analyze our own bytecode
+  analyzer.setComputeLimits(Int.MaxValue, Long.MaxValue)
   try {
     analyzer.analyze(classInternalName, methodNode)
   } catch {
