@@ -25,31 +25,34 @@ jobs:
     name: publish (bootstrapped) to scala-integration or sonatype
     if: github.repository == 'scala/scala'
     runs-on: ubuntu-latest
-    env:
-      SCALA_VER_BASE: ${{ inputs.SCALA_VER_BASE }}
-      SCALA_VER_SUFFIX: ${{ inputs.SCALA_VER_SUFFIX }}
-      STARR_REF: ${{ inputs.STARR_REF }}
-      PRIVATE_REPO_PASS: ${{ secrets.PRIVATE_REPO_PASS }}
-      PGP_SECRET: ${{ secrets.PGP_SECRET }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      SCALA_REPO_TOKEN: ${{ secrets.SCALA_REPO_TOKEN }}
+    # the secrets live in an environment per release branch, which only that branch can use
+    environment: publish-${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           # buildStarr clones STARR_REF from this checkout
           fetch-depth: ${{ inputs.STARR_REF && '0' || '1' }}
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: 8
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@ecad189dd245444b9ae0a0cd5922fd938b88906f # v1.5.12
         with:
           # the cache is for sbt 2
           disk-cache: false
-      - run: |
+      - env:
+          SCALA_VER_BASE: ${{ inputs.SCALA_VER_BASE }}
+          SCALA_VER_SUFFIX: ${{ inputs.SCALA_VER_SUFFIX }}
+          STARR_REF: ${{ inputs.STARR_REF }}
+          PRIVATE_REPO_PASS: ${{ secrets.PRIVATE_REPO_PASS }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SCALA_REPO_TOKEN: ${{ secrets.SCALA_REPO_TOKEN }}
+        run: |
           (cd admin && ./init.sh)
           source scripts/common
           source scripts/bootstrap_fun
@@ -64,13 +67,19 @@ jobs:
     name: language spec
     if: github.repository == 'scala/scala'
     runs-on: ubuntu-latest
+    environment: publish-${{ github.ref_name }}
+    # rsync from an older run must not finish after a newer one
+    concurrency:
+      group: spec-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
         with:
           ruby-version: '3.4'
           bundler-cache: true
       - run: bundle exec jekyll build -s spec/ -d build/spec
       - run: scripts/publish-spec.sh
         env:
-          CHARA_SPEC_SSH_KEY: ${{ secrets.CHARA_SPEC_2_12_SSH_KEY }}
+          CHARA_SPEC_SSH_KEY: ${{ secrets.CHARA_SPEC_SSH_KEY }}
