@@ -99,12 +99,7 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
 // Save MiMa logs
 SavedLogs.settings
 
-Global / scalaVersion      := {
-  if (DottySupport.compileWithDotty)
-    DottySupport.dottyVersion
-  else
-    versionProps("starr.version")
-}
+Global / scalaVersion      := versionProps("starr.version")
 
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
@@ -238,12 +233,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
   run / outputStrategy := Some(StdoutOutput)
-) ++ removePomDependencies ++ setForkedWorkingDirectory ++ (
-  if (DottySupport.compileWithDotty)
-    DottySupport.commonSettings
-  else
-    Seq()
-)
+) ++ removePomDependencies ++ setForkedWorkingDirectory
 
 lazy val fatalWarningsSettings = Seq(
   Compile / scalacOptions ++= {
@@ -465,12 +455,6 @@ lazy val library = configureAsSubproject(project)
     MimaFilters.mimaSettings,
   )
   .settings(filterDocSources("*.scala" -- regexFileFilter(".*/scala/runtime/.*")))
-  .settings(
-    if (DottySupport.compileWithDotty)
-      DottySupport.librarySettings
-    else
-      Seq()
-  )
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
