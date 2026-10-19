@@ -1453,7 +1453,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     if (flags.isStatic) staticScope else instanceScope
 
   // Append annotation. For Java deprecation, prefer an annotation with values (since, etc).
-  private def addUniqueAnnotation(symbol: Symbol, annot: AnnotationInfo): symbol.type = {
+  private def addUniqueAnnotation(symbol: Symbol, annot0: AnnotationInfo): symbol.type = {
+    val annot = annot0.symbol match {
+      case sym: StubSymbol if sym.name.toString == JdkValueBasedAnnotCtSymName => AnnotationInfo(JdkValueBasedAnnot.tpe, Nil, Nil)
+      case _ => annot0
+    }
     // Silently ignore missing annotation classes like javac and Scala 3
     def skipAnnot =
       annot.symbol match {
