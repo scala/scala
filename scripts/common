@@ -3,12 +3,7 @@ set -e
 # The scala/scala checkout directory (set by Jenkins, or the current directory on GitHub Actions)
 WORKSPACE="${WORKSPACE-`pwd`}"
 
-# On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On GitHub Actions, it's ~/.ivy2.
-if [ "$GITHUB_ACTIONS" = "true" ]; then
-  IVY2_DIR="$HOME/.ivy2"
-else
-  IVY2_DIR="$WORKSPACE/.ivy2"
-fi
+IVY2_DIR="$HOME/.ivy2"
 
 SBT_VERSION=`grep sbt.version $WORKSPACE/project/build.properties | sed -n 's/sbt.version=\(.*\)/\1/p'`
 
@@ -113,24 +108,6 @@ fold_end() {
   echo "::endgroup::"
 }
 
-
-##### git
-gfxd() {
-  git clean -fxd # TESTING
-}
-
-update() {
-  [[ -d $WORKSPACE ]] || mkdir -p $WORKSPACE
-  cd $WORKSPACE
-
-  if [ ! -d $WORKSPACE/$2 ]; then git clone "https://github.com/$1/$2.git"; fi
-
-  cd $2
-
-  git fetch --tags "https://github.com/$1/$2.git"
-  (git fetch "https://github.com/$1/$2.git" $3 && git checkout -fq FETCH_HEAD) #|| git checkout -fq $3 # || fallback is for local testing on tag
-  git reset --hard
-}
 
 #### sbt tools
 

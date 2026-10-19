@@ -9,8 +9,6 @@
 # Specifying the Scala version:
 #  - To build a release (enables publishing to sonatype):
 #    - Specify SCALA_VER_BASE and optionally SCALA_VER_SUFFIX. The version is SCALA_VER=$SCALA_VER_BASE$SCALA_VER_SUFFIX.
-#    - After building a release, the jenkins job provides an updated versions.properties file as artifact.
-#      Put this file in the Scala repo and create a pull request, also update `baseVersion in Global` in build.sbt.
 #
 # - Otherwise, an integration build is performed:
 #    - version number is read from the build.sbt, extended with -[bin|pre]-$sha
@@ -24,7 +22,7 @@
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
 
-clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on GitHub Actions it's a fresh machine every time)
+clean="clean" # TESTING leave empty to speed up testing locally (on GitHub Actions it's a fresh machine every time)
 
 ## BUILD STEPS:
 
@@ -49,9 +47,6 @@ determineScalaVersion() {
 
   SCALA_VER="$SCALA_VER_BASE$SCALA_VER_SUFFIX"
 
-  echo "version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
-  echo "sbtDistVersionOverride=-Dproject.version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
-
   echo "Building Scala $SCALA_VER."
 }
 
@@ -67,7 +62,7 @@ removeExistingBuilds() {
 
     # "module" is not a scala module (like scala-xml), but an artifact of a boostrap build. the variable
     # contains: "org/scala-lang/modules", "org/scala-lang/scala-compiler", "org/scala-lang/scala-library", ...
-    local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
+    local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri'`
 
     for module in $scalaLangModules; do
       local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | endswith(\"$SCALA_VER\")) | .uri"`
@@ -149,20 +144,4 @@ buildQuick() {
   else
     invokeQuick $clean publish
   fi
-}
-
-testStability() {
-  # Run stability tests using the just built version as "quick" and a new version as "strap"
-  fold_start stab "Testing stability"
-  cd $WORKSPACE
-
-  mv build/quick quick1
-  rm -rf build/
-
-  invokeQuick $clean library/compile reflect/compile compiler/compile
-
-  mv build/quick build/strap
-  mv quick1 build/quick
-  scripts/stability-test.sh
-  fold_end stab
 }
