@@ -1294,7 +1294,11 @@ trait Namers extends MethodSynthesis {
 
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
       cdef.getAndRemoveAttachment[PermittedSubclasses].foreach { permitted =>
-        clazz.updateAttachment(new PermittedSubclassSymbols(permitted.permits, t => enteringTyper(typer.typed(t, Mode.NOmode).symbol)))
+        clazz.updateAttachment(new PermittedSubclassSymbols(permitted.permits, { t =>
+          val sub = enteringTyper(typer.typed(t, Mode.NOmode).symbol)
+          if (sub.isClass) clazz.addChild(sub)
+          sub
+        }))
       }
 
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).

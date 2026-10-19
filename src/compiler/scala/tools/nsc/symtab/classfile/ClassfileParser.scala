@@ -920,12 +920,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case tpnme.PermittedSubclassesATTR =>
           sym.setFlag(SEALED)
           val numberOfClasses = u2()
-          numberOfClasses times {
-            val k = pool.getClassSymbol(u2())
-            completer match {
-              case ctc: ClassTypeCompleter => ctc.permittedSubclasses ::= k   // sym.addChild(k)
-              case _ =>
-            }
+          val permits = List.fill(numberOfClasses)(pool.getClassSymbol(u2()))
+          sym.updateAttachment(new PermittedSubclassSymbols(permits.map(Ident(_)), _.symbol))
+          completer match {
+            case ctc: ClassTypeCompleter => ctc.permittedSubclasses = permits.reverse
+            case _ =>
           }
 
         case _ =>
