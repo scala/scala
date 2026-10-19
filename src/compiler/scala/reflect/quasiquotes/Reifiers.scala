@@ -38,8 +38,9 @@ trait Reifiers { self: Quasiquotes =>
 
     /** Map that stores freshly generated names linked to the corresponding names in the reified tree.
      *  This information is used to reify names created by calls to freshTermName and freshTypeName.
+     *  Insertion-ordered: the iteration order fixes the order of the emitted vals.
      */
-    val nameMap = collection.mutable.HashMap.empty[Name, Set[TermName]].withDefault { _ => Set() }
+    val nameMap = collection.mutable.LinkedHashMap.empty[Name, List[TermName]].withDefault { _ => Nil }
 
     /** Wraps expressions into:
      *    a block which starts with a sequence of vals that correspond
@@ -259,7 +260,7 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(hole: UnapplyHole) => hole.treeNoUnlift
       case FreshName(prefix) if prefix != nme.QUASIQUOTE_NAME_PREFIX =>
         def fresh() = c.freshName(TermName(nme.QUASIQUOTE_NAME_PREFIX))
-        def introduceName() = { val n = fresh(); nameMap(name) += n; n}
+        def introduceName() = { val n = fresh(); nameMap(name) :+= n; n}
         def result(n: Name) = if (isReifyingExpressions) Ident(n) else Bind(n, Ident(nme.WILDCARD))
         if (isReifyingPatterns) result(introduceName())
         else result(nameMap.get(name).map { _.head }.getOrElse { introduceName() })
