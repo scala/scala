@@ -3504,13 +3504,45 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
        NoSymbol)
 
     private[this] var childSet: Set[Symbol] = Set()
-    override def children = childSet
+    override def children = attachments.get[PermittedSubclassSymbols] match {
+      case Some(permitted) => permittedChildren(permitted)
+      case _               => childSet
+    }
     override def addChild(sym: Symbol): Unit = {
-      if(!isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type] && !childSet.contains(sym))
-        globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+      if (knownDirectSubclassesCalled && !childSet.contains(sym))
+        observedBeforeRegistered(sym)
 
       childSet = childSet + sym
     }
+
+    private def knownDirectSubclassesCalled = !isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type]
+    private def observedBeforeRegistered(sym: Symbol): Unit =
+      globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+
+    // The children of a sealed Java class are the permitted classes that extend it, a classfile may name others
+    // (JVMS 4.7.31). If completing one needs the children, it is like a Scala subclass that is not yet registered.
+    private def permittedChildren(permitted: PermittedSubclassSymbols): Set[Symbol] =
+      if (permitted.children != null) permitted.children
+      else if (permitted.completing != null) {
+        if (knownDirectSubclassesCalled) observedBeforeRegistered(permitted.completing)
+        Set.empty
+      }
+      else {
+        var complete = true
+        val children = permitted.symbols.filter { sym =>
+          permitted.completing = sym
+          // a stub is a stale entry for a class that no longer exists
+          try !sym.isInstanceOf[StubSymbol] && sym.parentSymbols.contains(this)
+          catch { case _: CyclicReference =>
+            // `sym` is being completed. Unless a macro asked, assume it is a child (javac checked) and don't cache.
+            complete = false
+            if (knownDirectSubclassesCalled) { observedBeforeRegistered(sym); false } else true
+          }
+          finally permitted.completing = null
+        }.toSet
+        if (complete) permitted.children = children
+        children
+      }
 
     def anonOrRefinementString = {
       if (hasCompleteInfo) {

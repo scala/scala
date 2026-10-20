@@ -170,7 +170,17 @@ trait StdAttachments {
 
   /** Java sealed classes may be qualified with a permits clause specifying allowed subclasses. */
   case class PermittedSubclasses(permits: List[Tree]) extends PlainAttachment
-  case class PermittedSubclassSymbols(permits: List[Symbol]) extends PlainAttachment
+
+  /** The classes permitted to extend a sealed Java class, which determine its children. They are named by its
+   *  `permits` clause or PermittedSubclasses attribute (`declared`), or else are the classes of its compilation
+   *  unit (JLS 8.1.6). They are resolved and completed on first use, doing so while completing the sealed class
+   *  could cycle.
+   */
+  final class PermittedSubclassSymbols(permitted: => List[Symbol], val declared: Boolean) extends PlainAttachment {
+    lazy val symbols: List[Symbol] = permitted
+    private[reflect] var children: Set[Symbol] = null
+    private[reflect] var completing: Symbol = null
+  }
 
   case class NamePos(pos: Position) extends PlainAttachment
 

@@ -1,0 +1,7 @@
+Test_2.scala:7: warning: match may not be exhaustive.
+It would fail on the following inputs: Free(), Square(), _
+  def f(s: Shape) = s match { case _: Circle => 1; case _: Shape.Point => 2; case _: Holder.Inner => 3 }
+                    ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
