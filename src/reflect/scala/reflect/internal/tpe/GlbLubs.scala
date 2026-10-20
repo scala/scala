@@ -334,7 +334,8 @@ private[internal] trait GlbLubs {
    *     - their signatures match (so one overrides the other) as seen from `t` but not as seen from `lubBase`.
    *       This can happen when `lubBase` has existentially bound type arguments, e.g. `WrappedArray[_ >: Int with Double]`,
    *       or when a base class of `t` that is not a base class of `lubBase` defines a type member,
-   *       e.g. `type X = Int` makes `def m(x: X)` and `def m(x: Int)` match.
+   *       e.g. `type X = Int` makes `def m(x: X)` and `def m(x: Int)` match,
+   *       or implements a val of a shared base class, e.g. `val o: OInt.type` makes `def m(x: o.X)` and `def m(x: Int)` match.
    *
    *  Otherwise, both lookups walk the same declarations in the same order and find `sym`.
    *
@@ -372,13 +373,17 @@ private[internal] trait GlbLubs {
       val names = mutable.HashSet.empty[Name]
       def add(name: Name): Unit = if ((result eq null) || result(name)) names += name
       var declaresType = false
+      var stableNames: List[Name] = Nil
       tBaseClasses foreach { bc =>
         if (!inLubBase(bc)) bc.info.decls foreach { decl =>
           add(decl.name)
           if (decl.isType) declaresType = true
+          else if (decl.isStable) stableNames ::= decl.name
         }
       }
-      val multiplyDeclaredMatters = mayCollapse || declaresType ||
+      def implementsSharedVal = stableNames.exists(name =>
+        tBaseClasses.exists(bc => inLubBase(bc) && bc.info.decls.lookupAll(name).exists(_.isStable)))
+      val multiplyDeclaredMatters = mayCollapse || declaresType || implementsSharedVal ||
         !tBaseClasses.filter(inLubBase).corresponds(lubBaseClasses.filter(t.baseTypeIndex(_) >= 0))(_ eq _)
       if (multiplyDeclaredMatters) {
         val sharedNames = mutable.HashSet.empty[Name]
@@ -394,9 +399,6 @@ private[internal] trait GlbLubs {
     }
     result
   }
-
-
-
 
   /** The least upper bound wrt <:< of a list of types */
   protected[internal] def lub(ts0: List[Type], depth: Depth): Type = {

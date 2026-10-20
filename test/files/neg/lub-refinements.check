@@ -13,4 +13,19 @@ lub-refinements.scala:37: error: type mismatch;
  required: Nothing
     x: Nothing
     ^
-3 errors
+lub-refinements.scala:48: error: type mismatch;
+ found   : Test.QX with Test.QY{def m: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:59: error: type mismatch;
+ found   : Test.HA with Test.HB{def m(x: Int): this.HY; type HY <: String; type HX <: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:72: error: type mismatch;
+ found   : Test.VA with Test.VB{def m(x: Int): this.o.Y; val o: Test.OInt.type}
+ required: Nothing
+    x: Nothing
+    ^
+6 errors

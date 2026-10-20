@@ -36,4 +36,39 @@ object Test {
     val x = if (c) new XY else new YX
     x: Nothing
   }
+
+  // Shared base classes linearized in a different order in the lubbed types (`Y with X`) than in the lub (`X with Y`)
+  trait Q { def m: Any }
+  trait QX extends Q { override def m: Int = 1 }
+  trait QY extends Q { override def m: Any = 2 }
+  class YX1 extends QY with QX { def a = 1 }
+  class YX2 extends QY with QX { def b = 1 }
+  def linearizationInherited(c: Boolean): Unit = {
+    val x = if (c) new YX1 else new YX2
+    x: Nothing
+  }
+
+  // A type member of the lubbed types makes inherited members match
+  trait H { type HX; type HY }
+  trait HA extends H { def m(x: HX): Any }
+  trait HB extends H { def m(x: Int): HY = ??? }
+  class H1 extends HA with HB { type HX = Int; type HY = String; def a = 1 }
+  class H2 extends HA with HB { type HX = Int; type HY = String; def b = 1 }
+  def typeMember(c: Boolean): Unit = {
+    val x = if (c) new H1 else new H2
+    x: Nothing
+  }
+
+  // A val of the lubbed types makes inherited members match
+  trait Outer { type X; type Y }
+  object OInt extends Outer { type X = Int; type Y = String }
+  trait V { val o: Outer }
+  trait VA extends V { def m(x: o.X): Any }
+  trait VB extends V { def m(x: Int): o.Y = ??? }
+  class V1 extends VA with VB { val o: OInt.type = OInt; def a = 1 }
+  class V2 extends VA with VB { val o: OInt.type = OInt; def b = 1 }
+  def valPath(c: Boolean): Unit = {
+    val x = if (c) new V1 else new V2
+    x: Nothing
+  }
 }
