@@ -94,9 +94,9 @@ Use partest for compiler work, JUnit/ScalaCheck for library work.
 ### Partest Tips
 
 - **Flags:** Add `//> using options -Werror -Xlint` at top of source
-- **Java flags:** `// javac: <flags>`
-- **Filters:** `// filter: <regex>` to exclude output lines
-- **Version constraints:** `// javaVersion 8` or `15+` or `9 - 11`
+- **Java flags:** `//> using javacOpt <flags>`
+- **Filters:** `//> using filter <regex>` to exclude output lines
+- **Version constraints:** `//> using jvm 17+` or `8` or `9-11`
 - **Separate compilation:** Use `_N` suffixes (e.g., `A.scala`, `B_1.scala`, `Test_2.scala`)
 
 ### Creating Check Files

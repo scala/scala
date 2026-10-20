@@ -137,6 +137,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
       if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
 
+      // Children of a class from a classfile or pickle are registered when the class is completed
+      rawInfo match {
+        case sl: SymLoader if !sl.fromSource => initialize
+        case _ =>
+      }
+
       enclosingPackage.info.decls.foreach { sym =>
         if(sourceFile == sym.sourceFile) {
           sym.rawInfo.forceDirectSuperclasses()

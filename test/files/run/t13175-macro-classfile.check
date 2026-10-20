@@ -1,0 +1,19 @@
+p.Shape
+  p.Circle
+  p.Holder.Inner
+  p.Poly
+    p.Free
+    p.Square
+  p.Shape.Point
+java.lang.constant.ConstantDesc
+  java.lang.Double
+  java.lang.Float
+  java.lang.Integer
+  java.lang.Long
+  java.lang.String
+  java.lang.constant.ClassDesc
+  java.lang.constant.DynamicConstantDesc
+  java.lang.constant.MethodHandleDesc
+    java.lang.constant.AsTypeMethodHandleDesc
+    java.lang.constant.DirectMethodHandleDesc
+  java.lang.constant.MethodTypeDesc
