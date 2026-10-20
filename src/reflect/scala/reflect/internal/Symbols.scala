@@ -136,6 +136,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def knownDirectSubclasses = {
       // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
       if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      // before setting KnownDirectSubclassesCalled, loading registers the children
+      loadChildren()
 
       enclosingPackage.info.decls.foreach { sym =>
         if(sourceFile == sym.sourceFile) {
@@ -147,6 +149,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         updateAttachment(KnownDirectSubclassesCalled)
 
       children
+    }
+
+    /** The children of a class from a classfile or pickle are known once it is loaded. */
+    private[reflect] def loadChildren(): Unit = rawInfo match {
+      case loader: SymLoader if !loader.fromSource => initialize
+      case _ =>
     }
 
     def selfType = {
@@ -3504,9 +3512,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
        NoSymbol)
 
     private[this] var childSet: Set[Symbol] = Set()
-    override def children = attachments.get[PermittedSubclassSymbols] match {
-      case Some(permitted) => permittedChildren(permitted)
-      case _               => childSet
+    override def children = {
+      loadChildren()
+      attachments.get[PermittedSubclassSymbols] match {
+        case Some(permitted) => permittedChildren(permitted)
+        case _               => childSet
+      }
     }
     override def addChild(sym: Symbol): Unit = {
       if (knownDirectSubclassesCalled && !childSet.contains(sym))
@@ -3672,6 +3683,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def info            = fail(NoType)
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
+    // the children of a missing class are unknown, asking for them is not an error
+    override private[reflect] def loadChildren(): Unit = ()
   }
   class StubClassSymbol(owner0: Symbol, name0: TypeName, val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
   class StubTermSymbol(owner0: Symbol, name0: TermName, val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
