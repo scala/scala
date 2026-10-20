@@ -388,6 +388,16 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   override def registerTopLevelSym(sym: Symbol): Unit = { currentTopLevelSyms += sym }
 
+  /** A targeted type check stops early, before the `@nowarn` annotations in the rest of the unit are known.
+   *  Its warnings stay suspended until a full type check of the unit reports them.
+   */
+  override protected def PerRunReporting: PerRunReporting = new PerRunReporting {
+    override def reportSuspendedMessages(unit: CompilationUnit): Unit = unit match {
+      case u: RichCompilationUnit if u.targetPos != NoPosition =>
+      case _ => super.reportSuspendedMessages(unit)
+    }
+  }
+
   protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
     val global: Global.this.type
     val platform: Global.this.platform.type

@@ -34,17 +34,13 @@ object Test extends InteractiveTest {
 
     askReload(sourceFiles.toIndexedSeq)
 
-
-    // what happens here:
-    //   1. targeted type check of `foo`, warningin is suspended, then *not* reported because of the nowarn.
-    //      once that type check is finished, `reportSuspendedMessages` is called
-    //   2. targeted type check of `bar`, warning is directly issued because `reportSuspendedMessages` was called
-    //      before in that run, for that source file; `suppressions` are considered known.
-    //   3. targeted type check of `baz`, warning is directly issued, though it should be filtered out...
-    println("targeted 2 - doesn't handle nowarn correctly")
+    // Targeted type checks keep their warnings suspended, the full type check filters them with all `@nowarn`s known.
+    // Background type checking may run before or after the targeted checks, the outcome is the same.
+    println("targeted 2")
     // tree not yet typed
     new TypeAction(compiler).runTest()
     assert(run1 ne compiler.currentRun)
+    sourceFiles foreach (src => askLoadedTyped(src).get)
     ws()
   }
 }

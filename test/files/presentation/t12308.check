@@ -27,7 +27,7 @@ askType at Foo.scala(4,37)
 ================================================================================
 Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1,List())
 reload: Foo.scala
-targeted 2 - doesn't handle nowarn correctly
+targeted 2
 
 askType at Foo.scala(2,37)
 ================================================================================
@@ -47,4 +47,3 @@ askType at Foo.scala(4,37)
 1
 ================================================================================
 Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1,List())
-Problem(RangePosition(t12308/src/Foo.scala, 109, 109, 114),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1,List())
