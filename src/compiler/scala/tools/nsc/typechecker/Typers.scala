@@ -3530,7 +3530,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // Note that Java units don't have synthetics, but there's no point in making a special case (for performance or correctness),
         // as we only type check Java units when running Scaladoc on Java sources.
-        addSynthetics(stats1, scope)
+        // An interleaved request to type the unit would take the remaining synthetics, they'd be missing from this tree.
+        uninterruptible(addSynthetics(stats1, scope))
       }
     }
 
