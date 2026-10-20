@@ -289,6 +289,22 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree): Unit = {}
 
+  /** Whether the presentation compiler may service requests in `signalDone`. */
+  def interruptsEnabled: Boolean = false
+  def interruptsEnabled_=(enabled: Boolean): Unit = ()
+
+  /** Runs `op` without servicing presentation compiler requests in between, which would see its changes half done.
+   *
+   *  A request can retype trees that the typer is in the middle of. Every multi-step change to a scope,
+   *  `unit.synthetics`, attachments or reporting state must either run in `uninterruptible` or have the same
+   *  outcome when the tree is retyped.
+   */
+  final def uninterruptible[T](op: => T): T = {
+    val saved = interruptsEnabled
+    interruptsEnabled = false
+    try op finally interruptsEnabled = saved
+  }
+
   /** Called from parser, which signals hereby that a method definition has been parsed. */
   def signalParseProgress(pos: Position): Unit = {}
 

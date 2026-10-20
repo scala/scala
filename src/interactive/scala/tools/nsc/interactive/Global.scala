@@ -307,7 +307,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   protected[interactive] var minRunId = 1
 
-  private[interactive] var interruptsEnabled = true
+  override var interruptsEnabled = true
 
   private val NoResponse: Response[_] = new Response[Any]
 
