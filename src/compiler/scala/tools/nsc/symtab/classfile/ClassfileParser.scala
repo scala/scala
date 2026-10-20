@@ -919,14 +919,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.PermittedSubclassesATTR =>
           sym.setFlag(SEALED)
-          val numberOfClasses = u2()
-          numberOfClasses times {
-            val k = pool.getClassSymbol(u2())
-            completer match {
-              case ctc: ClassTypeCompleter => ctc.permittedSubclasses ::= k   // sym.addChild(k)
-              case _ =>
-            }
-          }
+          val permitted = List.fill(u2().toInt)(pool.getClassSymbol(u2()))
+          // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
+          if (!sym.hasJavaEnumFlag)
+            sym.updateAttachment(new PermittedSubclassSymbols(permitted, declared = true))
 
         case _ =>
           in.skip(attrLen)
@@ -1308,7 +1304,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var exceptions: List[NameOrString] = Nil
   }
   private final class ClassTypeCompleter(@unused name: Name, @unused jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
-    var permittedSubclasses: List[symbolTable.Symbol] = Nil
     override def complete(sym: symbolTable.Symbol): Unit = {
       val info = sigToTypeOpt(sym, sig).getOrElse {
         val superTpe = if (parent == null) definitions.AnyClass.tpe_* else getClassSymbol(parent.value).tpe_*
@@ -1317,11 +1312,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         ClassInfoType(superTpe1 :: ifacesTypes, instanceScope, clazz)
       }
       sym.setInfo(info)
-      // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
-      if (!sym.hasJavaEnumFlag)
-        for (k <- permittedSubclasses)
-          if (k.parentSymbols.contains(sym))
-            sym.addChild(k)
     }
   }
 
