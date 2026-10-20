@@ -353,7 +353,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                   val sym = dupl.symbol
                   val vetoScope = !brutally && !(locals contains sym) && !(locals contains sym.deSkolemize)
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
-                  if (!(vetoScope || vetoThis)) dupl.symbol = NoSymbol
+                  // An error symbol is left by a failed typing attempt, not an external binding. Keeping it would
+                  // make retyping skip the tree without reporting an error (scala/bug#9041, scala/bug#13198).
+                  if (sym.isError || !(vetoScope || vetoThis)) dupl.symbol = NoSymbol
                 }
                 dupl.clearType()
             }
