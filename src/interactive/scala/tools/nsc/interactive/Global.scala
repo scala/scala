@@ -34,12 +34,15 @@ import scala.util.control.ControlThrowable
  * This trait allows the IDE to have an instance of the PC that
  * does not clear the comments table at every new typer run (those
  * being many and close between in this context).
+ *
+ * Expanded comments are still dropped: they are derived from raw comments,
+ * which are replaced when a source is reloaded.
  */
 
 trait CommentPreservingTypers extends Typers {
   self: Analyzer =>
 
-  override def resetDocComments() = {}
+  override def resetDocComments() = global.cookedDocComments.clear()
 }
 
 trait InteractiveAnalyzer extends Analyzer {

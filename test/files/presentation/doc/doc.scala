@@ -45,10 +45,12 @@ object Test extends InteractiveTest {
 
       val global: this.type = this
 
+      // CommentPreservingTypers keeps doc comments across typer runs: once a unit is typed,
+      // its tree no longer has the `DocDef`s to recover them from.
       @annotation.nowarn
       override lazy val analyzer = new {
         val global: outer.type = outer
-      } with doc.ScaladocAnalyzer with InteractiveAnalyzer {
+      } with doc.ScaladocAnalyzer with InteractiveAnalyzer with CommentPreservingTypers {
         override def newTyper(context: Context): InteractiveTyper with ScaladocTyper =
           new Typer(context) with InteractiveTyper with ScaladocTyper
       }
