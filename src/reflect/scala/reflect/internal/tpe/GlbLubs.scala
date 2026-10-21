@@ -351,10 +351,14 @@ private[internal] trait GlbLubs {
   /** Run a `lub` or `glb` with explicit depth in the caches of the enclosing call. Without one,
    *  it is outermost and must claim the caches, so a nested top-level call gets fresh ones and
    *  no entries outlive it (scala/bug#6437).
+   *
+   *  `body` gets the caches so that it need not look them up again, which in runtime reflection
+   *  costs a thread-local access. They stay current for the whole call: a nested top-level call
+   *  that installs fresh ones restores them when it finishes.
    */
-  private def withEnclosingLubGlbCaches[T](body: => T): T = {
+  private def withEnclosingLubGlbCaches[T](body: LubGlbCaches => T): T = {
     val caches = lubGlbCaches
-    if (caches.inUse) body else claimLubGlbCaches(caches, body)
+    if (caches.inUse) body(caches) else claimLubGlbCaches(caches, body(caches))
   }
 
   private def claimLubGlbCaches[T](caches: LubGlbCaches, body: => T): T = {
@@ -388,7 +392,8 @@ private[internal] trait GlbLubs {
   }
 
   /** The least upper bound wrt <:< of a list of types */
-  protected[internal] def lub(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches {
+  protected[internal] def lub(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches { caches =>
+    val lubResults = caches.lubResults
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingTpe
       case List(t) => t
@@ -527,28 +532,38 @@ private[internal] trait GlbLubs {
   private final val globalGlbLimit = Depth(2)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
-  def glb(ts: List[Type]): Type = elimSuper(ts) match {
-    case List() => AnyTpe
-    case List(t) => t
-    case ts0 =>
-      if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
-      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try withLubGlbCaches(isLub = false, ts0) {
-        glbNorm(ts0, lubDepth(ts0))
-      } finally {
-        if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
+  def glb(ts: List[Type]): Type = ts match {
+    case Nil      => AnyTpe
+    case t :: Nil => t
+    case _        =>
+      // `elimSuper` runs subtype checks, which must not see the caches of an enclosing call either.
+      withLubGlbCaches(isLub = false, ts) {
+        elimSuper(ts) match {
+          case List() => AnyTpe
+          case List(t) => t
+          case ts0 =>
+            if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
+            val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
+            try glbNorm(ts0, lubDepth(ts0))
+            finally {
+              if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
+            }
+        }
       }
   }
 
-  protected[internal] def glb(ts: List[Type], depth: Depth): Type = elimSuper(ts) match {
-    case List() => AnyTpe
-    case List(t) => t
-    case ts0 => glbNorm(ts0, depth)
+  protected[internal] def glb(ts: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches { _ =>
+    elimSuper(ts) match {
+      case List() => AnyTpe
+      case List(t) => t
+      case ts0 => glbNorm(ts0, depth)
+    }
   }
 
   /** The greatest lower bound of a list of types (as determined by `<:<`), which have been normalized
     *  with regard to `elimSuper`. */
-  protected def glbNorm(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches {
+  protected def glbNorm(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches { caches =>
+    val glbResults = caches.glbResults
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyTpe
       case List(t) => t
