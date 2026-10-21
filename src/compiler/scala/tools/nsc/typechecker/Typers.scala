@@ -1964,7 +1964,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  the tricky method synthesis scenarios, so we'll make it that.
      */
     protected def finishMethodSynthesis(templ: Template, clazz: Symbol, context: Context): Template = {
-      addSyntheticMethods(templ, clazz, context)
+      // An interleaved request would retype the class, see some synthetic methods already present and skip adding the others.
+      uninterruptible(addSyntheticMethods(templ, clazz, context))
     }
     /** For flatMapping a list of trees when you want the DocDefs and Annotated
      *  to be transparent.
@@ -3529,7 +3530,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // Note that Java units don't have synthetics, but there's no point in making a special case (for performance or correctness),
         // as we only type check Java units when running Scaladoc on Java sources.
-        addSynthetics(stats1, scope)
+        // An interleaved request to type the unit would take the remaining synthetics, they'd be missing from this tree.
+        uninterruptible(addSynthetics(stats1, scope))
       }
     }
 
