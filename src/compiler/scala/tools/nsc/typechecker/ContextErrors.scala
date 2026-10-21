@@ -62,6 +62,14 @@ trait ContextErrors extends splain.SplainErrors {
   case class NormalTypeError(underlyingTree: Tree, errMsg: String, override val actions: List[CodeAction] = Nil)
     extends TreeTypeError
 
+  /** A type error whose message is `message + hints() + suffix`, with `hints` computed on first use. For expensive
+   *  hints on errors that are often discarded in a silent context.
+   */
+  case class LazyHintsTypeError(underlyingTree: Tree, message: String, suffix: String)(hints: () => String)
+    extends TreeTypeError {
+    lazy val errMsg: String = message + hints() + suffix
+  }
+
   case class AccessTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
 
@@ -428,102 +436,110 @@ trait ContextErrors extends splain.SplainErrors {
       //typedSelect or checkSelector
       def NotAMemberError(sel: Tree /*Select|Import*/, qual: Tree, name: Name, cx: Context) = {
         import util.EditDistance, util.StringUtil.oxford
-        def errMsg: String = {
+        val owner            = qual.tpe.typeSymbol
+        val target           = qual.tpe.widen
+        def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
+        def nameString       = decodeWithKind(name, owner)
+        val message          =
+          if (name == nme.CONSTRUCTOR) s"$target does not have a constructor"
+          else s"$nameString is not a member of $targetKindString${target.directObjectString}"
+        val posAddendum      = withAddendum(qual.pos)("")
+
+        // The hints are computed lazily, if at all, as the error is often buffered and discarded in a silent context
+        // (e.g. `i += 1` is first typed as `i.+=(1)`). Capture mutable state eagerly and compute them in the phase in
+        // which the error was issued.
+        val inImplicitSearch = context.openImplicits.nonEmpty
+        val issuedPhase      = phase
+        /* Illuminating some common situations and errors a bit further. */
+        def hints: String = {
           val editThreshold  = 3
           val maxSuggestions = 4
 
-          val owner            = qual.tpe.typeSymbol
-          val target           = qual.tpe.widen
-          def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
-          def nameString       = decodeWithKind(name, owner)
-          /* Illuminating some common situations and errors a bit further. */
-          def addendum         = {
-            @inline def orEmpty(cond: Boolean)(s: => String) = if (cond) s else ""
-            val companionSymbol: Symbol = {
-              if (name.isTermName && owner.isPackageClass)
-                target.member(name.toTypeName)
-              else NoSymbol
-            }
-            val companion = orEmpty(companionSymbol != NoSymbol)(s"note: $companionSymbol exists, but it has no companion object.")
-            // find out all the names available under target within ~2 edit distances
-            lazy val alternatives: List[(Int, String)] = {
-              val x = name.decode
-              // effectively suppress comparison ops, but if they say <= and there is >=, offer it
-              def isEncodedComparison(n: Name) = n match {
-                case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE => true
-                case _ => false
-              }
-              val nameIsComparison = isEncodedComparison(name)
-              if (context.openImplicits.nonEmpty || x.length < 2) Nil
-              else {
-                target.members.iterator
-                  .filter(sym => sym.isTerm == name.isTermName &&
-                    !sym.isConstructor &&
-                    !nme.isLocalName(sym.name) &&
-                    isEncodedComparison(sym.name) == nameIsComparison &&
-                    sym.name != nme.EQ && sym.name != nme.NE &&
-                    cx.isAccessible(sym, target))
-                  .map(_.name.decode)
-                  .filter { n =>
-                    math.abs(n.length - x.length) <= editThreshold &&
-                    n != x &&
-                    !n.contains("$")
-                  }
-                  .map(n => (EditDistance.levenshtein(n, x), n))
-                  .filter { case (d, n) =>
-                    val nset = n.endsWith("_=")
-                    val xset = x.endsWith("_=")
-                    val (n1, x1) = if (nset && xset) (n.dropRight(2), x.dropRight(2)) else (n, x)
-                    def contained = x1.forall(c => n1.indexOf(c) >= 0)
-                    !(nset ^ xset) && d <= editThreshold && (d <= n1.length/2 && d <= x1.length/2 || contained)
-                  }
-                  .toList.sorted
-              }
-            }
-            val altStr: String =
-              orEmpty(companionSymbol == NoSymbol && alternatives.nonEmpty) {
-                val d0 = alternatives.head._1
-                val (best0, rest0) = alternatives.span(_._1 == d0)
-                val best = best0.map(_._2).distinct
-                val rest = rest0.map(_._2).distinct
-                val more = (maxSuggestions - best.length) max 0
-                val add1 = orEmpty(more > 0 && rest.nonEmpty)(s" or perhaps ${oxford(rest.take(more), "or")}?")
-                val add2 = orEmpty(best.length > maxSuggestions || rest.length > more)(" or...?")
-                s"did you mean ${oxford(best.take(maxSuggestions), "or")}?$add1$add2"
-              }
-            val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
-            val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
-            val javaRules = orEmpty(owner.isClass && !owner.hasPackageFlag) {
-              owner.baseClasses.iterator.filter(bc => bc.ne(ObjectClass) && bc.isJavaDefined)
-                .map { bc => cx.javaFindMember(bc.info, name, _.isStaticMember) match {
-                    case (_, NoSymbol) if name.isTermName =>
-                      cx.javaFindMember(bc.info, name.toTypeName, _.isStaticMember)
-                    case res => res
-                  }
-                }
-                .find(_._2 ne NoSymbol) match {
-                  case Some((jtype, jmember)) =>
-                    val more = sm"""Static Java members belong to companion objects in Scala;
-                      |they are not inherited, even by subclasses defined in Java."""
-                    s"did you mean ${jtype.typeSymbol.fullName}.${jmember.name}? $more"
-                  case _ => ""
-                }
-            }
-            List(companion, altStr, notAnyRef, semicolon, javaRules).filter("" != _).map("\n" + _).mkString
+          @inline def orEmpty(cond: Boolean)(s: => String) = if (cond) s else ""
+          val companionSymbol: Symbol = {
+            if (name.isTermName && owner.isPackageClass)
+              target.member(name.toTypeName)
+            else NoSymbol
           }
-          def targetStr = targetKindString + target.directObjectString
-          withAddendum(qual.pos)(
-            if (name == nme.CONSTRUCTOR) s"$target does not have a constructor"
-            else s"$nameString is not a member of $targetStr$addendum"
-          )
+          val companion = orEmpty(companionSymbol != NoSymbol)(s"note: $companionSymbol exists, but it has no companion object.")
+          // find out all the names available under target within ~2 edit distances
+          lazy val alternatives: List[(Int, String)] = {
+            val x = name.decode
+            // effectively suppress comparison ops, but if they say <= and there is >=, offer it
+            def isEncodedComparison(n: Name) = n match {
+              case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE => true
+              case _ => false
+            }
+            val nameIsComparison = isEncodedComparison(name)
+            if (inImplicitSearch || x.length < 2) Nil
+            else {
+              target.members.iterator
+                .filter(sym => sym.isTerm == name.isTermName &&
+                  !sym.isConstructor &&
+                  !nme.isLocalName(sym.name) &&
+                  isEncodedComparison(sym.name) == nameIsComparison &&
+                  sym.name != nme.EQ && sym.name != nme.NE &&
+                  cx.isAccessible(sym, target))
+                .map(_.name.decode)
+                .filter { n =>
+                  math.abs(n.length - x.length) <= editThreshold &&
+                  n != x &&
+                  !n.contains("$")
+                }
+                .map(n => (EditDistance.levenshtein(n, x), n))
+                .filter { case (d, n) =>
+                  val nset = n.endsWith("_=")
+                  val xset = x.endsWith("_=")
+                  val (n1, x1) = if (nset && xset) (n.dropRight(2), x.dropRight(2)) else (n, x)
+                  def contained = x1.forall(c => n1.indexOf(c) >= 0)
+                  !(nset ^ xset) && d <= editThreshold && (d <= n1.length/2 && d <= x1.length/2 || contained)
+                }
+                .toList.sorted
+            }
+          }
+          val altStr: String =
+            orEmpty(companionSymbol == NoSymbol && alternatives.nonEmpty) {
+              val d0 = alternatives.head._1
+              val (best0, rest0) = alternatives.span(_._1 == d0)
+              val best = best0.map(_._2).distinct
+              val rest = rest0.map(_._2).distinct
+              val more = (maxSuggestions - best.length) max 0
+              val add1 = orEmpty(more > 0 && rest.nonEmpty)(s" or perhaps ${oxford(rest.take(more), "or")}?")
+              val add2 = orEmpty(best.length > maxSuggestions || rest.length > more)(" or...?")
+              s"did you mean ${oxford(best.take(maxSuggestions), "or")}?$add1$add2"
+            }
+          val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
+          val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
+          val javaRules = orEmpty(owner.isClass && !owner.hasPackageFlag) {
+            owner.baseClasses.iterator.filter(bc => bc.ne(ObjectClass) && bc.isJavaDefined)
+              .map { bc => cx.javaFindMember(bc.info, name, _.isStaticMember) match {
+                  case (_, NoSymbol) if name.isTermName =>
+                    cx.javaFindMember(bc.info, name.toTypeName, _.isStaticMember)
+                  case res => res
+                }
+              }
+              .find(_._2 ne NoSymbol) match {
+                case Some((jtype, jmember)) =>
+                  val more = sm"""Static Java members belong to companion objects in Scala;
+                    |they are not inherited, even by subclasses defined in Java."""
+                  s"did you mean ${jtype.typeSymbol.fullName}.${jmember.name}? $more"
+                case _ => ""
+              }
+          }
+          List(companion, altStr, notAnyRef, semicolon, javaRules).filter("" != _).map("\n" + _).mkString
         }
+        // Post-typer typing (e.g. in erasure) has no use for user-facing hints.
+        val lazyHints: () => String =
+          if (name == nme.CONSTRUCTOR || isPastTyper) () => ""
+          else () => enteringPhase(issuedPhase)(hints)
+        def errMsg = message + lazyHints() + posAddendum
         sel match {
           case tree: Import => // selector name is unique; use it to improve position
             tree.selectors.find(_.hasName(name)) match {
               case Some(badsel) => issueTypeError(PosAndMsgTypeError(tree.posOf(badsel), errMsg))
               case _ => issueNormalTypeError(sel, errMsg)
             }
-          case _ => issueNormalTypeError(sel, errMsg)
+          case _ => issueTypeError(LazyHintsTypeError(sel, message, posAddendum)(lazyHints))
         }
         // the error has to be set for the copied tree, otherwise
         // the error remains persistent across multiple compilations
