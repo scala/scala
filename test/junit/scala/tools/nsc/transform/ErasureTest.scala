@@ -92,11 +92,39 @@ class ErasureTest extends BytecodeTesting {
         |abstract class V
         |trait SelfTrait { self: D => def m: String = d }
         |trait SelfRefined { self: V with X => def m: String = x }
+        |abstract class Base { def b: String = "b" }
+        |trait SelfSub { self: Sub => def m: String = b }
+        |abstract class Sub extends Base with SelfSub
+        |class P { private def a(): String = "P.a" }
+        |trait A { def a(): String }
+        |trait SelfPrivate { self: UP => def m: String = a() }
+        |abstract class UP extends P with A with SelfPrivate
+        |trait SelfJava { self: UJ => def m: String = d }
+        |abstract class UJ extends java.lang.Thread with D with SelfJava
         |""".stripMargin
     val cs = compileClasses(code)
     // a self type that erases to a trait: cast to the member's owner, as before
     assertEquals(List(TypeOp(CHECKCAST, "D"), InvokeInterface("D", "d", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfTrait", "m"))
     // `V with X` erases to the class `V`, which does not derive from `X`: cast to `X`
     assertEquals(List(TypeOp(CHECKCAST, "X"), InvokeInterface("X", "x", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfRefined", "m"))
+    // a member of a class is already called with `invokevirtual`; it is not retargeted to the self type's class
+    assertEquals(List(TypeOp(CHECKCAST, "Base"), InvokeVirtual("Base", "b", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfSub", "m"))
+    // `invokevirtual UP.a` would resolve to the private `P.a`
+    assertEquals(List(TypeOp(CHECKCAST, "A"), InvokeInterface("A", "a", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfPrivate", "m"))
+    // a Java superclass may declare private or static methods that we cannot see
+    assertEquals(List(TypeOp(CHECKCAST, "D"), InvokeInterface("D", "d", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfJava", "m"))
+  }
+
+  @Test
+  def selfTypeCastOverload(): Unit = {
+    val code =
+      """class P { private def a(x: Int): String = "P.a" }
+        |trait A { def a(): String }
+        |trait SelfOverload { self: U => def m: String = a() }
+        |abstract class U extends P with A with SelfOverload
+        |""".stripMargin
+    val cs = compileClasses(code)
+    // the private `P.a` has a different descriptor, so `invokevirtual U.a` resolves to `A.a`
+    assertEquals(List(TypeOp(CHECKCAST, "U"), InvokeVirtual("U", "a", "()Ljava/lang/String;")), castsAndCalls(cs, "SelfOverload", "m"))
   }
 }
