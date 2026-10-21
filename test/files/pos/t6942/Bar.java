@@ -1,4 +1,3 @@
-// scalac: -nowarn
 //
 package foo;
 

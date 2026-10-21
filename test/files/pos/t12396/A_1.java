@@ -1,4 +1,3 @@
-// javaVersion: 21+
 
 public class A_1 {
   public int f(Object s) {

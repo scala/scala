@@ -1,4 +1,4 @@
-//scalac: -Xlint:-nonlocal-return
+//> using options -Xlint:-nonlocal-return
 object Test {
   def f(): Int = {
     try (1 to 10).map { i => return 16 ; i }.sum

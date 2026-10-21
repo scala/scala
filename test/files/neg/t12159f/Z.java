@@ -1,4 +1,3 @@
-// javaVersion: 17+
 package p;
 
 final class Z1 extends Z {

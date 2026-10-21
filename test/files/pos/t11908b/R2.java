@@ -1,4 +1,3 @@
-// javaVersion: 16+
 public class R2 {
     final record R(int i, String s) implements IntLike {
         public int getInt() {
