@@ -1,4 +1,4 @@
-// scalac: -Ypickle-java
+//> using options -Ypickle-java
 package p1;
 
 public class Test extends Base {}

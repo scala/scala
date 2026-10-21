@@ -1,4 +1,4 @@
-//scalac: -Xmaxwarns 0 -Xlint:-stars-align
+//> using options -Xmaxwarns 0 -Xlint:-stars-align
 //
 case class Foo(x: Int, ys: Int*) {
   // We write our own toString because of scala/bug#7735

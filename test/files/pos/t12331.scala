@@ -1,4 +1,4 @@
-//scalac: -Ymacro-annotations
+//> using options -Ymacro-annotations
 //-Ymacro-annotations -Yvalidate-pos:_ -Vprint:_ -Vprint-pos
 
 import annotation._

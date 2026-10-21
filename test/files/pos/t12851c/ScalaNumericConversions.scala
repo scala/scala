@@ -1,4 +1,4 @@
-//> using option -Werror
+//> using options -Werror
 /*
  * Scala (https://www.scala-lang.org)
  *

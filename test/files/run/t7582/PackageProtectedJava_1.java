@@ -1,4 +1,3 @@
-// scalac: -opt:l:inline -opt-inline-from:** -opt-warnings
 package p1;
 
 // public class, protected method

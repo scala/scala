@@ -1,4 +1,3 @@
-// javaVersion: 15+
 class TextBlocks {
 
     final static String aText = """

@@ -1,4 +1,4 @@
-//scalac: -Yimports:java.lang
+//> using options -Yimports:java.lang
 
 import scala.Int
 

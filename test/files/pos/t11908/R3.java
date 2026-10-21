@@ -1,4 +1,3 @@
-// javaVersion: 16+
 public record R3(int i, long l, String s) {
 
     // User-specified accessor
