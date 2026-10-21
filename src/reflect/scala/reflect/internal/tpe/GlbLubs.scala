@@ -293,13 +293,23 @@ private[internal] trait GlbLubs {
    *  valid within that call: they may be in-progress placeholders (`Any` / `Nothing`) and
    *  were computed at the current phase.
    */
-  final class LubGlbCaches {
+  final class LubGlbCaches(val outer: LubGlbCaches) {
     val lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
     val glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
     var inUse = false
+    /** The arguments of the top-level `lub` (`ownerIsLub`) or `glb` that claimed these caches,
+     *  `null` if a call with explicit depth claimed them.
+     */
+    var ownerTs: List[Type] = null
+    var ownerIsLub = false
     def clear(): Unit = { lubResults.clear(); glbResults.clear() }
+    /** How many enclosing top-level calls, including the owner, compute this `lub` or `glb`. */
+    def inProgress(isLub: Boolean, ts: List[Type]): Int = {
+      val here = if (ownerIsLub == isLub && ownerTs == ts) 1 else 0
+      if (outer eq null) here else here + outer.inProgress(isLub, ts)
+    }
   }
-  private[this] var _lubGlbCaches = new LubGlbCaches
+  private[this] var _lubGlbCaches = new LubGlbCaches(null)
   def lubGlbCaches: LubGlbCaches = _lubGlbCaches
   def lubGlbCaches_=(caches: LubGlbCaches): Unit = _lubGlbCaches = caches
 
@@ -312,20 +322,30 @@ private[internal] trait GlbLubs {
    *  forcing the info of a member runs a lazy type completer that typechecks code. The nested
    *  call must neither observe the outer call's recursion guards (it would return `Any` or
    *  `Nothing`) nor discard them when it finishes, so it gets fresh caches.
+   *
+   *  A call already in progress twice is taken to be a cycle, e.g. through `solve`, and shares
+   *  the current caches so that their recursion guards stop it.
    */
-  private def withLubGlbCaches[T](body: => T): T = {
+  private def withLubGlbCaches[T](isLub: Boolean, ts: List[Type])(body: => T): T = {
     // Single-threaded only: `inUse` and the maps are plain fields, so a holder must never be
     // visible to two threads. The compiler universe is single-threaded; runtime reflection
     // (`SynchronizedTypes`) overrides `lubGlbCaches` with thread-local storage, so each thread
     // gets, replaces and restores only its own holder. A universe used concurrently must do
     // the same; making `inUse` volatile would not help, as the maps would still be shared.
     val saved = lubGlbCaches
-    if (saved.inUse) {
-      val fresh = new LubGlbCaches
+    if (!saved.inUse) {
+      saved.ownerTs = ts
+      saved.ownerIsLub = isLub
+      try claimLubGlbCaches(saved, body) finally saved.ownerTs = null
+    } else if (saved.inProgress(isLub, ts) >= 2) body
+    else {
+      val fresh = new LubGlbCaches(saved)
       fresh.inUse = true
+      fresh.ownerTs = ts
+      fresh.ownerIsLub = isLub
       lubGlbCaches = fresh
       try body finally lubGlbCaches = saved
-    } else claimLubGlbCaches(saved, body)
+    }
   }
 
   /** Run a `lub` or `glb` with explicit depth in the caches of the enclosing call. Without one,
@@ -348,7 +368,7 @@ private[internal] trait GlbLubs {
     case _        =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try withLubGlbCaches {
+      try withLubGlbCaches(isLub = true, ts) {
         val res = lub(ts, lubDepth(ts))
         // If the number of unapplied type parameters in all incoming
         // types is consistent, and the lub does not match that, return
@@ -513,7 +533,7 @@ private[internal] trait GlbLubs {
     case ts0 =>
       if (settings.areStatisticsEnabled) statistics.incCounter(lubCount)
       val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try withLubGlbCaches {
+      try withLubGlbCaches(isLub = false, ts0) {
         glbNorm(ts0, lubDepth(ts0))
       } finally {
         if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)

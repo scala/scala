@@ -79,7 +79,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   private lazy val _pendingBaseTypes = mkThreadLocalStorage(new mutable.HashSet[Type])
   override def pendingBaseTypes = _pendingBaseTypes.get
 
-  private lazy val _lubGlbCaches = mkThreadLocalStorage(new LubGlbCaches)
+  private lazy val _lubGlbCaches = mkThreadLocalStorage(new LubGlbCaches(null))
   override def lubGlbCaches = _lubGlbCaches.get
   override def lubGlbCaches_=(caches: LubGlbCaches) = _lubGlbCaches.set(caches)
 

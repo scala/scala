@@ -51,4 +51,27 @@ class GlbLubsTest {
     check(lub(_), lubDepth)
     check(lub(_, Depth(3)), _ => Depth(3))
   }
+
+  /** A top-level lub that re-enters itself through something other than a completer, which
+   *  would detect the cycle, must still terminate.
+   */
+  @Test def selfReentrantLubTerminates(): Unit = {
+    val annotated = AnnotatedType(List(AnnotationInfo(TypeConstraintClass.tpe, Nil, Nil)), IntTpe)
+    val ts = classes(annotated, _ => NullaryMethodType(IntTpe), _ => NullaryMethodType(IntTpe))
+    val limit = 20
+    var nesting, maxNesting = 0
+    addAnnotationChecker(new AnnotationChecker {
+      def annotationsConform(tpe1: Type, tpe2: Type): Boolean = {
+        if (nesting < limit) {
+          nesting += 1
+          maxNesting = maxNesting max nesting
+          try lub(ts) finally nesting -= 1
+        }
+        true
+      }
+    })
+    try lub(ts)
+    finally removeAllAnnotationCheckers()
+    assertTrue(s"lub re-entered itself $maxNesting times", maxNesting < limit)
+  }
 }
