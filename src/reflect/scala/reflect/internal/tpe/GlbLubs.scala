@@ -289,7 +289,7 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
-  /** Memo tables and recursion guards for one top-level `lub` or `glb`. Entries are only
+  /** Memo tables and recursion guards for one outermost `lub` or `glb`. Entries are only
    *  valid within that call: they may be in-progress placeholders (`Any` / `Nothing`) and
    *  were computed at the current phase.
    */
@@ -312,9 +312,6 @@ private[internal] trait GlbLubs {
    *  forcing the info of a member runs a lazy type completer that typechecks code. The nested
    *  call must neither observe the outer call's recursion guards (it would return `Any` or
    *  `Nothing`) nor discard them when it finishes, so it gets fresh caches.
-   *
-   *  Entries left behind by `lub`/`glb` calls with explicit depth made outside of any top-level
-   *  call are discarded on entry (scala/bug#6437).
    */
   private def withLubGlbCaches[T](body: => T): T = {
     // Single-threaded only: `inUse` and the maps are plain fields, so a holder must never be
@@ -328,11 +325,21 @@ private[internal] trait GlbLubs {
       fresh.inUse = true
       lubGlbCaches = fresh
       try body finally lubGlbCaches = saved
-    } else {
-      saved.clear()
-      saved.inUse = true
-      try body finally { saved.inUse = false; saved.clear() }
-    }
+    } else claimLubGlbCaches(saved, body)
+  }
+
+  /** Run a `lub` or `glb` with explicit depth in the caches of the enclosing call. Without one,
+   *  it is outermost and must claim the caches, so a nested top-level call gets fresh ones and
+   *  no entries outlive it (scala/bug#6437).
+   */
+  private def withEnclosingLubGlbCaches[T](body: => T): T = {
+    val caches = lubGlbCaches
+    if (caches.inUse) body else claimLubGlbCaches(caches, body)
+  }
+
+  private def claimLubGlbCaches[T](caches: LubGlbCaches, body: => T): T = {
+    caches.inUse = true
+    try body finally { caches.inUse = false; caches.clear() }
   }
 
   def lub(ts: List[Type]): Type = ts match {
@@ -361,7 +368,7 @@ private[internal] trait GlbLubs {
   }
 
   /** The least upper bound wrt <:< of a list of types */
-  protected[internal] def lub(ts0: List[Type], depth: Depth): Type = {
+  protected[internal] def lub(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingTpe
       case List(t) => t
@@ -521,7 +528,7 @@ private[internal] trait GlbLubs {
 
   /** The greatest lower bound of a list of types (as determined by `<:<`), which have been normalized
     *  with regard to `elimSuper`. */
-  protected def glbNorm(ts0: List[Type], depth: Depth): Type = {
+  protected def glbNorm(ts0: List[Type], depth: Depth): Type = withEnclosingLubGlbCaches {
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyTpe
       case List(t) => t
