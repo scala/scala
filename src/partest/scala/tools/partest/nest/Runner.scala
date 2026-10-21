@@ -336,7 +336,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   /** Normalize the log output by applying test-specific filters
    *  and fixing filesystem-specific paths.
    *
-   *  Line filters are picked up from `filter: pattern` at the top of sources.
+   *  Line filters are picked up from `//> using filter pattern` at the top of sources.
    *  The filtered line is detected with a simple "contains" test,
    *  and yes, "filter" means "filter out" in this context.
    *
@@ -422,7 +422,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       if (!state.isOk) appendTranscript(EOL + logFile.fileContents)
     }
 
-  // all sources in a round may contribute flags via // scalac: -flags
+  // all sources in a round may contribute flags via //> using options -flags
   // under --realeasy, if a jvm isn't specified, require the minimum viable using -release 8
   // to avoid accidentally committing a test that requires a later JVM.
   def flagsForCompilation(sources: List[File]): List[String] = {
@@ -440,17 +440,28 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   // for each file, cache the args for each tool
   private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, List[String]]]
-  //private val optionsPattern = raw"\s*//>\s*using\s+(?:([^.]+)\.)?option(s)?\s+(.*)".r
   private val optionsPattern = raw"\s*//>\s*using\s+(${ToolName.alts})\s+(.*)".r
 
-  // Inspect given files for tool args in header line comments of the form `// tool: args`.
-  // If the line comment starts `//>`, accept `using option` or `using options` pragmas
-  // to define options to`scalac`. Or take `using test.options`, where test scope is used for test options.
+  // Header lines that look like directives but don't match `optionsPattern`: an unknown `using` key,
+  // or the obsolete `// tool: args` syntax. These would otherwise be silently ignored.
+  private val unknownUsingPattern = raw"\s*//>\s*using\b.*".r
+  private val legacyPattern       = raw"\s*//\s*(?:scalac|javac|javaVersion|jvm|filter|java(?=\s*:\s*-))\s*:.*".r
+
+  // Directives are line comments in the first 10 lines of a source file.
+  private def readHeaderFrom(f: File): List[String] =
+    Using.resource(Files.lines(f.toPath, codec.charSet))(_.limit(10).toArray()).toList.map(_.toString)
+
+  def invalidHeaderLines(files: List[File]): List[String] =
+    for {
+      f    <- files
+      line <- readHeaderFrom(f)
+      if !optionsPattern.matches(line) && (unknownUsingPattern.matches(line) || legacyPattern.matches(line))
+    } yield s"${f.getName}: ${line.trim}"
+
+  // Inspect given files for tool args in header pragmas of the form `//> using <tool> args`,
+  // where <tool> is one of `options` (scalac), `javacOpt`, `javaOpt`, `jvm`, `filter`,
+  // `test.options` or `retest.options`.
   // (`test` scope is not used that way by scala-cli, where framework args are passed on command line.)
-  // (One could imagine `using test.testOpt` for framework args.)
-  // If `filter:`, return entire line as if quoted, else parse the args string as command line.
-  // Currently, we look for scalac, javac, java, jvm, filter, test.
-  //
   def toolArgsFor(files: List[File])(tool: ToolName): List[String] = {
     def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).apply(tool)
     def readToolArgs(f: File): Map[ToolName, List[String]] = optionsFromHeader(readHeaderFrom(f))
@@ -458,19 +469,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       import scala.sys.process.Parser.tokenize
       def matchLine(line: String): List[(ToolName, List[String])] = line match {
         case optionsPattern(scope, rest) =>
-          val named = Try {
-            if (scope == null) ToolName.scalac
-            else ToolName.named(scope)
-          }.toOption
-          named match {
-            case None =>
-              suiteRunner.verbose(s"ignoring pragma with unknown scope '$scope': $line")
-              Nil
-            case Some(name) =>
-              val settings = tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
-              if (settings.isEmpty) Nil
-              else (name, settings) :: Nil
-          }
+          val settings = tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
+          if (settings.isEmpty) Nil
+          else (ToolName.named(scope), settings) :: Nil
         case _ => Nil
       }
       header.flatMap(matchLine)
@@ -478,8 +479,6 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
         .map { case (k, kvs) => (k, kvs.flatMap(_._2)) }
         .withDefaultValue(List.empty[String])
     }
-    def readHeaderFrom(f: File): List[String] =
-      Using.resource(Files.lines(f.toPath, codec.charSet))(_.limit(10).toArray()).toList.map(_.toString)
     files.flatMap(argsFor)
   }
 
@@ -550,7 +549,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def runNegTest(): TestState = {
     // a "crash test" passes if the error is not FatalError and there is a check file to compare.
     // a neg test passes if the log compares same to check file.
-    // under "//> using retest.option -some-flags", also check pos compilation after adding the extra flags.
+    // under "//> using retest.options -some-flags", also check pos compilation after adding the extra flags.
     def checked(r: TestState) = r match {
       case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
@@ -660,7 +659,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     logFile.delete()
     stopwatch.start()
 
-    val state =  kind match {
+    val invalidHeaders = invalidHeaderLines(sources(testFile))
+    val state = if (invalidHeaders.nonEmpty) genFail(invalidHeaders.mkString("unrecognized header directive, expected `//> using <tool> args`: ", "; ", "")) else kind match {
       case "pos"          => runPosTest()
       case "neg"          => runNegTest()
       case "res"          => runResidentTest()

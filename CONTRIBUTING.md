@@ -130,12 +130,15 @@ scala  -cp out Test
 ```
 
 **Flags**
-  - To specify compiler flags such as `-Werror -Xlint`, you can add a comment at the top of your source file of the form:
-    `//> using options -Werror -Xlint`
-  - Similarly, a `// javac: <flags>` comment in a Java source file passes flags to the Java compiler.
-  - A `// filter: <regex>` comment eliminates output lines that match the filter before comparing to the `.check` file.
-  - A `// java: <flags>` comment makes a `run` test execute in a separate JVM and passes the additional flags to the `java` command.
-  - A `// javaVersion <N[+| - M]>` comment makes partest skip the test if the java version is outside the requested range (e.g. `8`, `15+`, `9 - 11`)
+
+Partest reads `//> using <tool> <args>` directives from the first 10 lines of each source file in a test. Directives from all files of a test apply to the whole test. Any other header line that looks like a directive (an unknown `using` key, or the obsolete `// scalac:` style) fails the test.
+
+  - `//> using options -Werror -Xlint` passes flags to the Scala compiler.
+  - `//> using javacOpt <flags>` passes flags to the Java compiler.
+  - `//> using filter <regex>` eliminates output lines that match the regex before comparing to the `.check` file. Quote a regex that contains spaces.
+  - `//> using javaOpt <flags>` makes a `run` test execute in a separate JVM and passes the additional flags to the `java` command.
+  - `//> using jvm <N[+|-M]>` makes partest skip the test if the Java version is outside the requested range (e.g. `8`, `15+`, `9-11`).
+  - `//> using retest.options <flags>` on a `neg` test: after the expected failure matches the `.check` file, compile again with the extra flags and expect success.
 
 **Common Usage**
 
