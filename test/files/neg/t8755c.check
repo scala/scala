@@ -3,7 +3,7 @@
         parser   1  parse source into ASTs, perform simple desugaring
          namer   2  resolve names, attach symbols to named trees
 packageobjects   3  load package objects
-         typer   4  the meat and potatoes: type the trees
+         typer   4  type the trees
             C1   0  C1 tests phase assembly
 superaccessors   6  add super accessors in traits and nested classes
     extmethods   7  add extension methods for value classes

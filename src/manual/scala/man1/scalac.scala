@@ -322,7 +322,7 @@ object scalac extends Command {
           "load package objects"),
         Definition(
           MItalic("typer"),
-          "the meat and potatoes: type the trees"),
+          "type the trees"),
         Definition(
           MItalic("superaccessors"),
           "add super accessors in traits and nested classes"),

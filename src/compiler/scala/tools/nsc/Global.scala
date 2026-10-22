@@ -714,8 +714,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   /** Add the internal compiler phases to the phases set.
    *  This implementation creates a description map at the same time.
    *  The order of this list has no effect: phase order is computed from
-   *  `runsAfter` and `runsRightAfter` by phase assembly. It is kept in run order
-   *  for the reader.
+   *  `runsAfter` and `runsRightAfter` by phase assembly. The list is kept in run
+   *  order for the reader. It omits `flatten` and the platform phases (`jvm`),
+   *  which are added elsewhere.
    */
   protected def computeInternalPhases(): Unit =
     // Keep descriptions short enough that -Vphases output fits in 80 columns.
@@ -723,7 +724,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       syntaxAnalyzer          -> "parse source into ASTs, perform simple desugaring",
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
-      analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      analyzer.typerFactory   -> "type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for value classes",
       pickler                 -> "serialize symbol tables",
