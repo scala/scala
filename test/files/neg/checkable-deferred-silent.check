@@ -1,0 +1,33 @@
+checkable-deferred-silent.scala:23: warning: fruitless type test: a value of type A cannot also be a B
+  def f0(x: A) = x.isInstanceOf[B]
+                               ^
+checkable-deferred-silent.scala:24: warning: fruitless type test: a value of type A cannot also be a B
+  def f1(x: A) = one(x.isInstanceOf[B])
+                                   ^
+checkable-deferred-silent.scala:25: warning: fruitless type test: a value of type A cannot also be a B
+  def f2(x: A) = ov(x.isInstanceOf[B])
+                                  ^
+checkable-deferred-silent.scala:26: warning: fruitless type test: a value of type A cannot also be a B
+  def f3(c: C, x: A) = c.n(x.isInstanceOf[B])
+                                         ^
+checkable-deferred-silent.scala:27: warning: fruitless type test: a value of type A cannot also be a B
+  def f4(x: A) = named(i = 1, b = x.isInstanceOf[B])
+                                                ^
+checkable-deferred-silent.scala:28: warning: fruitless type test: a value of type A cannot also be a B
+  def f5(x: A) = s"${x.isInstanceOf[B]}"
+                                   ^
+checkable-deferred-silent.scala:30: warning: fruitless type test: a value of type List[A] cannot also be a Seq[B] (but still might match its erasure)
+  def g0(x: List[A]) = x match { case _: Seq[B] => 0; case _ => 1 }
+                                         ^
+checkable-deferred-silent.scala:31: warning: fruitless type test: a value of type List[A] cannot also be a Seq[B] (but still might match its erasure)
+  def g1(x: List[A]) = oneI(x match { case _: Seq[B] => 0; case _ => 1 })
+                                              ^
+checkable-deferred-silent.scala:32: warning: fruitless type test: a value of type List[A] cannot also be a Seq[B] (but still might match its erasure)
+  def g2(x: List[A]) = ovI(x match { case _: Seq[B] => 0; case _ => 1 })
+                                             ^
+checkable-deferred-silent.scala:33: warning: fruitless type test: a value of type List[A] cannot also be a Seq[B] (but still might match its erasure)
+  def g3(c: C, x: List[A]) = c.n(x match { case _: Seq[B] => 0; case _ => 1 })
+                                                   ^
+error: No warnings can be incurred under -Werror.
+10 warnings
+1 error
