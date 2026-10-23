@@ -1,0 +1,4 @@
+glb: wrong=0 exceptions=0
+glb after: A with B{def x: Int; def y: Int}
+isErroneous: wrong=0 exceptions=0
+isDependentMethodType: wrong=0 exceptions=0
