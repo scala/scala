@@ -2967,30 +2967,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
-    /** Synthesize and type check the implementation of a type with a Single Abstract Method.
+    /** Adapt a type checked Function node `{ (p1: T1, ..., pN: TN) => body }` to an expected SAM type.
       *
-      * Based on a type checked Function node `{ (p1: T1, ..., pN: TN) => body } : S`
-      * where `S` is the expected type that defines a single abstract method (call it `apply` for the example),
-      * that has signature `(p1: T1', ..., pN: TN'): T'`, synthesize the instantiation of the following anonymous class
+      * `pt` is the expected type `S`, which defines a single abstract method `sam`
+      * with signature `(p1: T1', ..., pN: TN'): T'`. If `pt` is not fully defined,
+      * its unknown type parameters are inferred from the function's type (`instantiateSamFromFunction`).
+      * The types T1' ... TN' and T' are derived from the signature of `sam`, as seen from the fully defined type.
       *
-      * {{{
-      *   new S {
-      *    def apply\$body(p1: T1, ..., pN: TN): T = body
-      *    def apply(p1: T1', ..., pN: TN'): T' = apply\$body(p1,..., pN)
-      *   }
-      * }}}
-      *
-      * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `pt`,
-      * If `pt` is not fully defined, we derive `samClassTpFullyDefined` by inferring any unknown type parameters.
-      *
-      * The types T1' ... TN' and T' are derived from the method signature of the sam method,
-      * as seen from the fully defined `samClassTpFullyDefined`.
-      *
-      * The function's body is put in a (static) method in the class definition to enforce scoping.
-      * S's members should not be in scope in `body`. (Putting it in the block outside the class runs into implementation problems described below)
+      * No class is synthesized here. On success, `fun` keeps its shape, its type becomes the SAM type,
+      * and it gets a `SAMFunction` attachment that carries a synthetic class symbol, used by erasure
+      * to compute any bridges the SAM implementation needs. Uncurry and delambdafy later emit the function
+      * through LambdaMetaFactory, or as an anonymous class when LMF can't implement `S`.
       *
       * The restriction on implicit arguments (neither S's constructor, nor sam may take an implicit argument list),
-      * is to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
+      * is to keep type inference of the fully defined SAM type simple (see `Definitions.samOf`).
       *
       * Impl notes:
       *   - `fun` has a FunctionType, but the expected type `pt` is some SAM type -- let's remedy that

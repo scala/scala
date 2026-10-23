@@ -515,24 +515,24 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *
    *  ========= Macro expansion =========
    *
-   *  First of all `macroExpandXXX`:
-   *    1) If necessary desugars the `expandee` to fit into the default expansion scheme
-   *       that is understood by `macroExpandWithRuntime` / `macroExpandWithoutRuntime`
+   *  `macroExpand` delegates (through `pluginsMacroExpand` and `standardMacroExpand`) to a `DefMacroExpander`.
+   *
+   *  First of all `MacroExpander.expand`:
+   *    1) Loads the macro implementation using `macroRuntime`, and calls
+   *       `macroExpandWithRuntime`, or `macroExpandWithoutRuntime` if it cannot be loaded
    *
    *  Then `macroExpandWithRuntime`:
    *    2) Checks whether the expansion needs to be delayed
-   *    3) Loads macro implementation using `macroMirror`
-   *    4) Synthesizes invocation arguments for the macro implementation
-   *    5) Checks that the result is a tree or an expr bound to this universe
+   *    3) Synthesizes invocation arguments for the macro implementation (`macroArgs`) and invokes it
+   *    4) Checks that the result is a tree or an expr bound to this universe, without free symbols
    *
-   *  Finally `macroExpandXXX`:
-   *    6) Validates the expansion against the white list of supported tree shapes
-   *    7) Typechecks the result as required by the circumstances of the macro application
+   *  Finally `DefMacroExpander.onSuccess`:
+   *    5) Typechecks the result as required by the circumstances of the macro application
    *
-   *  If -Ymacro-debug-lite is enabled, you will get basic notifications about macro expansion
+   *  If -Vmacro-lite is enabled, you will get basic notifications about macro expansion
    *  along with macro expansions logged in the form that can be copy/pasted verbatim into REPL.
    *
-   *  If -Ymacro-debug-verbose is enabled, you will get detailed log of how exactly this function
+   *  If -Vmacro is enabled, you will get detailed log of how exactly this function
    *  performs class loading and method resolution in order to load the macro implementation.
    *  The log will also include other non-trivial steps of macro expansion.
    *
@@ -653,7 +653,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         if (tree.isErrorTyped) tree
         else {
           if (macroDebugVerbose) println(s"$label (against pt = $pt): $tree")
-          // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
+          // `macroExpand` is called from `adapt`, where implicit conversions are disabled
           // therefore we need to re-enable the conversions back temporarily
           val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
           if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reporter.errors}")

@@ -168,7 +168,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   }
 
   /**
-   * An `AsyncBlockBuilder` builds a `ListBuffer[AsyncState]` based on the expressions of a `Block(stats, expr)` (see `Async.asyncImpl`).
+   * An `AsyncBlockBuilder` builds a `ListBuffer[AsyncState]` based on the expressions of a `Block(stats, expr)` (see `buildAsyncBlock`).
    *
    * @param stats       a list of expressions
    * @param expr        the last expression of the block

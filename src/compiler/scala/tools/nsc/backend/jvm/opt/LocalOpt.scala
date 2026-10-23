@@ -142,7 +142,9 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * running an Analyzer (just that frames allocate more space than required). The correct max
  * values written to the bytecode are re-computed during classfile serialization.
  * To keep things simpler, we don't update the max values in every optimization:
- *   - we do it in `removeUnreachableCodeImpl`, because it's quite straightforward
+ *   - they are computed once by `BackendUtils.computeMaxLocalsMaxStack` before running the first
+ *     Analyzer, and cached using the `ACC_MAXS_COMPUTED` pseudo-flag
+ *   - optimizations that can grow the stack (e.g., box/unbox, copy propagation) increase maxStack
  *   - maxLocals is updated in `compactLocalVariables`, which runs at the end of method optimizations
  *
  *
@@ -800,7 +802,8 @@ object LocalOptImpls {
    *
    * Note that no instructions are eliminated.
    *
-   * Returns a pair of booleans (handlerRemoved, liveHandlerRemoved)
+   * Returns a `RemoveHandlersResult`, which tells whether any handler was removed and whether
+   * a live (reachable) handler was removed.
    *
    * The `liveHandlerRemoved` result depends on `removeUnreachableCode` being executed
    * before, so that `BackendUtils.isLabelReachable` gives a correct answer.

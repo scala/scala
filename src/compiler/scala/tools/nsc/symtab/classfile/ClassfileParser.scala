@@ -893,7 +893,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             // in the output directories of scalac.
             //
             // References:
-            // https://issues.scala-lang.org/browse/SI-2689
+            // https://github.com/scala/bug/issues/2689
             // https://github.com/scala/scala/commit/7315339782f6e19ddd6199768352a91ef66eb27d
             // https://github.com/scala-ide/scala-ide/commit/786ea5d4dc44065379a05eb3ac65d37f8948c05d
             //

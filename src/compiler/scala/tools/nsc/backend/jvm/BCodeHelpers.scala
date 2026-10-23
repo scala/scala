@@ -26,7 +26,10 @@ import scala.util.chaining._
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
  *
- *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
+ *  @author  Miguel Garcia
+ *
+ *  For compiler archaeologists: Miguel's notes from 2010-2014, long out of date,
+ *  https://chara.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
  *
  */
 abstract class BCodeHelpers extends BCodeIdiomatic {
@@ -202,8 +205,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    * an anonymous or local class). See doc in BTypes.
    *
    * The class is parameterized by two functions to obtain a bytecode class descriptor for a class
-   * symbol, and to obtain a method signature descriptor fro a method symbol. These function depend
-   * on the implementation of GenASM / GenBCode, so they need to be passed in.
+   * symbol, and to obtain a method signature descriptor fro a method symbol. These functions are
+   * passed in because this code was once shared by the GenASM and GenBCode backends.
    */
   def enclosingMethodAttribute(classSym: Symbol, classDesc: Symbol => String, methodDesc: Symbol => String): Option[EnclosingMethodEntry] = {
     // specialized classes are always top-level, see comment in BTypes

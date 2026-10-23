@@ -74,10 +74,10 @@ import symtab.Flags._
   * The only change due to overriding is that its value is never written to the field
   * (the overridden val's value is, of course, stored in the field in addition to its side-effect being performed).
   *
-  * Would be nice to accommodate Java 9 support for vals defined in traits.
-  * They are currently emitted as final, but the write (putfield) to the val does not occur syntactically
-  * within the <init> method (it's done by the trait setter, which is called from the trait's mixin constructor,
-  * which is called from the subclass's constructor...)
+  * The field that backs a trait val in a subclass is MUTABLE, so it is not emitted as ACC_FINAL:
+  * the write (putfield) does not occur syntactically within the <init> method (it's done by the trait setter,
+  * which is called from the trait's mixin constructor, which is called from the subclass's constructor...),
+  * and since Java 9 the JVM rejects writes to a final field outside <init>.
   */
 abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransformers with AccessorSynthesis {
   import global._
@@ -91,7 +91,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     if (sym.isJavaDefined || sym.isPackageClass || !sym.isClass) tp
     else synthFieldsAndAccessors(tp)
 
-  // TODO: drop PRESUPER support when we implement trait parameters in 2.13
+  // TODO: drop PRESUPER support when early initializers are removed
   private def excludedAccessorOrFieldByFlags(statSym: Symbol): Boolean = statSym hasFlag PRESUPER
 
   // used for internal communication between info and tree transform of this phase -- not pickled, not in initialflags

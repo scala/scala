@@ -136,7 +136,8 @@ abstract class ExplicitOuter extends InfoTransform
    *    </li>
    *    <li>
    *      Add a protected \$outer field to an inner class which is
-   *      not a trait.
+   *      not a trait, unless it can reuse the outer field of its
+   *      superclass (see `hasOuterField`).
    *    </li>
    *    <li>
    *      <p>
@@ -150,13 +151,6 @@ abstract class ExplicitOuter extends InfoTransform
    *        mixin classes with outer accessor defs (unless the superclass
    *        already inherits the same mixin).
    *      </p>
-   *    </li>
-   *    <li>
-   *      Make all super accessors and modules in traits non-private, mangling
-   *      their names.
-   *    </li>
-   *    <li>
-   *      Remove protected flag from all members of traits.
    *    </li>
    *  </ol>
    *  Note: this transformInfo need not be reflected as the JVM reflection already

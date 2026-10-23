@@ -57,7 +57,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
    *  processing if an argument is seen which is not a command line option.
    *  This is an expedience for the moment so that you can say
    *
-   *    scalac -d /tmp foo.scala -optimise
+   *    scalac -d /tmp foo.scala -deprecation
    *
    *  while also allowing
    *

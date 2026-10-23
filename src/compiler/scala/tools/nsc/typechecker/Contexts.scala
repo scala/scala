@@ -184,7 +184,7 @@ trait Contexts { self: Analyzer with ImportTracking =>
    * More on error buffering:
    *     When are type errors recoverable? In quite a few places, it turns out. Some examples:
    *     trying to type an application with/without the expected type, or with/without implicit views
-   *     enabled. This is usually mediated by `Typer.silent`, `Inferencer#tryTwice`.
+   *     enabled. This is usually mediated by `Typer.silent`.
    *
    *     Initially, starting from the `typer` phase, the contexts either buffer or report errors;
    *     afterwards errors are thrown. This is configured in `rootContext`. Additionally, more
