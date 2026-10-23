@@ -1984,7 +1984,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** A total ordering between symbols that refines the class
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
-     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id`.
+     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `isLessSameDepth`.
      */
     final def isLess(that: Symbol): Boolean = (this ne that)  && {
       def baseTypeSeqLength(sym: Symbol) =
@@ -1993,9 +1993,62 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (this.isType)
         (that.isType &&
          { val diff = baseTypeSeqLength(this) - baseTypeSeqLength(that)
-           diff > 0 || diff == 0 && this.id < that.id })
+           diff > 0 || diff == 0 && isLessSameDepth(this, that) })
       else
         that.isType || this.id < that.id
+    }
+
+    /** The order of base types of the same depth:
+     *
+     *  - Abstract types precede classes. The base type sequence of a reference to an abstract type is the type
+     *    itself followed by that of its upper bound as seen from the prefix, which may be deeper than its declared
+     *    bound, from which its depth is computed. E.g. `SymbolApi#NameType <: Universe#Name`, but in `Global`
+     *    its bound is the class `Names#Name`, of the same depth. The `lub` of two such base type sequences
+     *    relies on them being ordered by `isLess`.
+     *  - `Object` precedes other base types (universal traits like `Equals`), as it did when the order was by
+     *    id. Java generic signatures erase a refinement to its first parent, so `Equals with Object` must not
+     *    become `Equals`.
+     *  - Otherwise, by `compareByName`.
+     */
+    private def isLessSameDepth(sym1: Symbol, sym2: Symbol): Boolean =
+      if (sym1.isAbstractType != sym2.isAbstractType) sym1.isAbstractType
+      else {
+        val obj = definitions.ObjectClass
+        if (sym1 eq obj) true
+        else if (sym2 eq obj) false
+        else compareByName(sym1, sym2) < 0
+      }
+
+    /** A total order on symbols that, unlike their ids, doesn't depend on the order in which they are created.
+     *
+     *  Symbols are ordered by name, then by the order of their owners. Only symbols with the same name and owner
+     *  (e.g. refinement classes, or type parameters of overloaded methods) are ordered by id.
+     *
+     *  This is used to order base types of the same depth, and hence the parents of a least upper bound, which
+     *  determine its erasure. A class gets its id when it is entered from source, in declaration order, or when
+     *  the package that contains it is listed from the classpath (see `DirectoryClassPath.listChildren`).
+     *  Ordering by id would make the inferred type of `if (c) new S else new T` (where `S` and `T` extend the
+     *  same traits) depend on whether those traits are compiled from source in the same run.
+     */
+    private def compareByName(sym1: Symbol, sym2: Symbol): Int =
+      if (sym1 eq sym2) 0
+      else {
+        val byName = compareNames(sym1.name, sym2.name)
+        if (byName != 0) byName
+        else if ((sym1 eq NoSymbol) || (sym2 eq NoSymbol) || (sym1.owner eq sym2.owner)) java.lang.Integer.compare(sym1.id, sym2.id)
+        else compareByName(sym1.owner, sym2.owner)
+      }
+
+    private def compareNames(n1: Name, n2: Name): Int = {
+      val len = math.min(n1.length, n2.length)
+      var i = 0
+      while (i < len) {
+        val c1 = n1.charAt(i)
+        val c2 = n2.charAt(i)
+        if (c1 != c2) return c1 - c2
+        i += 1
+      }
+      n1.length - n2.length
     }
 
     /** A partial ordering between symbols.
