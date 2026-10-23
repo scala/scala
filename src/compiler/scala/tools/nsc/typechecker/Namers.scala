@@ -754,13 +754,43 @@ trait Namers extends MethodSynthesis {
         enterDefaultGetters(tree.symbol, tree, tree.vparamss, tree.tparams)
     }
 
+    private def enterJavaClass(tree: ClassDef): Unit = {
+      val clazz = tree.symbol
+      val source = clazz.pos.source
+      patmat.javaClassesByUnit.get(source).foreach(_.addOne(clazz))
+      if (clazz.isSealed && !clazz.hasJavaEnumFlag) {
+        val permitted = tree.getAndRemoveAttachment[PermittedSubclasses] match {
+          case Some(PermittedSubclasses(permits)) =>
+            val typer = namerOf(clazz).typer
+            new PermittedSubclassSymbols(permits.map(t => enteringTyper(typer.typed(t, Mode.NOmode).symbol)), declared = true)
+          case _ =>
+            def unitClasses: List[Symbol] = {
+              // completing a class or its companion enters the nested classes
+              val classes = patmat.javaClassesByUnit.getOrElse(source, mutable.Set.empty[Symbol])
+              val seen = mutable.LinkedHashSet.empty[Symbol]
+              @tailrec def loop(): Unit = classes.find(!seen(_)) match {
+                case Some(c) =>
+                  seen += c
+                  c.initialize.companionSymbol.moduleClass.initialize
+                  loop()
+                case _ =>
+              }
+              loop()
+              seen.toList
+            }
+            new PermittedSubclassSymbols(unitClasses, declared = false)
+        }
+        clazz.updateAttachment(permitted)
+      }
+    }
+
     def enterClassDef(tree: ClassDef): Unit = {
       val ClassDef(mods, _, _, impl) = tree
       val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
       tree.symbol = enterClassSymbol(tree)
       tree.symbol setInfo completerOf(tree)
 
-      if (tree.symbol.isJava) patmat.javaClassesByUnit.get(tree.symbol.pos.source).foreach(_.addOne(tree.symbol))
+      if (tree.symbol.isJava) enterJavaClass(tree)
 
       if (mods.isCase) {
         val m = ensureCompanionObject(tree, caseModuleDef)
@@ -1192,15 +1222,13 @@ trait Namers extends MethodSynthesis {
           val psym = ptpe.typeSymbol
           if (psym.isSealed) {
             val sameSourceFile = context.unit.source.file == psym.sourceFile
-            val okChild =
-              if (psym.isJava)
-                psym.attachments.get[PermittedSubclassSymbols] match {
-                  case Some(permitted) => permitted.permits.exists(_ == clazz)
-                  case _ => sameSourceFile
-                }
-              else
-                sameSourceFile
-            if (okChild)
+            if (psym.isJava) {
+              // javac checks Java subclasses, typechecking `permits` while completing one could cycle
+              val permitted = clazz.isJava || psym.attachments.get[PermittedSubclassSymbols].exists(p => p.declared && p.symbols.contains(clazz))
+              if (!permitted)
+                pending += ParentSealedInheritanceError(tpt, psym)
+            }
+            else if (sameSourceFile)
               psym.addChild(clazz)
             else
               pending += ParentSealedInheritanceError(tpt, psym)
@@ -1279,12 +1307,6 @@ trait Namers extends MethodSynthesis {
       val res = GenPolyType(tparams0, resultType)
 
       val pluginsTp = pluginsTypeSig(res, typer, cdef, WildcardType)
-      cdef.getAndRemoveAttachment[PermittedSubclasses].foreach { permitted =>
-        clazz.updateAttachment[PermittedSubclassSymbols] {
-          PermittedSubclassSymbols(permitted.permits.map(typer.typed(_, Mode.NOmode).symbol))
-        }
-      }
-
       // Already assign the type to the class symbol (monoTypeCompleter will do it again).
       // Allows isDerivedValueClass to look at the info.
       clazz setInfo pluginsTp
