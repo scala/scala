@@ -70,7 +70,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  like from the point of view of one of its subclasses.
  */
 trait Checkable {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

@@ -22,7 +22,6 @@ import scala.reflect.internal.Mode._
 
 abstract class Erasure extends InfoTransform
                           with scala.reflect.internal.transform.Erasure
-                          with typechecker.Analyzer
                           with TypingTransformers
                           with ast.TreeDSL
                           with TypeAdaptingTransformer
@@ -481,7 +480,13 @@ abstract class Erasure extends InfoTransform
 
 // -------- erasure on trees ------------------------------------------
 
-  override def newTyper(context: Context) = new Eraser(context)
+  /** Re-typechecks trees after erasure, using `Eraser` as its typer. */
+  object erasureAnalyzer extends {
+    val global: Erasure.this.global.type = Erasure.this.global
+  } with typechecker.AbstractAnalyzer {
+    override def newTyper(context: Context): Typer = new Eraser(context)
+  }
+  import erasureAnalyzer.{Context, OriginalTreeAttachment, Typer, newTyper, rootContextPostTyper}
 
   class EnterBridges(@unused unit: CompilationUnit, root: Symbol) {
     val site         = root.thisType

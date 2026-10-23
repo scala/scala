@@ -18,7 +18,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.reflect.internal.util.StringOps._
 import scala.tools.nsc.Reporting.WarningCategory
 
-abstract class TreeCheckers extends Analyzer {
+abstract class TreeCheckers extends AbstractAnalyzer {
   import global._
 
   override protected def onTreeCheckerError(pos: Position, msg: String): Unit = {
