@@ -69,6 +69,34 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testTryCatchExprFreshName(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |package demo
+          |
+          |class a {
+          |  def handler: PartialFunction[Throwable, String] = { case _: RuntimeException => "" }
+          |  def x = try "" catch handler
+          |  def y = try "" catch handler
+          |}
+          |
+      """.stripMargin),
+      source("b.scala",
+      """
+        |package demo
+        |
+        |class b {
+        |  def test(): Unit = {
+        |    new a().y
+        |  }
+        |}
+      """.stripMargin)
+
+    )
+    test(List(code))
+  }
+
   @Test def testReify(): Unit = {
     def code = List[SourceFile](
       source("a.scala",
