@@ -322,6 +322,84 @@ private[internal] trait GlbLubs {
       }
   }
 
+  /** A superset of the names of the members of `lubBase` that could be refined by every type in `ts`,
+   *  or `null` for no restriction.
+   *
+   *  `t` can only refine member `sym` of `lubBase` if `t.nonPrivateMember(sym.name)` finds
+   *  some symbol other than `sym`. That requires one of:
+   *
+   *   - a base class of `t` that is not a base class of `lubBase` declares a member with that name.
+   *   - two distinct base classes shared by `t` and `lubBase` declare a member with that name, and either
+   *     - they are linearized in a different order in `t` and in `lubBase`, or
+   *     - their signatures match (so one overrides the other) as seen from `t` but not as seen from `lubBase`.
+   *       This can happen when `lubBase` has existentially bound type arguments, e.g. `WrappedArray[_ >: Int with Double]`,
+   *       or when a base class of `t` that is not a base class of `lubBase` defines a type member,
+   *       e.g. `type X = Int` makes `def m(x: X)` and `def m(x: Int)` match,
+   *       or implements a val of a shared base class, e.g. `val o: OInt.type` makes `def m(x: o.X)` and `def m(x: Int)` match.
+   *
+   *  Otherwise, both lookups walk the same declarations in the same order and find `sym`.
+   *
+   *  This lets `lub` avoid computing and checking all the members of `lubBase`
+   *  (which typically has many members, few or none of which are refined by all of `ts`).
+   *  Returns `null` (no restriction) if collecting the names looks more expensive than that.
+   */
+  private def lubRefinableNames(lubBase: Type, ts: List[Type]): mutable.Set[Name] = {
+    val lubBaseClasses = lubBase.baseClasses
+    val lubBaseTypeSeq = lubBase.baseTypeSeq
+    def inLubBase(bc: Symbol) = lubBaseTypeSeq.baseTypeIndex(bc) >= 0
+    val lubBaseDecls = lubBaseClasses.foldLeft(0)((n, bc) => n + bc.info.decls.size)
+    // The number of declarations in the base classes of `t` that are not base classes of `lubBase`,
+    // or `Int.MaxValue` if that exceeds `lubBaseDecls`.
+    def ownDecls(t: Type): Int = {
+      var n   = 0
+      var bcs = t.baseClasses
+      while (!bcs.isEmpty && n <= lubBaseDecls) {
+        if (!inLubBase(bcs.head)) n += bcs.head.info.decls.size
+        bcs = bcs.tail
+      }
+      if (n > lubBaseDecls) Int.MaxValue else n
+    }
+    val sized = ts.map(t => (t, ownDecls(t)))
+    // Collecting the names would visit more declarations than considering all members of `lubBase`.
+    if (!sized.exists(_._2 != Int.MaxValue)) return null
+
+    val mayCollapse = containsExistential(lubBase)
+    var result: mutable.Set[Name] = null
+    var remaining = sized.sortBy(_._2) // fewest declarations first, so that the intersection shrinks quickly
+    while (!remaining.isEmpty && ((result eq null) || !result.isEmpty)) {
+      val t = remaining.head._1
+      remaining = remaining.tail
+      val tBaseClasses = t.baseClasses
+      val names = mutable.HashSet.empty[Name]
+      def add(name: Name): Unit = if ((result eq null) || result(name)) names += name
+      var declaresType = false
+      var stableNames: List[Name] = Nil
+      tBaseClasses foreach { bc =>
+        if (!inLubBase(bc)) bc.info.decls foreach { decl =>
+          add(decl.name)
+          if (decl.isType) declaresType = true
+          else if (decl.isStable) stableNames ::= decl.name
+        }
+      }
+      def implementsSharedVal = stableNames.exists(name =>
+        tBaseClasses.exists(bc => inLubBase(bc) && bc.info.decls.lookupAll(name).exists(_.isStable)))
+      val multiplyDeclaredMatters = mayCollapse || declaresType || implementsSharedVal ||
+        !tBaseClasses.filter(inLubBase).corresponds(lubBaseClasses.filter(t.baseTypeIndex(_) >= 0))(_ eq _)
+      if (multiplyDeclaredMatters) {
+        val sharedNames = mutable.HashSet.empty[Name]
+        tBaseClasses foreach { bc =>
+          if (inLubBase(bc)) {
+            val decls = bc.info.decls
+            decls foreach (decl => if (sharedNames(decl.name)) add(decl.name))
+            decls foreach (decl => sharedNames += decl.name)
+          }
+        }
+      }
+      result = names
+    }
+    result
+  }
+
   /** The least upper bound wrt <:< of a list of types */
   protected[internal] def lub(ts0: List[Type], depth: Depth): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
@@ -403,7 +481,14 @@ private[internal] trait GlbLubs {
           }
           // add a refinement symbol for all non-class members of lubBase
           // which are refined by every type in ts.
-          for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
+          // `ts` rather than `narrowts`: `t.narrow` only adds a refinement class without decls to the base classes of `t`,
+          // and computing the base classes of the fresh narrowed types would cost more than the members we are trying to avoid.
+          val refinableNames = lubRefinableNames(lubBase, ts)
+          val lubBaseMembers =
+            if (refinableNames eq null) lubBase.nonPrivateMembers
+            else if (refinableNames.isEmpty) EmptyScope
+            else lubBase.nonPrivateMembersNamed(refinableNames)
+          for (sym <- lubBaseMembers ; if !excludeFromLub(sym)) {
             try lubsym(sym) andAlso (addMember(lubThisType, lubRefined, _, depth))
             catch {
               case ex: NoCommonType =>

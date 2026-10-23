@@ -1,0 +1,31 @@
+lub-refinements.scala:8: error: type mismatch;
+ found   : Test.A{type T <: Int; def f: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:26: error: type mismatch;
+ found   : scala.collection.mutable.ArraySeq[_ >: Int with Double with Long with Float with Char with Byte with Short with Boolean with Unit]{def array: Array[_ >: Int with Double with Long with Float with Char with Byte with Short with Boolean with Unit]; def elemTag: scala.reflect.ClassTag[_ >: Int with Double with Long with Float with Char with Byte with Short with Boolean with Unit]}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:37: error: type mismatch;
+ found   : Test.X with Test.Y{def m: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:48: error: type mismatch;
+ found   : Test.QX with Test.QY{def m: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:59: error: type mismatch;
+ found   : Test.HA with Test.HB{def m(x: Int): this.HY; type HY <: String; type HX <: Int}
+ required: Nothing
+    x: Nothing
+    ^
+lub-refinements.scala:72: error: type mismatch;
+ found   : Test.VA with Test.VB{def m(x: Int): this.o.Y; val o: Test.OInt.type}
+ required: Nothing
+    x: Nothing
+    ^
+6 errors
