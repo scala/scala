@@ -22,7 +22,7 @@ import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.symtab.Flags._
 
-/** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
+/** - uncurry all symbol and tree types -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
  *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters
@@ -51,8 +51,8 @@ import scala.tools.nsc.symtab.Flags._
  *
  *      meth(x_1,..., try { x_i } catch { ..}, .. x_b0) ==>
  *        {
- *          def liftedTry\$1 = try { x_i } catch { .. }
- *          meth(x_1, .., liftedTry\$1(), .. )
+ *          def liftedTree1\$1 = try { x_i } catch { .. }
+ *          meth(x_1, .., liftedTree1\$1(), .. )
  *        }
  *  - remove calls to elidable methods and replace their bodies with NOPs when elide-below
  *    requires it
@@ -207,7 +207,14 @@ abstract class UnCurry extends InfoTransform
 
 // ------ Transforming anonymous functions and by-name-arguments ----------------
 
-    /**  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
+    /**  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R].
+     *
+     *  By default, the body is lifted to a method and the function becomes a call to it,
+     *  which delambdafy later turns into an invokedynamic of LambdaMetaFactory.
+     *
+     *  Under `-Ydelambdafy:inline`, in early initializers or superclass constructor arguments,
+     *  or when the SAM type cannot be implemented by LambdaMetaFactory (see `mustExpandFunction`),
+     *  the function is expanded into an anonymous class:
      *
      *    class \$anon() extends AbstractFunctionN[T_1, .., T_N, R] with Serializable {
      *      def apply(x_1: T_1, ..., x_N: T_n): R = body

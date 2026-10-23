@@ -25,7 +25,7 @@ import scala.tools.nsc.backend.jvm.GenBCode._
 
 /*
  *
- *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
+ *  @author  Miguel Garcia
  *
  */
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
@@ -734,7 +734,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               //
               // Note that using `Object.clone()` would work as well, but only because the JVM
               // relaxes protected access specifically if the receiver is an array:
-              //   https://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/interpreter/linkResolver.cpp#l439
+              //   https://github.com/openjdk/jdk/blob/master/src/hotspot/share/interpreter/linkResolver.cpp
+              //   (the "arrays always override clone" case in `LinkResolver::check_method_accessability`)
               // Example: `class C { override def clone(): Object = "hi" }`
               // Emitting `def f(c: C) = c.clone()` as `Object.clone()` gives a VerifyError.
               val target: String = tpeTK(qual).asRefBType.classOrArrayType

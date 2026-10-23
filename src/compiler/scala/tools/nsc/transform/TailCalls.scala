@@ -71,10 +71,9 @@ abstract class TailCalls extends Transform {
    *   is never used and should be cleaned up by dead code elimination (when enabled).
    * </p>
    * <p>
-   *   This phase has been moved before pattern matching to catch more
-   *   of the common cases of tail recursive functions. This means that
-   *   more cases should be taken into account (like nested function, and
-   *   pattern cases).
+   *   This phase runs after pattern matching, uncurry and fields, so it
+   *   must handle nested functions and the label definitions (`case` and
+   *   `matchEnd` labels) that the pattern matcher emits.
    * </p>
    * <p>
    *   If a method contains self-recursive calls, a label is added to at

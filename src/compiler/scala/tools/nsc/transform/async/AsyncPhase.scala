@@ -108,7 +108,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     // }
     //
     // The RHS of the method is transformed into a state machine with that transformation tailored by the
-    // attached `FutureSystem`. Local val/var/def/class/object trees that are referred to from multiple states
+    // `AsyncAttachment` (the await method, the post-ANF hook and so on). Local val/var/def/class/object trees that are referred to from multiple states
     // are lifted into members of the enclosing class.
     override def transform(tree: Tree): Tree =
       super.transform(tree) match {

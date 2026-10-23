@@ -702,8 +702,8 @@ abstract class BTypes {
       // InlineInfos are serialized for classes being compiled. For those the info was built by
       // buildInlineInfoFromClassSymbol, which only adds a warning under scala/bug#9111, which in turn
       // only happens for class symbols of java source files.
-      // we could put this assertion into InlineInfoAttribute, but it is more safe to put it here
-      // where it affect only GenBCode, and not add any assertion to GenASM in 2.11.6.
+      // we could put this assertion into InlineInfoAttribute, but putting it here limits it to
+      // classes being compiled.
       assert(i.inlineInfo.warning.isEmpty, i.inlineInfo.warning)
       InlineInfoAttribute(i.inlineInfo)
     })

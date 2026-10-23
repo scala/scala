@@ -25,8 +25,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
   // https://github.com/tkawachi/sbt-doctest depends on this constructor being available
   def this(error: String => Unit, printMsg: String => Unit) = this(error, printMsg, DefaultPathFactory)
 
-  // TODO 2.13 Remove
-  private def removalIn213 = "This flag is scheduled for removal in 2.13. If you have a case where you need this flag then please report a bug."
+  private def scheduledForRemoval = "This flag is deprecated and scheduled for removal. If you have a case where you need this flag then please report a bug."
 
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
@@ -220,11 +219,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     ""
   )
 
-  // TODO 2.13 Remove
+  // TODO remove (deprecated since 2.12)
   val docExpandAllTypes = BooleanSetting (
     "-expand-all-types",
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
-  ) withDeprecationMessage(removalIn213)
+  ) withDeprecationMessage(scheduledForRemoval)
 
   val docGroups = BooleanSetting (
     "-groups",

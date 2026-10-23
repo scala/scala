@@ -532,7 +532,7 @@ abstract class Inliner {
      * Break cycles in the inline request graph by removing callsites.
      *
      * The list `requests` is traversed left-to-right, removing those callsites that are part of a
-     * cycle. Elided callsites are also removed from the `inlineRequestsForMethod` map.
+     * cycle. Elided callsites are added to the `elided` set.
      */
     def breakInlineCycles: List[(MethodNode, List[InlineRequest])] = {
       // is there a path of inline requests from start to goal?
@@ -995,7 +995,7 @@ abstract class Inliner {
    * if the body of the callee is changed by the inliner / optimizer, so it can be used early
    * (when looking at the call graph and collecting inline requests for the program).
    *
-   * The tests that inspect the callee's instructions are implemented in method `canInlineBody`,
+   * The tests that inspect the callee's instructions are implemented in method `canInlineCallsite`,
    * which is queried when performing an inline.
    *
    * @return `Some(message)` if inlining cannot be performed, `None` otherwise

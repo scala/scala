@@ -20,7 +20,7 @@ import scala.tools.asm
 
 /*
  *
- *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
+ *  @author  Miguel Garcia
  *
  */
 abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
@@ -164,7 +164,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
      *
      *  A number of code patterns can be emitted to realize the intended semantics.
      *
-     *  A popular alternative (GenICode, javac) consists in duplicating the cleanup-chain at each early-return position.
+     *  A popular alternative (javac, and the old GenICode backend) consists in duplicating the cleanup-chain at each early-return position.
      *  The principle at work being that once control is transferred to a cleanup-section,
      *  control will always stay within the cleanup-chain.
      *  That is, barring an exception being thrown in a cleanup-section, in which case the enclosing try-block
