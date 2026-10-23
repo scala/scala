@@ -3706,10 +3706,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val args1 = typedArgs(args, forArgMode(fun, mode))
           val clone = fun.symbol.cloneSymbol.withoutAnnotations
           val cloneParams = args1.map(arg => clone.newValueParameter(freshTermName()).setInfo(arg.tpe.deconst))
+          val castTarg = tree.getAndRemoveAttachment[PolymorphicSignatureCastAttachment]
+          def castType = castTarg.map(a => typedType(a.targ).tpe).filter(isFullyDefined)
           val resultType =
             if (fun.symbol.tpe.resultType.typeSymbol != ObjectClass) fun.symbol.tpe.resultType
             else if (isFullyDefined(pt)) pt
-            else ObjectTpe
+            else castType.getOrElse(ObjectTpe)
           clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
           val fun1 = fun.setSymbol(clone).setType(clone.info)
           doTypedApply(tree, fun1, args1, mode, resultType).setType(resultType)
@@ -6047,8 +6049,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // @M TODO: the compiler still bootstraps&all tests pass when this is commented out..
         //val undets = context.undetparams
 
+        val castQual = fun match {
+          case Select(qual @ Apply(polyFun: RefTree, _), nme.asInstanceOf_)
+          if args.lengthIs == 1 && currentRun.runDefinitions.polymorphicSignatureNames(polyFun.name) =>
+            qual.updateAttachment(PolymorphicSignatureCastAttachment(args.head))
+          case _ => EmptyTree
+        }
         // @M: fun is typed in TAPPmode because it is being applied to its actual type parameters
         val fun1 = typed(fun, mode.forFunMode | TAPPmode)
+        if (!castQual.isEmpty) castQual.removeAttachment[PolymorphicSignatureCastAttachment]
         val tparams = if (fun1.symbol == null) Nil else fun1.symbol.typeParams
 
         //@M TODO: val undets_fun = context.undetparams  ?
