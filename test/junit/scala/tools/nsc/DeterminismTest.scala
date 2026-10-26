@@ -97,6 +97,35 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testQuasiquoteFreshNameOrder(): Unit = {
+    def code = List[SourceFile](
+      source("p.scala",
+        """
+          |package demo
+          |
+          |import scala.reflect.macros.whitebox
+          |
+          |class P(val c: whitebox.Context) {
+          |  import c.universe._
+          |  def p1(f: Tree): Tree = q"$f(_)"
+          |  def p2(f: Tree): Tree = q"$f(_, _, _, _, _, _, _, _)"
+          |}
+      """.stripMargin),
+      source("q.scala",
+        """
+          |package demo
+          |
+          |import scala.reflect.macros.whitebox
+          |
+          |class Q(val c: whitebox.Context) {
+          |  import c.universe._
+          |  def pack(cons: Tree): Tree = q"$cons(_, _)"
+          |}
+      """.stripMargin)
+    )
+    test(List(code))
+  }
+
   @Test def testReify(): Unit = {
     def code = List[SourceFile](
       source("a.scala",
