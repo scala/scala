@@ -17,6 +17,7 @@ package runtime
 import scala.collection.mutable
 import java.lang.ref.{WeakReference => jWeakRef}
 import scala.ref.{WeakReference => sWeakRef}
+import scala.reflect.internal.Depth
 import java.util.IdentityHashMap
 
 /** This trait overrides methods in reflect.internal, bracketing
@@ -65,6 +66,10 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   private lazy val _subsametypeRecursions = mkThreadLocalStorage(0)
   override def subsametypeRecursions = _subsametypeRecursions.get
   override def subsametypeRecursions_=(value: Int) = _subsametypeRecursions.set(value)
+
+  private lazy val _globalGlbDepth = mkThreadLocalStorage(Depth.Zero)
+  override def globalGlbDepth = _globalGlbDepth.get
+  override def globalGlbDepth_=(value: Depth) = _globalGlbDepth.set(value)
 
   private lazy val _pendingSubTypes = mkThreadLocalStorage(new mutable.HashSet[SubTypePair])
   override def pendingSubTypes = _pendingSubTypes.get

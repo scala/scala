@@ -294,7 +294,7 @@ trait Types
     def isError: Boolean = typeSymbol.isError || termSymbol.isError
 
     /** Is this type produced as a repair for an error? */
-    def isErroneous: Boolean = ErroneousCollector.collect(this)
+    def isErroneous: Boolean = erroneousCollectorInstance.using(_.collect(this))
 
     /** Can this type only be subtyped by bottom types?
      *  This is assessed to be the case if the class is final,
@@ -2894,7 +2894,11 @@ trait Types
 
     private[this] var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
-      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
+      if (isdepmeth == UNKNOWN) {
+        // bound first: the inliner cannot inline `using` (which has a handler) with `fromBoolean`'s receiver on the stack
+        val isDependent = isDependentCollectorInstance.using(_.collect(resultType.dealias))
+        isdepmeth = fromBoolean(isDependent)
+      }
       toBoolean(isdepmeth)
     }
 
@@ -3723,20 +3727,22 @@ trait Types
       registerBound(HasTypeMember(sym.name.toTypeName, tp), isLowerBound = false)
     }
 
-    private def unrelatable(tp: Type): List[TypeSkolem] = {
-      UnrelatableCollector.barLevel = level
-      UnrelatableCollector.collect(tp)
-    }
+    private def unrelatable(tp: Type): List[TypeSkolem] =
+      unrelatableCollectorInstance.using { collector =>
+        collector.barLevel = level
+        collector.collect(tp)
+      }
 
 
     /** Can this variable be related in a constraint to type `tp`?
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
       */
-    def isRelatable(tp: Type): Boolean = {
-      IsRelatableCollector.barLevel = level
-      IsRelatableCollector.collect(tp)
-    }
+    def isRelatable(tp: Type): Boolean =
+      isRelatableCollectorInstance.using { collector =>
+        collector.barLevel = level
+        collector.collect(tp)
+      }
 
     override def normalize: Type = (
       if (instValid) inst
@@ -5349,7 +5355,9 @@ trait Types
     "scala.collection.Iterable",
     "scala.collection.Iterator")
 
-  private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
+  private[this] val typeContainsTypeVarCollectorInstance: ReusableInstance[FindTypeCollector] =
+    ReusableInstance(new FindTypeCollector(_.isInstanceOf[TypeVar]), enabled = isCompilerUniverse)
+  private[scala] val typeContainsTypeVar = (tp: Type) => typeContainsTypeVarCollectorInstance.using(_.collect(tp).isDefined)
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
   @tailrec
