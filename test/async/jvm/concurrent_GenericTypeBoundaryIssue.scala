@@ -15,7 +15,7 @@ class Bound extends Security[Bound]
 
 class Futures extends Security[Futures]
 
-object Test extends App { test
+object Test extends App {
   val out = Console.out
   def processBound(bound: Bound): Future[Unit]  = async {
     out.println("process Bound")
@@ -25,11 +25,13 @@ object Test extends App { test
   }
   def doStuff(sec: Security[_]): Future[Unit]  = async {
     sec match {
-      case bound: Bound     => processBound(bound)
-      case futures: Futures => processFutures(futures)
+      case bound: Bound     => await(processBound(bound))
+      case futures: Futures => await(processFutures(futures))
       case _                => throw new Exception("Unknown Security type: " + sec)
     }
   }
 
   def test: Unit = Await.result(doStuff(new Bound), Duration.Inf)
+
+  test
 }
