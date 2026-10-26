@@ -1,3 +1,6 @@
+//> using javaOpt -Xmx1g
+// Own JVM: allocates 8 GB in 2 MB arrays, hundreds of which can be live at once
+
 //package scala.concurrent
 import scala.concurrent._
 import duration._
