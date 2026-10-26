@@ -1,0 +1,15 @@
+sigpoly-cast.scala:8: warning: the cast does not set the result type of signature polymorphic method invokeExact, the call returns Object;
+use a type ascription instead: `(... : Int)`
+    mh.invokeExact(c).asInstanceOf[Int]
+                  ^
+sigpoly-cast.scala:9: warning: the cast does not set the result type of signature polymorphic method invoke, the call returns Object;
+use a type ascription instead: `(... : String)`
+    mh.invoke(c).asInstanceOf[String]
+             ^
+sigpoly-cast.scala:10: warning: the cast does not set the result type of signature polymorphic method getVolatile, the call returns Object;
+use a type ascription instead: `(... : Long)`
+    vh.getVolatile(c).asInstanceOf[Long]
+                  ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

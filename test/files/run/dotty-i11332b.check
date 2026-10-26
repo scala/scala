@@ -1,0 +1,4 @@
+dotty-i11332b.scala:12: warning: the cast does not set the result type of signature polymorphic method invoke, the call returns Object;
+use a type ascription instead: `(... : ClassLoader)`
+    assert(null != (mhCL.invoke().asInstanceOf[ClassLoader]: ClassLoader))
+                               ^
