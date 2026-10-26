@@ -51,8 +51,9 @@ trait FindMembers {
 
     // Main entry point
     def apply(): T = {
-      if (settings.areStatisticsEnabled) statistics.incCounter(findMemberCount)
-      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, findMemberNanos) else null
+      val findAll = name == nme.ANYname
+      if (settings.areStatisticsEnabled) statistics.incCounter(if (findAll) findMembersCount else findMemberCount)
+      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, if (findAll) findMembersNanos else findMemberNanos) else null
       try searchConcreteThenDeferred
       finally if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
     }
@@ -102,6 +103,9 @@ trait FindMembers {
 
       val findAll = name == nme.ANYname
 
+      // The number of decls visited, and of potential members among them, for statistics
+      var visited, considered = 0
+
       val phaseFlagMask = phase.flagMask
       val fastFlags = (phaseFlagMask & ~InitialFlags) == 0
 
@@ -110,17 +114,19 @@ trait FindMembers {
         val decls = currentBaseClass.info.decls
         var entry = if (findAll) decls.elems else decls.lookupEntry(name)
         while (entry ne null) {
+          visited += 1
           val sym = entry.sym
           val flags =
             if (fastFlags)
               sym.rawflags & phaseFlagMask
             else
               sym.flags(phaseFlagMask)
-          val meetsRequirements = (flags & required) == required
+          val meetsRequirements = (flags & required) == required && (!findAll || admitsName(sym.name))
           if (meetsRequirements) {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
             if (!isExcluded && isPotentialMember(sym, flags, selectorClass, currentBaseClass, seenFirstNonRefinementClass, refinementClasses)) {
+              considered += 1
               if (shortCircuit(sym)) return false
               else addMemberIfNew(sym)
             } else if (excl == DEFERRED) {
@@ -143,8 +149,15 @@ trait FindMembers {
 
         bcs = bcs.tail
       }
+      if (settings.areStatisticsEnabled) {
+        statistics.incCounter(if (findAll) findMembersDeclCount else findMemberDeclCount, visited)
+        statistics.incCounter(if (findAll) findMembersCandidateCount else findMemberCandidateCount, considered)
+      }
       deferredSeen
     }
+
+    /* Should members with this name be considered when finding all members? */
+    protected def admitsName(name: Name): Boolean = true
 
     /* Should this symbol be returned immediately as the sole result? */
     protected def shortCircuit(sym: Symbol): Boolean
@@ -216,9 +229,11 @@ trait FindMembers {
     }
   }
 
-  private[reflect] final class FindMembers(tpe0: Type, excludedFlags0: Long, requiredFlags0: Long)
+  private[reflect] final class FindMembers(tpe0: Type, excludedFlags0: Long, requiredFlags0: Long, nameFilter: Name => Boolean)
     extends FindMemberBase[Scope]() {
     init(tpe0, nme.ANYname, excludedFlags0, requiredFlags0)
+
+    override protected def admitsName(name: Name): Boolean = (nameFilter eq null) || nameFilter(name)
 
     private[this] var _membersScope: Scope   = null
     private def membersScope: Scope = {
