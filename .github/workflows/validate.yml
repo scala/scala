@@ -24,10 +24,6 @@ jobs:
       # it is still a true bootstrap.
       - name: build
         run: sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-      - name: rebuild
-        run: |
-          STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          sbt -Dstarr.version=$STARR Test/compile
       - name: testAll1
         run: |
           STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
@@ -36,7 +32,3 @@ jobs:
         run: |
           STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           sbt -Dstarr.version=$STARR setupValidateTest testAll2
-      - name: benchmarks
-        run: |
-          STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          sbt -Dstarr.version=$STARR bench/Jmh/compile

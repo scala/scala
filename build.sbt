@@ -1238,7 +1238,7 @@ lazy val remainingTests = List(
   (reflect / mimaReportBinaryIssues      ).result.map(_ -> "reflect/mimaReportBinaryIssues"), // ..so specify both
   (testJDeps                             ).result.map(_ -> "testJDeps"),
   (testJarSize                           ).result.map(_ -> "testJarSize"),
-  (bench / Compile / compile).map(_ => ()).result.map(_ -> "bench/compile"),
+  (bench / Jmh / compile).map(_ => ()).result.map(_ -> "bench/Jmh/compile"),
   Def.task(()).dependsOn( // Run these in parallel:
      library / Compile / doc,
      reflect / Compile / doc,
