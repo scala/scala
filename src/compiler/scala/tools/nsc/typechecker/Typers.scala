@@ -4496,6 +4496,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+    /** Unlike in Java, a cast doesn't set the result type of a signature polymorphic call (SLS 6.6), so in
+     *  `mh.invokeExact(x).asInstanceOf[Int]` the call returns `Object`, which breaks `invokeExact`.
+     */
+    private def warnPolymorphicSignatureCast(qual: Tree, targ: Tree): Unit = qual match {
+      case Apply(fun, _) if qual.tpe != null && qual.tpe.typeSymbol == ObjectClass && !targ.isErroneous =>
+        // `fun.symbol` is the per-call-site clone made in `doTypedApply`
+        val sym = fun.symbol
+        def isPolymorphicSignatureCall =
+          sym != null && sym.isJavaDefined && sym.owner.info.decl(sym.name).alternatives.exists(currentRun.runDefinitions.isPolymorphicSignature)
+        val tp = targ.tpe
+        if (isPolymorphicSignatureCall && erasure.javaErasure(tp).typeSymbol != ObjectClass)
+          context.warning(qual.pos,
+            sm"""the cast does not set the result type of signature polymorphic method ${sym.name}, the call returns Object;
+                |use a type ascription instead: `(... : $tp)`""",
+            WarningCategory.Other)
+      case _ =>
+    }
+
     // lifted out of typed1 because it's needed in typedImplicit0
     protected def typedTypeApply(tree: Tree, mode: Mode, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
       case OverloadedType(_, _) =>
@@ -6069,6 +6087,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // this assert is too strict: be tolerant for errors like trait A { def foo[m[x], g]=error(""); def x[g] = foo[g/*ERR: missing argument type*/] }
           //assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError) //, (fun1.symbol,fun1.symbol.info,fun1.symbol.info.getClass,args,tparams))
           args mapConserve (typedHigherKindedType(_, mode))
+        }
+
+        fun1 match {
+          case Select(qual, nme.asInstanceOf_) if args1.lengthIs == 1 => warnPolymorphicSignatureCast(qual, args1.head)
+          case _ =>
         }
 
         //@M TODO: context.undetparams = undets_fun ?
