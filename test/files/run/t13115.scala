@@ -1,5 +1,3 @@
-///> using dep org.scala-lang:scala-compiler:2.13.7
-
 import scala.tools.nsc.{Global, Settings}
 import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.io.VirtualDirectory
