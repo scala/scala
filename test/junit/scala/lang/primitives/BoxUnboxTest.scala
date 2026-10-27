@@ -1,6 +1,6 @@
 package scala.lang.primitives
 
-import org.junit.Assert._
+import org.junit.Assert.{ assertThrows => _, _ }
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -19,7 +19,7 @@ class BoxUnboxTest extends RunTesting {
   @Test
   def boxUnboxInt(): Unit = {
     import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
+    import org.junit.Assert.{ assertThrows => _, _ }
 
     def genericNull[T] = null.asInstanceOf[T] // allowed, see scala/bug#4437, point 2
 
@@ -82,7 +82,7 @@ class BoxUnboxTest extends RunTesting {
   @Test
   def numericConversions(): Unit = {
     import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
+    import org.junit.Assert.{ assertThrows => _, _ }
 
     val i1 = 1L.asInstanceOf[Int]
     assertEquals(i1, 1)
@@ -105,7 +105,7 @@ class BoxUnboxTest extends RunTesting {
     // as Any. passing a Unit as Any makes the compiler go through another layer of boxing, so it
     // can hide some bugs (where we actually have a null, but the compiler makes it a ()).
     import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
+    import org.junit.Assert.{ assertThrows => _, _ }
 
     var v = 0
     def eff() = { v = 1 }

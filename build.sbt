@@ -40,8 +40,8 @@ val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml
 val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-parser-combinators")
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                          % "junit"           % "4.12"
-val junitInterfaceDep = "com.novocode"                   % "junit-interface" % "0.11"                            % Test
+val junitDep          = "junit"                          % "junit"           % "4.13.2"
+val junitInterfaceDep = "com.github.sbt"                 % "junit-interface" % "0.13.3"                          % Test
 val scalacheckDep     = "org.scalacheck"                %% "scalacheck"      % "1.18.1"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"        % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"       % versionProps("scala-asm.version")

@@ -3,7 +3,7 @@ package scala.reflect.internal
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.{ assertThrows => _, _ }
 import scala.annotation.nowarn
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 import scala.tools.testing.AssertUtil._
