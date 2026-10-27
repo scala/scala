@@ -978,7 +978,7 @@ lazy val scala2: Project = (project in file("."))
         (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
         (library / mimaReportBinaryIssues).result.map(_ -> "library/mimaReportBinaryIssues"), // doesn't aggregate..
         (reflect / mimaReportBinaryIssues).result.map(_ -> "reflect/mimaReportBinaryIssues"), // ..so specify both
-        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
+        (bench / Jmh / compile).map(_ => ()).result map (_ -> "bench/Jmh/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
           (library / Compile / doc),
           (reflect / Compile / doc),
