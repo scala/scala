@@ -7,7 +7,7 @@ import scala.tools.testing.AssertUtil
 
 @RunWith(classOf[JUnit4])
 class RangeTest {
-  import Assert._
+  import Assert.{ assertThrows => _, _ }
   import AssertUtil._
 
   @Test
