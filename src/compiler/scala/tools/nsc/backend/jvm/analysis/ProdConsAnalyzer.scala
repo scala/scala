@@ -474,4 +474,11 @@ class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm
     val handlerStackTop = handlerFrame.getLocals - 1 + 1
     new SourceValue(1, ExceptionProducer(tryCatchBlockNode.handler, handlerStackTop))
   }
+
+  // A local or stack slot that no instruction on either path wrote holds the same value in both frames. SourceInterpreter
+  // would check that one's producers contain the other's, iterating the whole set; in a large method with many joins,
+  // that is most of the analysis.
+  override def merge(value1: SourceValue, value2: SourceValue): SourceValue =
+    if (value1 eq value2) value1
+    else super.merge(value1, value2)
 }
