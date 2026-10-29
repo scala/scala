@@ -455,6 +455,38 @@ trait TypeComparers {
     )
   }
 
+  /** A fast path for `tp1 <: C[..., _, ...]`, where every quantified symbol of the existential is a wildcard with empty
+   *  bounds that appears once, directly, as an argument of the class type `C[...]` (`Outlet[_]`, `Class[_]`).
+   *  Such a wildcard accepts whatever argument `tp1` has for it, so the check is `tp1 <: C[...]` with those arguments
+   *  taken from `tp1`'s base type, with no symbols to clone and no type variables to solve or check against bounds.
+   *  Only answers `true`; otherwise the caller checks as before. `tp1` must have no type variables, whose
+   *  constraints would differ from those the general check registers.
+   */
+  private def isSubTypeOfUnboundedWildcards(tp1: Type, et2: ExistentialType, depth: Depth): Boolean = et2.underlying match {
+    case tr2 @ TypeRef(pre2, sym2, args2) if sym2.isClass && !phase.erasedTypes =>
+      val quantified = et2.quantified
+      def isWildcardArg(arg: Type) = arg match {
+        case TypeRef(NoPrefix, q, Nil) => quantified.contains(q)
+        case _ => false
+      }
+      def emptyBounds(q: Symbol) = q.info match {
+        case TypeBounds(lo, hi) => lo.isNothing && (hi.isAny || (hi eq ObjectTpeJava))
+        case _ => false
+      }
+      quantified.forall(q => emptyBounds(q) && args2.count(_.typeSymbolDirect eq q) == 1) &&
+        args2.forall(arg => isWildcardArg(arg) || !quantified.exists(arg.contains)) &&
+        !quantified.exists(pre2.contains) &&
+        tp1.isGround && (tp1.isNothing || {
+          tp1.baseType(sym2) match {
+            case TypeRef(_, `sym2`, baseArgs) if sameLength(baseArgs, args2) =>
+              val args = map2(args2, baseArgs)((arg, baseArg) => if (isWildcardArg(arg)) baseArg else arg)
+              isSubType(tp1, copyTypeRef(tr2, pre2, sym2, args), depth)
+            case _ => false
+          }
+        })
+    case _ => false
+  }
+
   /** Does type `tp1` conform to `tp2`? */
   private def isSubType2(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
@@ -569,7 +601,7 @@ trait TypeComparers {
         (rt2.parents forall (isSubType(tp1, _, depth))) &&
           (rt2.decls forall (specializesSym(tp1, _, depth)))
       case et2: ExistentialType =>
-        et2.withTypeVars(isSubType(tp1, _, depth), depth) || fourthTry
+        isSubTypeOfUnboundedWildcards(tp1, et2, depth) || et2.withTypeVars(isSubType(tp1, _, depth), depth) || fourthTry
       case mt2: MethodType =>
         tp1 match {
           case mt1 @ MethodType(params1, res1) =>
