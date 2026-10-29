@@ -304,6 +304,11 @@ abstract class BackendUtils extends PerRunInit {
   def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
   def isTupleConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, tupleClassConstructors)
 
+  // The classes of those constructors, to tell from a `NEW` alone that it can't create a box, ref or tuple
+  def isPrimitiveBoxClass(internalName: InternalName): Boolean = primitiveBoxConstructors.contains(internalName)
+  def isRuntimeRefClass(internalName: InternalName): Boolean = srRefConstructors.contains(internalName)
+  def isTupleClass(internalName: InternalName): Boolean = tupleClassConstructors.contains(internalName)
+
 
   def isSideEffectFreeConstructorCall(insn: MethodInsnNode): Boolean = {
     insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors.get((insn.owner, insn.desc))
