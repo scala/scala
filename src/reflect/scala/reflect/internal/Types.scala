@@ -1805,8 +1805,12 @@ trait Types
                          override val decls: Scope) extends CompoundType with RefinedTypeApi {
     override def isHigherKinded = (
       !parents.isEmpty &&
-      (parents.forall(_.isHigherKinded)) &&
-      !phase.erasedTypes
+      !phase.erasedTypes && {
+        // A refined type among the parents, as in `(A with B) with C`, is checked after the others, which usually decide
+        // it: checking it first takes time linear in the depth of the nesting (pekko's generated `T1 with ... with T22`).
+        def isRefined(tp: Type) = tp.isInstanceOf[RefinedType]
+        parents.forall(p => isRefined(p) || p.isHigherKinded) && parents.forall(p => !isRefined(p) || p.isHigherKinded)
+      }
     )
     override def typeParams =
       if (isHigherKinded) firstParent.typeParams
