@@ -1147,6 +1147,14 @@ private[internal] trait TypeMaps {
     }
   }
 
+  /** Applies `f` to the types satisfying `p`, in the order `FilterTypeCollector` collects them. */
+  class FilterForEachTypeFolder[U](p: Type => Boolean, f: Type => U) extends TypeFolder {
+    def apply(tp: Type): Unit = {
+      if (p(tp)) f(tp)
+      tp.foldOver(this)
+    }
+  }
+
   /** A map to implement the `filter` method. */
   class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
     def apply(tp: Type): Unit =

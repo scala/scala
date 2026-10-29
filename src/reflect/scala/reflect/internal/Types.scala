@@ -770,7 +770,7 @@ trait Types
     def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
 
     class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
-      def foreach[U](f: Type => U): Unit = this.collect(Type.this).foreach(f)
+      def foreach[U](f: Type => U): Unit = new FilterForEachTypeFolder(p, f).apply(Type.this)
       def map[T](f: Type => T): List[T]  = this.collect(Type.this).map(f)
     }
 

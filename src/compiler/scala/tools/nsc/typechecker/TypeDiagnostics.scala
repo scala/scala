@@ -512,7 +512,9 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val patvars   = ListBuffer.empty[Tree /*Bind|ValDef*/]
     val ignore    = mutable.Set.empty[Symbol] // nowarn
 
-    val annots    = mutable.Set.empty[AnnotationInfo] // avoid revisiting annotations of symbols and types
+    // avoid revisiting annotations of symbols and types; by identity, because equal annotations
+    // can have constant arguments that come from different trees
+    val annots    = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap[AnnotationInfo, java.lang.Boolean])
 
     def recordReference(sym: Symbol): Unit = targets.addOne(sym)
 
@@ -574,9 +576,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         currentOwner == module || enclosed
       }
 
-    def handleTreeType(t: Tree): Unit =
-      if ((t.tpe ne null) && t.tpe != NoType /*&& !treeInfo.isSuperConstrCall(t)*/) { // see isCurrentlyEnclosedBy
-        for (tp <- t.tpe if tp != NoType && !treeTypes(tp)) {
+    // Folders are allocated once because `handleTreeType` runs on every typed tree.
+    private[this] val treeTypeFolder: TypeFolder = new TypeFolder {
+      def apply(tp: Type): Unit = {
+        if (tp != NoType && !treeTypes(tp)) {
           // Include references to private/local aliases (which might otherwise refer to an enclosing class)
           val isAlias = {
             val td = tp.typeSymbolDirect
@@ -591,22 +594,45 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             case ConstantType(Constant(k: Type)) =>
               log(s"classOf $k referenced from $currentOwner")
               recordType(k)
+              // `foldOver` does not look into a class literal's type
+              annotationFolder(k)
             case _                    =>
               log(s"${if (isAlias) "alias " else ""}$tp referenced from $currentOwner")
               recordType(tp)
           }
-          for (annot <- tp.annotations)
-            descend(annot)
         }
-        // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-        t.tpe.prefix foreach {
+        // even if `tp` is in `treeTypes`: an equal type can have annotation arguments from other trees
+        for (annot <- tp.annotations)
+          descend(annot)
+        tp.foldOver(this)
+      }
+    }
+    private[this] val annotationFolder: TypeFolder = new TypeFolder {
+      def apply(tp: Type): Unit = {
+        for (annot <- tp.annotations)
+          descend(annot)
+        tp.foldOver(this)
+      }
+    }
+    private[this] val prefixFolder: TypeFolder = new TypeFolder {
+      def apply(tp: Type): Unit = {
+        tp match {
           case SingleType(_, sym) => recordReference(sym)
-          case _                  => ()
+          case _                  =>
         }
+        tp.foldOver(this)
+      }
+    }
+
+    def handleTreeType(t: Tree): Unit =
+      if ((t.tpe ne null) && t.tpe != NoType /*&& !treeInfo.isSuperConstrCall(t)*/) { // see isCurrentlyEnclosedBy
+        treeTypeFolder(t.tpe)
+        // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
+        prefixFolder(t.tpe.prefix)
       }
 
     def descend(annot: AnnotationInfo): Unit =
-      if (!annots(annot)) {
+      if (annots.add(annot)) {
         def traverseConstantArg(arg: ClassfileAnnotArg): Unit = arg match {
           case arg: LiteralAnnotArg =>
             arg.attachments.get[OriginalTreeAttachment] match {
@@ -617,7 +643,6 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           case NestedAnnotArg(annInfo) => descend(annInfo)
           case _ =>
         }
-        annots.addOne(annot)
         traverse(annot.original)
         annot.args.foreach(traverse)
         annot.assocs.foreach { case (_, arg) => traverseConstantArg(arg) }
