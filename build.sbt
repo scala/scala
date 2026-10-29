@@ -48,7 +48,7 @@ val jlineBuiltinsDep     = "org.jline"                      % "jline-builtins"  
 val jlineDeps            = Seq(jlineTerminalDep, jlineTerminalJniDep, jlineReaderDep, jlineBuiltinsDep)
 val testInterfaceDep     = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep         = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.18"
-val compilerInterfaceDep = "org.scala-sbt"                  % "compiler-interface"               % "1.10.8"
+val compilerInterfaceDep = "org.scala-sbt"                  % "compiler-interface"               % "1.13.0"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
