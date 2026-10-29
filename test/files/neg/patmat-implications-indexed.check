@@ -1,0 +1,32 @@
+patmat-implications-indexed.scala:45: warning: abstract type pattern X is unchecked since it is eliminated by erasure
+    case _: X => 1
+            ^
+patmat-implications-indexed.scala:46: warning: abstract type pattern X (the underlying of x.type) is unchecked since it is eliminated by erasure
+    case _: x.type => 2
+             ^
+patmat-implications-indexed.scala:68: warning: non-variable type argument Int in type pattern List[Int] is unchecked since it is eliminated by erasure
+    case _: List[Int] => 5
+            ^
+patmat-implications-indexed.scala:74: warning: non-variable type argument Int in type pattern Int => Int is unchecked since it is eliminated by erasure
+    case _: (Int => Int) => 11
+                 ^
+patmat-implications-indexed.scala:31: warning: unreachable code
+    case _: (M1 with M2) => 2
+                            ^
+patmat-implications-indexed.scala:49: warning: unreachable code
+    case C0(_) => 5
+                  ^
+patmat-implications-indexed.scala:68: warning: unreachable code
+    case _: List[Int] => 5
+                         ^
+patmat-implications-indexed.scala:82: warning: Exhaustivity analysis reached max recursion depth, not all missing cases are reported.
+(Please try with scalac -Ypatmat-exhaust-depth 40 or -Ypatmat-exhaust-depth off.)
+  def ex(t: T, o: Option[T]): Int = (t, o) match {
+                                    ^
+patmat-implications-indexed.scala:82: warning: match may not be exhaustive.
+It would fail on the following inputs: (C11(_), None), (_, None)
+  def ex(t: T, o: Option[T]): Int = (t, o) match {
+                                    ^
+error: No warnings can be incurred under -Werror.
+9 warnings
+1 error
