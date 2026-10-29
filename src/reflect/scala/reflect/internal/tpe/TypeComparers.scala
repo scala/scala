@@ -81,11 +81,18 @@ trait TypeComparers {
     } else
       false
 
+  /** Distinct type members of the same name are the same type under unifiable prefixes (one may override
+   *  the other, or both may be bound in a refinement or self type), but distinct classes never are:
+   *  a class can't be overridden, so an instance of one isn't an instance of the other (scala/bug#13205).
+   */
+  private def isUnifiableSyms(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type) =
+    !(sym1.isClass && sym2.isClass) && isUnifiable(pre1, pre2)
+
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean = (
     if (sym1 eq sym2)
       sym1.hasPackageFlag || sym1.owner.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else
-      (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
+      (sym1.name == sym2.name) && isUnifiableSyms(sym1, pre1, sym2, pre2)
   )
 
   def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
@@ -484,7 +491,7 @@ trait TypeComparers {
             val pre2 = tr2.pre
             (((if (sym1 eq sym2) phase.erasedTypes || sym1.rawowner.hasPackageFlag || isSubType(pre1, pre2, depth)
             else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
-              (isUnifiable(pre1, pre2) ||
+              (isUnifiableSyms(sym1, pre1, sym2, pre2) ||
                 isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
                 sym2.isAbstractType && isSubPre(pre1, pre2, sym2)))) &&
               isSubArgs(tr1.args, tr2.args, sym1.typeParams, depth))
