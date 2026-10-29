@@ -1,4 +1,4 @@
-fruitless-current-run.scala:21: warning: non-variable type argument A1 in type pattern Seq[A1] is unchecked since it is eliminated by erasure
+fruitless-current-run.scala:27: warning: non-variable type argument A1 in type pattern Seq[A1] is unchecked since it is eliminated by erasure
   def unchecked(x: List[A]) = x match { case _: Seq[A1] => 0; case _ => 1 }
                                                 ^
 fruitless-current-run.scala:13: warning: fruitless type test: a value of type A cannot also be a B
@@ -28,6 +28,9 @@ fruitless-current-run.scala:18: warning: fruitless type test: a value of type A 
 fruitless-current-run.scala:19: warning: fruitless type test: a value of type A cannot also be a B
   def v(x: Option[A]) = x match { case Some(E(_)) => 0; case _ => 1 }
                                              ^
+fruitless-current-run.scala:23: warning: fruitless type test: a value of type L cannot also be a B
+    def t(l: L) = l.isInstanceOf[B]
+                                ^
 error: No warnings can be incurred under -Werror.
-10 warnings
+11 warnings
 1 error

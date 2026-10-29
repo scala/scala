@@ -257,7 +257,9 @@ trait Checkable {
     private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
     private def isKnown(sym: Symbol) = isRecheck || !currentRun.compiles(sym) || { deferred = true; false }
     // initialization important
-    private def isEffectivelyFinal(sym: Symbol): Boolean = sym.initialize.isEffectivelyFinalOrNotOverridden
+    // a local class without children is final, but its children are only known once they are completed
+    private def isEffectivelyFinal(sym: Symbol): Boolean = sym.initialize.isEffectivelyFinalOrNotOverridden &&
+      (sym.isFinal || sym.isModuleOrModuleClass || !sym.originalOwner.isTerm || isKnown(sym))
 
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)
 

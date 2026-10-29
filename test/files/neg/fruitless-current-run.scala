@@ -18,5 +18,11 @@ object T {
   def u(x: A) = x match { case E(_) => 0; case _ => 1 }
   def v(x: Option[A]) = x match { case Some(E(_)) => 0; case _ => 1 }
 
+  def local = {
+    class L
+    def t(l: L) = l.isInstanceOf[B]
+    t(new L)
+  }
+
   def unchecked(x: List[A]) = x match { case _: Seq[A1] => 0; case _ => 1 }
 }
