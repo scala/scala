@@ -193,58 +193,59 @@ trait Logic extends Debugging {
      *
      * See https://www.decision-procedures.org/slides/propositional_logic-2x3.pdf
      */
-    def simplify(f: Prop): Prop = {
+    /** Whether `ops0` has a `p` and a `Not(p)`, among at most 10 operands (`simplify` gives up on more). */
+    protected def hasImpureAtom(ops0: Iterable[Prop]): Boolean = {
+      // HOT method, imperative rewrite of:
+      // ops.combinations(2).exists {
+      //   case Seq(a, Not(b)) if a == b => true
+      //   case Seq(Not(a), b) if a == b => true
+      //   case _                        => false
+      // }
 
-      def hasImpureAtom(ops0: Iterable[Prop]): Boolean = {
-        // HOT method, imperative rewrite of:
-        // ops.combinations(2).exists {
-        //   case Seq(a, Not(b)) if a == b => true
-        //   case Seq(Not(a), b) if a == b => true
-        //   case _                        => false
-        // }
-
-        def checkPair(a: Prop, b: Prop): Boolean = {
-          b match {
-            case Not(b) if a == b => true
-            case _ =>
-              a match {
-                case Not(a) if a == b => true
-                case _ => false
-              }
-          }
-        }
-        val size = ops0.size
-        if (size > 10) false // limit size to avoid blow up
-        else if (size < 2) false // no combinations
-        else if (size == 2) { // Specialized versions for size 2+3
-          val it = ops0.iterator
-          val result = checkPair(it.next(), it.next())
-          assert(!it.hasNext, "iterator must be empty")
-          result
-        } else if (size == 3) {
-          val it = ops0.iterator
-          val a = it.next()
-          val b = it.next()
-          val c = it.next()
-          assert(!it.hasNext, "iterator must be empty")
-          checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
-        } else {
-          val ops = new Array[Prop](size)
-          @annotation.unused val copied = ops0.copyToArray(ops)
-          //assert(copied == ops.length, "")
-          var i = 0
-          val len = ops.length
-          while (i < len - 1) {
-            var j = i + 1
-            while (j < len) {
-              if (checkPair(ops(i), ops(j))) return true
-              j += 1
+      def checkPair(a: Prop, b: Prop): Boolean = {
+        b match {
+          case Not(b) if a == b => true
+          case _ =>
+            a match {
+              case Not(a) if a == b => true
+              case _ => false
             }
-            i += 1
-          }
-          false
         }
       }
+      val size = ops0.size
+      if (size > 10) false // limit size to avoid blow up
+      else if (size < 2) false // no combinations
+      else if (size == 2) { // Specialized versions for size 2+3
+        val it = ops0.iterator
+        val result = checkPair(it.next(), it.next())
+        assert(!it.hasNext, "iterator must be empty")
+        result
+      } else if (size == 3) {
+        val it = ops0.iterator
+        val a = it.next()
+        val b = it.next()
+        val c = it.next()
+        assert(!it.hasNext, "iterator must be empty")
+        checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
+      } else {
+        val ops = new Array[Prop](size)
+        @annotation.unused val copied = ops0.copyToArray(ops)
+        //assert(copied == ops.length, "")
+        var i = 0
+        val len = ops.length
+        while (i < len - 1) {
+          var j = i + 1
+          while (j < len) {
+            if (checkPair(ops(i), ops(j))) return true
+            j += 1
+          }
+          i += 1
+        }
+        false
+      }
+    }
+
+    def simplify(f: Prop): Prop = {
 
       def mapConserve[CC[X] <: IterableOps[X, CC, CC[X]], A <: AnyRef](s: CC[A])(f: A => A): CC[A] = {
         var changed = false
