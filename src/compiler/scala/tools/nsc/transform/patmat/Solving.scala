@@ -341,16 +341,23 @@ trait Solving extends Logic {
 
     /** Using the same identity as `eqFreePropToSolvable`, CNF(P1 /\ ... /\ PN) == CNF(P1) ++ ... ++ CNF(PN),
      *  provided that the conversions share the symbol mapping and the numbering of Tseitin variables.
-     *  Unlike `eqFreePropToSolvable(And(prefix :+ p))`, this does not simplify across conjuncts, but the
-     *  result is equisatisfiable. Duplicate conjuncts are dropped and counted once against the budget,
-     *  as `simplify` would.
+     *
+     *  `eqFreePropToSolvable(And(prefix :+ p))` simplifies the whole conjunction first, which reduces it to
+     *  `False` when a conjunct is `False` or (among at most 10 conjuncts) a conjunct is the negation of
+     *  another, before the size budget is checked. Such a query is decided here the same way, so the prefix
+     *  is only converted to CNF, and counted against the budget, when a query is actually solved. Duplicate
+     *  conjuncts are dropped and counted once, as `simplify` would.
      */
     def incrementalSolver(allProps: Iterable[Prop]): IncrementalSolver = new IncrementalSolver {
       private val symbolMapping = new SymbolMapping(gatherSymbols(And.create(allProps)))
       private val cnfExtractor = new AlreadyInCNF(symbolMapping)
       private val cnfTransformer = new TransformToCnf(symbolMapping)
-      // only used for membership; clauses are added in the order of the (linked) conjuncts
-      private val prefixConjuncts = mutable.HashSet[Prop]()
+      // the distinct conjuncts of the prefix, in order (and as a set, for membership only); those before
+      // `converted` are in `prefix`
+      private val prefixConjuncts = ArrayBuffer[Prop]()
+      private val prefixConjunctSet = mutable.HashSet[Prop]()
+      private var converted = 0
+      private var prefixHasFalse = false
       private val prefix = ArrayBuffer[Clause]()
 
       // the unit clause for `constTrue` is emitted on first use, but every query must include it
@@ -369,23 +376,29 @@ trait Solving extends Logic {
           case p                            => cnfTransformer.apply(p).cnf
         }
       }
-      private def checkSize(n: Int): Unit =
-        if (n > AnalysisBudget.maxFormulaSize) throw AnalysisBudget.formulaSizeExceeded
 
       def addToPrefix(p: Prop): Unit =
         conjuncts(p).foreach { c =>
-          if (prefixConjuncts.add(c)) {
-            checkSize(prefixConjuncts.size)
-            prefix ++= cnfFor(c)
+          if (prefixConjunctSet.add(c)) {
+            if (c == False) prefixHasFalse = true
+            prefixConjuncts += c
           }
         }
 
       def hasModelWith(p: Prop): Boolean = {
-        val extra = conjuncts(p).iterator.filterNot(prefixConjuncts).toList.distinct
-        checkSize(prefixConjuncts.size + extra.size)
-        val clauses = ArrayBuffer.from(prefix)
-        extra.foreach(c => clauses ++= cnfFor(c))
-        hasModel(Solvable(clauses.toArray, symbolMapping))
+        val extra = conjuncts(p).iterator.filterNot(prefixConjunctSet).toList
+        val size = prefixConjuncts.size + extra.size
+        if (prefixHasFalse || extra.contains(False) || (size <= 10 && hasImpureAtom(prefixConjuncts ++ extra))) false
+        else {
+          if (size > AnalysisBudget.maxFormulaSize) throw AnalysisBudget.formulaSizeExceeded
+          while (converted < prefixConjuncts.size) {
+            prefix ++= cnfFor(prefixConjuncts(converted))
+            converted += 1
+          }
+          val clauses = ArrayBuffer.from(prefix)
+          extra.foreach(c => clauses ++= cnfFor(c))
+          hasModel(Solvable(clauses.toArray, symbolMapping))
+        }
       }
     }
 
