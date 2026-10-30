@@ -308,26 +308,6 @@ trait Solving extends Logic {
     }
 
     def eqFreePropToSolvable(p: Prop): Solvable = {
-
-      def doesFormulaExceedSize(p: Prop): Boolean = {
-        p match {
-          case And(ops) =>
-            if (ops.size > AnalysisBudget.maxFormulaSize) {
-              true
-            } else {
-              ops.exists(doesFormulaExceedSize)
-            }
-          case Or(ops)  =>
-            if (ops.size > AnalysisBudget.maxFormulaSize) {
-              true
-            } else {
-              ops.exists(doesFormulaExceedSize)
-            }
-          case Not(a)   => doesFormulaExceedSize(a)
-          case _        => false
-        }
-      }
-
       val simplified = simplify(p)
       if (doesFormulaExceedSize(simplified)) {
         throw AnalysisBudget.formulaSizeExceeded
@@ -356,6 +336,88 @@ trait Solving extends Logic {
           //assert(copied == cnfs.length, "")
           new Solvable(cnfs.flatten[Clause](_.cnf, reflect.classTag[Clause]), cnfs.head.symbolMapping)
         case simplified => cnfFor(simplified)
+      }
+    }
+
+    /** Using the same identity as `eqFreePropToSolvable`, CNF(P1 /\ ... /\ PN) == CNF(P1) ++ ... ++ CNF(PN),
+     *  provided that the conversions share the symbol mapping and the numbering of Tseitin variables.
+     *
+     *  `eqFreePropToSolvable(And(prefix :+ p))` simplifies the whole conjunction first, which reduces it to
+     *  `False` when a conjunct is `False` or (among at most 10 conjuncts) a conjunct is the negation of
+     *  another, before the size budget is checked. Such a query is decided here the same way, so the prefix
+     *  is only converted to CNF, and counted against the budget, when a query is actually solved. Duplicate
+     *  conjuncts are dropped and counted once, as `simplify` would.
+     */
+    def incrementalSolver(allProps: Iterable[Prop]): IncrementalSolver = new IncrementalSolver {
+      private val symbolMapping = new SymbolMapping(gatherSymbols(And.create(allProps)))
+      private val cnfExtractor = new AlreadyInCNF(symbolMapping)
+      private val cnfTransformer = new TransformToCnf(symbolMapping)
+      // the distinct conjuncts of the prefix, in order (and as a set, for membership only); those before
+      // `converted` are in `prefix`
+      private val prefixConjuncts = ArrayBuffer[Prop]()
+      private val prefixConjunctSet = mutable.HashSet[Prop]()
+      private var converted = 0
+      private var prefixHasFalse = false
+      private val prefix = ArrayBuffer[Clause]()
+
+      // the unit clause for `constTrue` is emitted on first use, but every query must include it
+      cnfTransformer.constTrue
+      prefix ++= cnfTransformer.buildCnf
+
+      private def conjuncts(p: Prop): Iterable[Prop] = simplify(p) match {
+        case And(ps) => ps
+        case True    => Nil
+        case p       => p :: Nil
+      }
+      private def cnfFor(p: Prop): Array[Clause] = {
+        if (doesFormulaExceedSize(p)) throw AnalysisBudget.formulaSizeExceeded
+        p match {
+          case cnfExtractor.ToCnf(solvable) => solvable.cnf
+          case p                            => cnfTransformer.apply(p).cnf
+        }
+      }
+
+      def addToPrefix(p: Prop): Unit =
+        conjuncts(p).foreach { c =>
+          if (prefixConjunctSet.add(c)) {
+            if (c == False) prefixHasFalse = true
+            prefixConjuncts += c
+          }
+        }
+
+      def hasModelWith(p: Prop): Boolean = {
+        val extra = conjuncts(p).iterator.filterNot(prefixConjunctSet).toList
+        val size = prefixConjuncts.size + extra.size
+        if (prefixHasFalse || extra.contains(False) || (size <= 10 && hasImpureAtom(prefixConjuncts ++ extra))) false
+        else {
+          if (size > AnalysisBudget.maxFormulaSize) throw AnalysisBudget.formulaSizeExceeded
+          while (converted < prefixConjuncts.size) {
+            prefix ++= cnfFor(prefixConjuncts(converted))
+            converted += 1
+          }
+          val clauses = ArrayBuffer.from(prefix)
+          extra.foreach(c => clauses ++= cnfFor(c))
+          hasModel(Solvable(clauses.toArray, symbolMapping))
+        }
+      }
+    }
+
+    private def doesFormulaExceedSize(p: Prop): Boolean = {
+      p match {
+        case And(ops) =>
+          if (ops.size > AnalysisBudget.maxFormulaSize) {
+            true
+          } else {
+            ops.exists(doesFormulaExceedSize)
+          }
+        case Or(ops)  =>
+          if (ops.size > AnalysisBudget.maxFormulaSize) {
+            true
+          } else {
+            ops.exists(doesFormulaExceedSize)
+          }
+        case Not(a)   => doesFormulaExceedSize(a)
+        case _        => false
       }
     }
   }
@@ -450,27 +512,6 @@ trait Solving extends Logic {
       findAllModels(solvable.cnf, Nil)
     }
 
-    /** Drop trivially true clauses, simplify others by dropping negation of `unitLit`.
-     *
-     *  Disjunctions that contain the literal we're making true in the returned model are trivially true.
-     *  Clauses can be simplified by dropping the negation of the literal we're making true
-     *  (since False \/ X == X)
-     */
-    private def dropUnit(clauses: Array[Clause], unitLit: Lit): Unit = {
-      val negated = -unitLit
-      var i, j = 0
-      while (i < clauses.length) {
-        val clause = clauses(i)
-        if (clause == null) return
-        clauses(i) = null
-        if (!clause.contains(unitLit)) {
-          clauses(j) = clause.excl(negated)
-          j += 1
-        }
-        i += 1
-      }
-    }
-
     def hasModel(solvable: Solvable): Boolean = findTseitinModelFor(solvable.cnf) != NoTseitinModel
 
     def findTseitinModelFor(clauses: Array[Clause]): TseitinModel = {
@@ -516,87 +557,150 @@ trait Solving extends Logic {
       * `(remaining clauses, variable assignments)`, and depth-first search
       * is achieved by using a stack rather than a queue.
       *
+      * Boolean Constraint Propagation runs to a fixpoint in time linear in the size
+      * of the formula, using occurrence lists. (Rescanning all clauses for each unit
+      * literal made a query quadratic, and the reachability analysis of an N-case
+      * match cubic, in N.) Unit clauses are still propagated in the order of their
+      * position in the clause array, which is the order in which a rescan would find
+      * them, since dropping satisfied clauses and false literals preserves that order.
+      * So the models, and thus the counter-examples, are as before.
       */
     private def findTseitinModel0(state: TseitinSearch): TseitinModel = {
       val pos = new java.util.BitSet()
       val neg = new java.util.BitSet()
+
+      // returns the clauses remaining after unit propagation and the extended assignments, or null on conflict
+      def propagate(clauses: Array[Clause], assignments0: List[Lit]): (Array[Clause], List[Lit]) = {
+        var n = 0
+        while (n < clauses.length && clauses(n) != null) n += 1
+        val units = new java.util.BitSet()
+        var i = 0
+        var conflict = false
+        var maxVar = 0
+        while (i < n) {
+          val c = clauses(i)
+          c.size match {
+            case 0 => conflict = true
+            case 1 => units.set(i)
+            case _ =>
+          }
+          c.foreach(l => if (l.variable > maxVar) maxVar = l.variable)
+          i += 1
+        }
+        if (conflict) return null
+        if (units.isEmpty) return (clauses, assignments0)
+
+        // occurrence lists, indexed by 2 * variable + (if positive 0 else 1)
+        val occStart = new Array[Int](2 * maxVar + 3)
+        i = 0
+        while (i < n) { clauses(i).foreach(l => occStart(2 * l.variable + (if (l.positive) 0 else 1) + 1) += 1); i += 1 }
+        var k = 1
+        while (k < occStart.length) { occStart(k) += occStart(k - 1); k += 1 }
+        val occ = new Array[Int](occStart(occStart.length - 1))
+        val fill = java.util.Arrays.copyOf(occStart, occStart.length)
+        i = 0
+        while (i < n) { val ci = i; clauses(i).foreach { l => val key = 2 * l.variable + (if (l.positive) 0 else 1); occ(fill(key)) = ci; fill(key) += 1 }; i += 1 }
+
+        val size = new Array[Int](n)
+        val sat = new Array[Boolean](n)
+        val value = new Array[Byte](maxVar + 1) // 0: unassigned, 1: true, -1: false
+        i = 0
+        while (i < n) { size(i) = clauses(i).size; i += 1 }
+
+        var assignments = assignments0
+        var u = units.nextSetBit(0)
+        while (u >= 0) {
+          units.clear(u)
+          if (!sat(u)) {
+            val unitLit = clauses(u).find(l => value(l.variable) == 0).get
+            assignments = unitLit :: assignments
+            value(unitLit.variable) = if (unitLit.positive) 1 else -1
+            val key = 2 * unitLit.variable + (if (unitLit.positive) 0 else 1)
+            var j = occStart(key)
+            while (j < occStart(key + 1)) { sat(occ(j)) = true; j += 1 }
+            val negKey = key ^ 1
+            j = occStart(negKey)
+            while (j < occStart(negKey + 1)) {
+              val c = occ(j)
+              if (!sat(c)) {
+                size(c) -= 1
+                if (size(c) == 0) return null
+                if (size(c) == 1) units.set(c)
+              }
+              j += 1
+            }
+          }
+          u = units.nextSetBit(0)
+        }
+
+        val remaining = new ArrayBuffer[Clause](n)
+        i = 0
+        while (i < n) {
+          if (!sat(i)) {
+            val c = clauses(i)
+            remaining += (if (size(i) == c.size) c else c.filter(l => value(l.variable) == 0))
+          }
+          i += 1
+        }
+        (remaining.toArray, assignments)
+      }
+
       @tailrec def loop(state: TseitinSearch): TseitinModel = state match {
         case Nil => NoTseitinModel
-        case (clauses, assignments) :: rest =>
-          if (clauses.isEmpty || clauses.head == null) assignments
-          else {
-            var i = 0
-            var emptyIndex = -1
-            var unitIndex = -1
-            while (i < clauses.length && emptyIndex == -1) {
-              val clause = clauses(i)
-              if (clause != null) {
-                clause.size match {
-                  case 0 => emptyIndex = i
-                  case 1 if unitIndex == -1 =>
-                    unitIndex = i
-                  case _ =>
-                }
-              }
-              i += 1
-            }
-            if (emptyIndex != -1)
-              loop(rest)
-            else if (unitIndex != -1) {
-              val unitLit = clauses(unitIndex).head
-              dropUnit(clauses, unitLit)
-              val tuples: TseitinSearch = (clauses, unitLit :: assignments) :: rest
-              loop(tuples)
-            } else {
-              // partition symbols according to whether they appear in positive and/or negative literals
-              pos.clear()
-              neg.clear()
-              for (clause <- clauses) {
-                if (clause != null) {
-                  clause.foreach { lit: Lit =>
-                    if (lit.positive) pos.set(lit.variable) else neg.set(lit.variable)
+        case (clauses0, assignments0) :: rest =>
+          propagate(clauses0, assignments0) match {
+            case null => loop(rest)
+            case (clauses, assignments) =>
+              if (clauses.isEmpty || clauses.head == null) assignments
+              else {
+                // partition symbols according to whether they appear in positive and/or negative literals
+                pos.clear()
+                neg.clear()
+                for (clause <- clauses) {
+                  if (clause != null) {
+                    clause.foreach { lit: Lit =>
+                      if (lit.positive) pos.set(lit.variable) else neg.set(lit.variable)
+                    }
                   }
                 }
-              }
 
-              // appearing only in either positive/negative positions
+                // appearing only in either positive/negative positions
 
-              pos.xor(neg)
-              val pures = pos
+                pos.xor(neg)
+                val pures = pos
 
-              if (!pures.isEmpty) {
-                val pureVar = pures.nextSetBit(0)
-                // turn it back into a literal
-                // (since equality on literals is in terms of equality
-                //  of the underlying symbol and its positivity, simply construct a new Lit)
-                val pureLit: Lit = Lit(if (neg.get(pureVar)) -pureVar else pureVar)
-                // debug.patmat("pure: "+ pureLit +" pures: "+ pures)
-                val simplified = clauses.filterNot(clause => clause != null && clause.contains(pureLit))
-                loop((simplified, pureLit :: assignments) :: rest)
-              } else {
-                val split = clauses.find(_ != null).get.head
-                // debug.patmat("split: "+ split)
-                var i = 0
-                var nullIndex = -1
-                while (i < clauses.length && nullIndex == -1) {
-                  if (clauses(i) eq null) nullIndex = i
-                  i += 1
+                if (!pures.isEmpty) {
+                  val pureVar = pures.nextSetBit(0)
+                  // turn it back into a literal
+                  // (since equality on literals is in terms of equality
+                  //  of the underlying symbol and its positivity, simply construct a new Lit)
+                  val pureLit: Lit = Lit(if (neg.get(pureVar)) -pureVar else pureVar)
+                  val simplified = clauses.filterNot(clause => clause != null && clause.contains(pureLit))
+                  loop((simplified, pureLit :: assignments) :: rest)
+                } else {
+                  val split = clauses.find(_ != null).get.head
+                  var i = 0
+                  var nullIndex = -1
+                  while (i < clauses.length && nullIndex == -1) {
+                    if (clauses(i) eq null) nullIndex = i
+                    i += 1
+                  }
+
+                  val effectiveLength = if (nullIndex == -1) clauses.length else nullIndex
+                  val posClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
+                  val negClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
+                  posClauses(effectiveLength) = Set.empty[Lit] + split
+                  negClauses(effectiveLength) = Set.empty[Lit] + (-split)
+
+                  val pos = (posClauses, assignments)
+                  val neg = (negClauses, assignments)
+                  loop(pos :: neg :: rest)
                 }
-
-                val effectiveLength = if (nullIndex == -1) clauses.length else nullIndex
-                val posClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
-                val negClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
-                posClauses(effectiveLength) = Set.empty[Lit] + split
-                negClauses(effectiveLength) = Set.empty[Lit] + (-split)
-
-                val pos = (posClauses, assignments)
-                val neg = (negClauses, assignments)
-                loop(pos :: neg :: rest)
               }
-            }
           }
       }
       loop(state)
     }
+
   }
 }
