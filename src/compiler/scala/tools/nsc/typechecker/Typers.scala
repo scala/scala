@@ -28,7 +28,7 @@ import Mode._
  *  @author  Martin Odersky
  */
 trait Typers extends Adaptations with Tags with TypersTracking with PatternTypers {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

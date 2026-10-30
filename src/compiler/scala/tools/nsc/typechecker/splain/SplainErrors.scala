@@ -14,7 +14,7 @@ package scala.tools.nsc
 package typechecker
 package splain
 
-trait SplainErrors { self: Analyzer with SplainFormatting =>
+trait SplainErrors { self: AbstractAnalyzer with SplainFormatting =>
   import global._
 
   def splainPushNotFound(tree: Tree, param: Symbol): Unit =

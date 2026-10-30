@@ -27,7 +27,7 @@ object FormatCache {
 }
 
 trait SplainFormatters {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._
@@ -216,7 +216,7 @@ object SplainFormatting {
 }
 
 trait SplainFormatting extends SplainFormatters {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
 

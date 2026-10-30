@@ -22,7 +22,7 @@ import scala.util.chaining._
 /**
  *  @author  Martin Odersky
  */
-trait Contexts { self: Analyzer with ImportTracking =>
+trait Contexts { self: AbstractAnalyzer with ImportTracking =>
   import global._
   import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
