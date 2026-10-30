@@ -2035,6 +2035,8 @@ abstract class RefChecks extends Transform {
         // type bounds (bug #935), issues deprecation warnings for symbols used
         // inside annotations.
         applyRefchecksToAnnotations(tree)
+        for (attachment <- tree.getAndRemoveAttachment[analyzer.CheckableRecheckAttachment]; recheck <- attachment.rechecks; (msg, category) <- recheck())
+          refchecksWarning(tree.pos, msg, category)
         val result: Tree = tree match {
           // NOTE: a val in a trait is now a DefDef, with the RHS being moved to an Assign in Constructors
           case tree: ValOrDefDef =>
