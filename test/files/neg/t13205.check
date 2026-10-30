@@ -1,0 +1,14 @@
+t13205.scala:5: error: type mismatch;
+ found   : X.this.AC
+    (which expands to)  X.this.C
+ required: X.this.BC
+    (which expands to)  X.this.C
+  def run = useB(mkA)
+                 ^
+t13205.scala:6: error: Cannot prove that X.this.AC <:< X.this.BC.
+  implicitly[AC <:< BC]
+            ^
+t13205.scala:7: error: Cannot prove that X.this.AC =:= X.this.BC.
+  implicitly[AC =:= BC]
+            ^
+3 errors
