@@ -2686,31 +2686,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
-      def initChildren(sym: Symbol): Unit =
-        if (sym.isJava && sym.isSealed)
-          sym.attachments.get[PermittedSubclassSymbols] match {
-            case Some(PermittedSubclassSymbols(permits)) =>
-              for (child <- permits if child.isJava)
-                initChildren(child.initialize)
-            case _ =>
-              val seen = mutable.HashSet.empty[Symbol]
-              def populate(): Unit =
-                patmat.javaClassesByUnit.get(sym.pos.source) match {
-                  case Some(classes) =>
-                    classes.find(!seen(_)) match {
-                      case Some(unseen) =>
-                        seen += unseen
-                        unseen.initialize.companionSymbol.moduleClass.initialize
-                        if (unseen.hasAttachment[PermittedSubclassSymbols]) initChildren(unseen)
-                        populate()
-                      case _ =>
-                    }
-                  case _ =>
-                }
-              populate()
-          }
-      initChildren(selectorTp.typeSymbol)
-
       def finish(cases: List[CaseDef], matchType: Type) = {
         if (!isPastTyper && settings.warnPatternShadow && !context.owner.isSynthetic)
           for (cdef <- cases; bind @ Bind(name, _) <- cdef.pat if !bind.hasAttachment[NoWarnAttachment.type])
@@ -5565,7 +5540,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             handleMissing
           }
           else {
-            if ((sym ne NoSymbol) && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
+            if (sym.isTerm && !qual.tpe.isStable && argsDependOnPrefix(sym)) {
               // Rewrites "qual.name ..." to "{ val lhs = qual ; lhs.name ... }" in cases where
               // qual is not stable and name has a method type which depends on its prefix. If
               // this is the case then hoisting qual out as a stable val means that members of
