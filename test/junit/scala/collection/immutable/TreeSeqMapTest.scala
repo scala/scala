@@ -180,6 +180,21 @@ class TreeSeqMapTest {
     assertTrue(m.isFailure)
     assertFalse("empty iterator does not have next", TreeSeqMap.empty.iterator.hasNext)
   }
+
+  @Test
+  def builderReuseAfterClear(): Unit = {
+    val b = TreeSeqMap.newBuilder[Int, String]
+    (1 to 5).foreach(i => b += (i -> "x"))
+    b.result()
+    b.clear()
+    b += (1 -> "a")
+    b += (1 -> "b")
+    val m = b.result()
+    assertEquals(1, m.size)
+    assertEquals(1, m.iterator.size)
+    assertEquals(List(1 -> "b"), m.toList)
+    assertTrue(m.removed(1).isEmpty)
+  }
 }
 object TreeSeqMapTest extends App {
   import TreeSeqMap.Ordering._

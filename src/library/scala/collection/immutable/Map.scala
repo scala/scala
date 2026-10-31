@@ -664,7 +664,7 @@ private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, 
   private[this] var hashMapBuilder: HashMapBuilder[K, V] = _
 
   private[immutable] def getOrElse[V0 >: V](key: K, value: V0): V0 =
-    if (hashMapBuilder ne null) hashMapBuilder.getOrElse(key, value)
+    if (switchedToHashMapBuilder) hashMapBuilder.getOrElse(key, value)
     else elems.getOrElse(key, value)
 
   override def clear(): Unit = {
