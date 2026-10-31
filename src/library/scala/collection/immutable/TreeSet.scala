@@ -250,11 +250,10 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
           // The cast is needed to compile with Dotty:
           // Dotty doesn't infer that E =:= Int, since instantiation of covariant GADTs is unsound
         new TreeSet[E](tree)
+      case _ if it.knownSize == 0 =>
+        new TreeSet[E]
       case _ =>
-        var t: RB.Tree[E, Null] = null
-        val i = it.iterator
-        while (i.hasNext) t = RB.update(t, i.next(), null, overwrite = false)
-        new TreeSet[E](t)
+        (newBuilder[E] ++= it).result()
     }
 
   def newBuilder[A](implicit ordering: Ordering[A]): ReusableBuilder[A, TreeSet[A]] = new TreeSetBuilder[A]
