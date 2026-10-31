@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.immutable.{ List,  Vector}
-import scala.collection.mutable
+import scala.collection.{Stepper, immutable, mutable}
 
 
 @RunWith(classOf[JUnit4])
@@ -52,5 +52,53 @@ class TreeSetTest {
       assertEquals(expected, src intersect set)
       assertEquals(expected, src filter set)
     }
+  }
+
+  private def drain[A](s: Stepper[A]): List[A] = {
+    val prefix = s.trySplit()
+    (if (prefix == null) Nil else prefix.iterator.toList) ++ s.iterator.toList
+  }
+
+  // Projections used to inherit whole-tree overrides of minAfter/maxBefore, the stepper and the `from` fast path
+  @Test
+  def rangeProjectionsRespectBounds(): Unit = {
+    val set = mutable.TreeSet(1 to 9: _*)
+    val projections = List(
+      set.rangeFrom(4)              -> (4 to 9),
+      set.rangeUntil(6)             -> (1 to 5),
+      set.range(3, 7)               -> (3 to 6),
+      set.range(3, 7).rangeFrom(5)  -> (5 to 6),
+      set.range(20, 30)             -> (1 until 1),
+    )
+    for ((proj, elems) <- projections) {
+      val expected = elems.toList
+
+      for (k <- 0 to 10) {
+        assertEquals(s"minAfter($k)", expected.find(_ >= k), proj.minAfter(k))
+        assertEquals(s"maxBefore($k)", expected.findLast(_ < k), proj.maxBefore(k))
+      }
+
+      assertEquals(expected, proj.stepper.iterator.toList)
+      assertEquals(expected, drain(proj.stepper))
+
+      assertEquals(expected, mutable.TreeSet.from(proj).toList)
+      assertEquals(expected, proj.to(mutable.TreeSet).toList)
+      assertEquals(expected, mutable.SortedSet.from(proj).toList)
+      assertEquals(expected, immutable.TreeSet.from(proj).toList)
+    }
+  }
+
+  @Test
+  def projectionOverridesTreeAccess(): Unit = {
+    import scala.reflect.runtime.universe._
+    RangeProjectionOverrides.assertOverridden(typeOf[TreeSet[_]], "TreeSetProjection", Map(
+      "ordering"              -> "same ordering",
+      "sortedIterableFactory" -> "builds a new collection",
+      "className"             -> "same name",
+      "unconstrained"         -> "returns this",
+      "addOne"                -> "mutations go to the shared tree",
+      "subtractOne"           -> "mutations go to the shared tree",
+      "clear"                 -> "clears the whole set, scala/bug#12808",
+    ))
   }
 }
