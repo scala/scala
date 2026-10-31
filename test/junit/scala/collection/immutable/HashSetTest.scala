@@ -384,4 +384,22 @@ class HashSetTest {
     assertTrue(HashSet.empty[String].subsetOf(HashSet("bryan", "cranston", "john", "stuart", "mill")))
     assertTrue(HashSet("john").subsetOf(HashSet("bryan", "cranston", "john", "stuart", "mill")))
   }
+
+  @Test
+  def diffHashSet(): Unit = {
+    var equalsCalls = 0
+    final class K(val i: Int) {
+      override def hashCode = i
+      override def equals(o: Any) = { equalsCalls += 1; o match { case k: K => k.i == i; case _ => false } }
+    }
+    val hs = HashSet.from((1 to 100).map(new K(_)))
+    val hs2 = HashSet.from((51 to 150).map(new K(_)))
+    val result = hs.diff(hs2)
+    assertTrue(s"$equalsCalls", equalsCalls <= 50)
+    assertEquals((1 to 50).toSet, result.map(_.i))
+
+    assertSame(hs, hs.diff(HashSet.empty[K]))
+    assertSame(hs, hs.diff(HashSet.from((200 to 300).map(new K(_)))))
+    assertTrue(hs.diff(HashSet.from((0 to 200).map(new K(_)))).isEmpty)
+  }
 }
