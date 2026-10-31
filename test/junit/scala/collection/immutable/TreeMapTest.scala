@@ -263,4 +263,16 @@ class TreeMapTest extends AllocationTest {
       assertSame(i.toString, src, nonAllocating(src - i, text = i.toString))
     }
   }
+
+  @Test
+  def fromUnsorted(): Unit = {
+    val xs = new scala.util.Random(42).shuffle((1 to 1000).toList)
+    val tm = TreeMap.from(xs.map(i => i -> -i) ++ xs.map(i => i -> i))
+    assertEquals((1 to 1000).map(i => i -> i).toList, tm.toList)
+    // the first of several equivalent keys is retained, together with the last value
+    val ci = Ordering.fromLessThan[String](_.compareToIgnoreCase(_) < 0)
+    val ciMap = TreeMap.from(List("b" -> 1, "a" -> 2, "B" -> 3, "A" -> 4))(ci)
+    assertEquals(List("a" -> 4, "b" -> 3), ciMap.toList)
+    assertEquals(List("a" -> 4, "b" -> 3), TreeMap.from(collection.mutable.LinkedHashMap("b" -> 1, "a" -> 2, "B" -> 3, "A" -> 4))(ci).toList)
+  }
 }
