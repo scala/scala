@@ -89,7 +89,7 @@ final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterabl
         }
       }
       override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0) 0 else super.knownSize
-      override def isEmpty: Boolean = iterator.hasNext
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 

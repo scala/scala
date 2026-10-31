@@ -277,4 +277,25 @@ class LazyZipOpsTest {
     val st: String = s
     assertEquals("bdf", st)
   }
+
+  @Test
+  def lazyZip2FilterIsEmpty(): Unit = {
+    def filtered(xs: List[Int], p: Int => Boolean) = xs.view.lazyZip(List(4, 5, 6)).filter((a, _) => p(a))
+    val nonEmpty = filtered(List(1, 2, 3), _ > 1)
+    assertFalse(nonEmpty.isEmpty)
+    assertTrue(nonEmpty.nonEmpty)
+    val allFiltered = filtered(List(1, 2, 3), _ > 3)
+    assertTrue(allFiltered.isEmpty)
+    assertFalse(allFiltered.nonEmpty)
+    assertTrue(filtered(Nil, _ => true).isEmpty)
+  }
+
+  @Test
+  def lazyZip3And4FilterIsEmpty(): Unit = {
+    val v = List(1, 2, 3).view
+    assertFalse(v.lazyZip(v).lazyZip(v).filter((a, _, _) => a > 1).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).filter((a, _, _) => a > 3).isEmpty)
+    assertFalse(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 1).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 3).isEmpty)
+  }
 }
