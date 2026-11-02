@@ -143,4 +143,19 @@ class VectorMapTest {
     assertEquals(List(1 -> "a", 2 -> "b"), m.removed(4).removed(5).updated(6, "f").removed(6).init.toList)
     assertEquals(List(1 -> "a", 2 -> "b"), m.removed(5).removed(4).updated(6, "f").removed(6).init.toList)
   }
+
+  @Test
+  def builderReuseAfterClear(): Unit = {
+    val b = VectorMap.newBuilder[Int, String]
+    (1 to 5).foreach(i => b += (i -> "x"))
+    b.result()
+    b.clear()
+    b += (1 -> "a")
+    b += (1 -> "b")
+    val m = b.result()
+    assertEquals(1, m.size)
+    assertEquals(1, m.iterator.size)
+    assertEquals(List(1 -> "b"), m.toList)
+    assertTrue(m.removed(1).isEmpty)
+  }
 }
