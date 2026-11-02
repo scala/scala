@@ -128,7 +128,6 @@ trait CompilationUnits { global: Global =>
     /** things to check at end of compilation unit */
     val toCheck = ArrayDeque.empty[CompilationUnit.ToCheck]
     private[nsc] def addPostUnitCheck(check: CompilationUnit.ToCheckAfterUnit): Unit = toCheck.append(check)
-    private[nsc] def addPostTyperCheck(check: CompilationUnit.ToCheckAfterTyper): Unit = toCheck.append(check)
 
     /** The features that were already checked for this unit */
     var checkedFeatures = Set[Symbol]()
@@ -154,6 +153,5 @@ trait CompilationUnits { global: Global =>
   object CompilationUnit {
     sealed trait ToCheck { def apply(): Unit }
     trait ToCheckAfterUnit extends ToCheck
-    trait ToCheckAfterTyper extends ToCheck
   }
 }

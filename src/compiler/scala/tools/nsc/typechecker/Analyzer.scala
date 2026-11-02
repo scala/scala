@@ -14,7 +14,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayDeque
 import scala.reflect.internal.util.JavaClearable
 
 /** Defines the sub-components for the namer, packageobjects, and typer phases.
@@ -119,8 +118,6 @@ trait Analyzer extends AnyRef
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
-      private val toCheckAfterTyper = ArrayDeque.empty[CompilationUnit.ToCheckAfterTyper]
-      def addCheckAfterTyper(check: CompilationUnit.ToCheckAfterTyper): Unit = toCheckAfterTyper.append(check)
       override def run(): Unit = {
         val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.typerNanos) else null
         global.echoPhaseSummary(this)
@@ -131,8 +128,6 @@ trait Analyzer extends AnyRef
           undoLog.clear()
         }
         finishComputeParamAlias()
-        try while (toCheckAfterTyper.nonEmpty) toCheckAfterTyper.removeHead().apply()
-        finally toCheckAfterTyper.clearAndShrink()
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
         if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.typerNanos, start)
@@ -143,12 +138,7 @@ trait Analyzer extends AnyRef
           unit.body = typer.typed(unit.body)
           // interactive typed may finish by throwing a `TyperResult`
           if (!settings.Youtline.value) {
-            while (unit.toCheck.nonEmpty) {
-              unit.toCheck.removeHead() match {
-                case now: CompilationUnit.ToCheckAfterUnit => now()
-                case later: CompilationUnit.ToCheckAfterTyper => addCheckAfterTyper(later)
-              }
-            }
+            while (unit.toCheck.nonEmpty) unit.toCheck.removeHead().apply()
             if (!settings.isScaladoc && settings.warnUnusedImport)
               warnUnusedImports(unit)
             if (!settings.isScaladoc && settings.warnUnused.isSetByUser)

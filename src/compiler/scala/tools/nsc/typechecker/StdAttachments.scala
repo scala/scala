@@ -126,6 +126,9 @@ trait StdAttachments {
    */
   case class SuperArgsAttachment(argss: List[List[Tree]])
 
+  /** Type tests involving classes compiled in this run, checked once the children of sealed classes are known. */
+  case class CheckableRecheckAttachment(rechecks: List[() => Option[(String, Reporting.WarningCategory)]])
+
   /** Convenience method for `SuperArgsAttachment`.
    *  Compared with `MacroRuntimeAttachment` this attachment has different a usage pattern,
    *  so it really benefits from a dedicated extractor.
