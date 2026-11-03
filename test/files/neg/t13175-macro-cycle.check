@@ -1,0 +1,2 @@
+error: knownDirectSubclasses of Shape observed before subclass S registered
+1 error

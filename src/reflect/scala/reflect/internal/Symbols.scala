@@ -136,6 +136,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def knownDirectSubclasses = {
       // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
       if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      // load first: loading registers the children, which is an error once knownDirectSubclasses was called
+      loadChildren()
 
       enclosingPackage.info.decls.foreach { sym =>
         if(sourceFile == sym.sourceFile) {
@@ -147,6 +149,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         updateAttachment(KnownDirectSubclassesCalled)
 
       children
+    }
+
+    /** Reads the classfile of a class from the classpath, which records its children: the pickle of a Scala class,
+     *  or the PermittedSubclasses attribute of a Java class. */
+    private[reflect] def loadChildren(): Unit = rawInfo match {
+      case loader: SymLoader if !loader.fromSource => initialize
+      case _ =>
     }
 
     def selfType = {
@@ -3504,13 +3513,49 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
        NoSymbol)
 
     private[this] var childSet: Set[Symbol] = Set()
-    override def children = childSet
+    override def children = {
+      loadChildren()
+      attachments.get[PermittedSubclassSymbols] match {
+        case Some(permitted) => permittedChildren(permitted)
+        case _               => childSet
+      }
+    }
     override def addChild(sym: Symbol): Unit = {
-      if(!isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type] && !childSet.contains(sym))
-        globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+      if (knownDirectSubclassesCalled && !childSet.contains(sym))
+        observedBeforeRegistered(sym)
 
       childSet = childSet + sym
     }
+
+    private def knownDirectSubclassesCalled = !isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type]
+    private def observedBeforeRegistered(sym: Symbol): Unit =
+      globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+
+    // The children of a sealed Java class are the permitted classes that extend it; a classfile may name others
+    // (JVMS 4.7.31). While a permitted class is being checked, the children are unknown, as for a Scala subclass
+    // that is not yet registered.
+    private def permittedChildren(permitted: PermittedSubclassSymbols): Set[Symbol] =
+      if (permitted.children != null) permitted.children
+      else if (permitted.completing != null) {
+        if (knownDirectSubclassesCalled) observedBeforeRegistered(permitted.completing)
+        Set.empty
+      }
+      else {
+        var complete = true
+        val children = permitted.symbols.filter { sym =>
+          permitted.completing = sym
+          // a stub is a permitted class that no longer exists
+          try !sym.isInstanceOf[StubSymbol] && sym.parentSymbols.contains(this)
+          catch { case _: CyclicReference =>
+            // `sym` is being completed: assume it is a child (javac checked it) unless a macro asked, and don't cache
+            complete = false
+            if (knownDirectSubclassesCalled) { observedBeforeRegistered(sym); false } else true
+          }
+          finally permitted.completing = null
+        }.toSet
+        if (complete) permitted.children = children
+        children
+      }
 
     def anonOrRefinementString = {
       if (hasCompleteInfo) {
@@ -3640,6 +3685,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def info            = fail(NoType)
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
+    // a missing class has no children, asking for them is not an error
+    override private[reflect] def loadChildren(): Unit = ()
   }
   class StubClassSymbol(owner0: Symbol, name0: TypeName, val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
   class StubTermSymbol(owner0: Symbol, name0: TermName, val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
