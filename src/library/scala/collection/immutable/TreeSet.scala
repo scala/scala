@@ -278,9 +278,6 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         case ts: TreeSet[A] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree
           else tree = RB.union(beforePublish(tree), ts.tree)(ordering)
-        case ts: TreeMap[A @unchecked, _] if ts.ordering == ordering =>
-          if (tree eq null) tree = ts.tree0
-          else tree = RB.union(beforePublish(tree), ts.tree0)(ordering)
         case _ =>
           super.addAll(xs)
       }
