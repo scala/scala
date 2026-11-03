@@ -367,4 +367,38 @@ class TreeSetTest extends AllocationTest {
     assertEquals(expected, TreeSet.from[Any](tm)(o))
     assertEquals(expected, tm.to(TreeSet.evidenceIterableFactory[Any](o)))
   }
+
+  private def drain[A](s: scala.collection.Stepper[A]): List[A] = {
+    val prefix = s.trySplit()
+    (if (prefix == null) Nil else prefix.iterator.toList) ++ s.iterator.toList
+  }
+
+  // Companion to the mutable.TreeSet test: immutable range projections are trees of their own
+  @Test
+  def rangeProjectionsRespectBounds(): Unit = {
+    val set = TreeSet(1 to 9: _*)
+    val projections = List(
+      set.rangeFrom(4)              -> (4 to 9),
+      set.rangeUntil(6)             -> (1 to 5),
+      set.range(3, 7)               -> (3 to 6),
+      set.range(3, 7).rangeFrom(5)  -> (5 to 6),
+      set.range(20, 30)             -> (1 until 1),
+    )
+    for ((proj, elems) <- projections) {
+      val expected = elems.toList
+
+      for (k <- 0 to 10) {
+        assertEquals(s"minAfter($k)", expected.find(_ >= k), proj.minAfter(k))
+        assertEquals(s"maxBefore($k)", expected.findLast(_ < k), proj.maxBefore(k))
+      }
+
+      assertEquals(expected, proj.stepper.iterator.toList)
+      assertEquals(expected, drain(proj.stepper))
+
+      assertEquals(expected, TreeSet.from(proj).toList)
+      assertEquals(expected, proj.to(TreeSet).toList)
+      assertEquals(expected, SortedSet.from(proj).toList)
+      assertEquals(expected, scala.collection.mutable.TreeSet.from(proj).toList)
+    }
+  }
 }
