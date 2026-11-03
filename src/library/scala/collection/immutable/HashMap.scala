@@ -353,9 +353,9 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
         } else {
           new HashMap(that.rootNode.updated(k, v, originalHash, improved, 0, replaceValue = true))
         }
-      } else if (that.size == 0) {
-        val thatPayload@(k, v) = rootNode.getPayload(0)
-        val thatOriginalHash = rootNode.getHash(0)
+      } else if (that.size == 1) {
+        val thatPayload@(k, v) = that.rootNode.getPayload(0)
+        val thatOriginalHash = that.rootNode.getHash(0)
         val thatImproved = improve(thatOriginalHash)
 
         if (rootNode.containsKey(k, thatOriginalHash, thatImproved, 0)) {
@@ -363,7 +363,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
           val (mergedK, mergedV) = mergef(payload, thatPayload)
           val mergedOriginalHash = mergedK.##
           val mergedImprovedHash = improve(mergedOriginalHash)
-          new HashMap(rootNode.updated(mergedK, mergedV, mergedOriginalHash, mergedImprovedHash, 0, replaceValue = true))
+          new HashMap(rootNode.removed(payload._1, thatOriginalHash, thatImproved, 0).updated(mergedK, mergedV, mergedOriginalHash, mergedImprovedHash, 0, replaceValue = true))
         } else {
           new HashMap(rootNode.updated(k, v, thatOriginalHash, thatImproved, 0, replaceValue = true))
         }

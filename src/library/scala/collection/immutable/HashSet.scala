@@ -222,7 +222,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
         case hashSet: HashSet[A] =>
           if (hashSet.isEmpty) this else {
             val newRootNode = rootNode.diff(hashSet.rootNode, 0)
-            if (newRootNode.size == 0) HashSet.empty else newHashSetOrThis(rootNode.diff(hashSet.rootNode, 0))
+            if (newRootNode.size == 0) HashSet.empty else newHashSetOrThis(newRootNode)
           }
         case hashSet: collection.mutable.HashSet[A] =>
           val iter = hashSet.nodeIterator

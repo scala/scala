@@ -390,4 +390,33 @@ class HashMapTest extends AllocationTest{
     val m0 = new UpdateCountingMap(0, SortedMap.empty[Int, String])
     ensureNoRedundantUpdates(m0)
   }
+
+  @Test
+  def mergedWithSingleton(): Unit = {
+    val big = HashMap.from((1 to 100).map(i => i -> s"v$i"))
+    var calls = List.empty[((Int, String), (Int, String))]
+    val f: ((Int, String), (Int, String)) => (Int, String) = { (l, r) => calls ::= ((l, r)); l._1 -> (l._2 + r._2) }
+
+    // singleton `that`, key present
+    val present = big.merged(HashMap(42 -> "x"))(f)
+    assertEquals(List(((42, "v42"), (42, "x"))), calls)
+    assertEquals(big.updated(42, "v42x"), present)
+
+    // singleton `this`, key present
+    calls = Nil
+    val present2 = HashMap(42 -> "x").merged(big)(f)
+    assertEquals(List(((42, "x"), (42, "v42"))), calls)
+    assertEquals(big.updated(42, "xv42"), present2)
+
+    // singleton `that` / `this`, key absent: mergef is not called
+    calls = Nil
+    assertEquals(big.updated(1000, "y"), big.merged(HashMap(1000 -> "y"))(f))
+    assertEquals(big.updated(1000, "y"), HashMap(1000 -> "y").merged(big)(f))
+    assertTrue(calls.isEmpty)
+
+    // mergef returning a different key replaces the merged key
+    val expected = big.removed(42).updated(1000, "x")
+    assertEquals(expected, big.merged(HashMap(42 -> "x")) { case (_, (_, r)) => 1000 -> r })
+    assertEquals(expected, HashMap(42 -> "x").merged(big) { case ((_, l), _) => 1000 -> l })
+  }
 }
