@@ -17,6 +17,8 @@ package xsbt
 
 import scala.tools.nsc.Global
 
+import xsbti.{ ClassRef, NameKind }
+
 /**
  * Utility methods for creating (source|binary) class names for a Symbol.
  */
@@ -39,6 +41,12 @@ trait ClassName extends Compat {
    * Create a String (source) name for a class symbol `s`.
    */
   protected def classNameAsString(s: Symbol): String = pickledNameAsString(s)
+
+  protected def classNameKind(s: Symbol): NameKind =
+    if (s.isModuleClass) NameKind.Term else NameKind.Type
+
+  protected def classRef(s: Symbol): ClassRef =
+    ClassRef.of(classNameAsString(s), classNameKind(s))
 
   /**
    * Given a class symbol `cls`, construct a name representing this constructor.

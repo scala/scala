@@ -6,6 +6,8 @@ import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 import xsbti.api.DependencyContext.DependencyByMacroExpansion
 
 import scala.tools.xsbt.TestCallback.ExtractedClassDependencies
+import xsbti.NameKind
+import xsbti.api.DependencyContext.DependencyByInheritance
 
 class DependencyTest extends BridgeTesting {
 
@@ -30,6 +32,20 @@ class DependencyTest extends BridgeTesting {
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
     assertEquals(inheritance("H"), Set("B", "E"))
   }
+
+  @Test
+  def `Dependency phase should qualify each endpoint of a class dependency with its namespace`(): Unit =
+    withTemporaryDirectory { tempDir =>
+      val srcA = "trait A"
+      val srcB = "trait B\nobject B extends A"
+      val srcC = "class C extends B"
+      val (_, callback) = compileSrcs(tempDir, srcA, srcB, srcC)
+      val inheritance = callback.classRefDependencies.collect {
+        case (on, from, DependencyByInheritance) => (on.name, from.name, from.kind)
+      }.toSet
+      // `object B extends A` and `trait B extends A` are the same edge in the relations
+      assertEquals(Set(("A", "B", NameKind.Term), ("B", "C", NameKind.Type)), inheritance)
+    }
 
   @Test
   def `Dependency phase should extract class dependencies from local members`(): Unit = {
