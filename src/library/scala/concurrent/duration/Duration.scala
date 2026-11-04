@@ -73,25 +73,24 @@ object Duration {
     }
   }
 
-  // "ms milli millisecond" -> List("ms", "milli", "millis", "millisecond", "milliseconds")
-  private[this] def words(s: String) = (s.trim split "\\s+").toList
-  private[this] def expandLabels(labels: String): List[String] = {
-    val hd :: rest = words(labels): @unchecked
+  // List("ms", "milli", "millisecond") -> List("ms", "milli", "millis", "millisecond", "milliseconds")
+  private[this] def expandLabels(labels: List[String]): List[String] = {
+    val hd :: rest = labels: @unchecked
     hd :: rest.flatMap(s => List(s, s + "s"))
   }
   private[this] val timeUnitLabels = List(
-    DAYS         -> "d day",
-    HOURS        -> "h hr hour",
-    MINUTES      -> "m min minute",
-    SECONDS      -> "s sec second",
-    MILLISECONDS -> "ms milli millisecond",
-    MICROSECONDS -> "µs micro microsecond",
-    NANOSECONDS  -> "ns nano nanosecond"
+    DAYS         -> List("d", "day"),
+    HOURS        -> List("h", "hr", "hour"),
+    MINUTES      -> List("m", "min", "minute"),
+    SECONDS      -> List("s", "sec", "second"),
+    MILLISECONDS -> List("ms", "milli", "millisecond"),
+    MICROSECONDS -> List("µs", "micro", "microsecond"),
+    NANOSECONDS  -> List("ns", "nano", "nanosecond")
   )
 
   // TimeUnit => standard label
   protected[duration] val timeUnitName: Map[TimeUnit, String] =
-    timeUnitLabels.toMap.view.mapValues(s => words(s).last).toMap
+    timeUnitLabels.toMap.view.mapValues(_.last).toMap
 
   // Label => TimeUnit
   protected[duration] val timeUnit: Map[String, TimeUnit] =
