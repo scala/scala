@@ -26,7 +26,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.typechecker.{Analyzer, Typers}
+import scala.tools.nsc.typechecker.{AbstractAnalyzer, Analyzer, Typers}
 import scala.util.control.Breaks._
 import scala.util.control.ControlThrowable
 
@@ -40,7 +40,7 @@ import scala.util.control.ControlThrowable
  */
 
 trait CommentPreservingTypers extends Typers {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   override def resetDocComments() = global.cookedDocComments.clear()
 }

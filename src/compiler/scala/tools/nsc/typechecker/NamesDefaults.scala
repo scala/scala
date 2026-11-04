@@ -21,7 +21,7 @@ import PartialFunction.cond
 /**
  *  @author Lukas Rytz
  */
-trait NamesDefaults { self: Analyzer =>
+trait NamesDefaults { self: AbstractAnalyzer =>
 
   import global._
   import definitions._
