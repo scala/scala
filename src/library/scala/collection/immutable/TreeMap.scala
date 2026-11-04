@@ -315,13 +315,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
       case sm: scala.collection.SortedMap[K, V] if ordering == sm.ordering =>
         new TreeMap[K, V](RB.fromOrderedEntries(sm.iterator, sm.size))
       case _ =>
-        var t: RB.Tree[K, V] = null
-        val i = it.iterator
-        while (i.hasNext) {
-          val (k, v) = i.next()
-          t = RB.update(t, k, v, overwrite = true)
-        }
-        new TreeMap[K, V](t)
+        (newBuilder[K, V] ++= it).result()
     }
 
   def newBuilder[K, V](implicit ordering: Ordering[K]): ReusableBuilder[(K, V), TreeMap[K, V]] = new TreeMapBuilder[K, V]
