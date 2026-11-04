@@ -56,7 +56,7 @@ import Fingerprint._
  *    (TypeTag(Int))
  */
 trait Macros extends MacroRuntimes with Traces with Helpers {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

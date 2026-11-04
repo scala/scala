@@ -527,7 +527,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // I only changed analyzer.
   //
   // factory for phases: namer, packageobjects, typer
-  lazy val analyzer =
+  lazy val analyzer: AbstractAnalyzer with Analyzer { val global: Global.this.type } =
     if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
     else new { val global: Global.this.type = Global.this } with Analyzer
 

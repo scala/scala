@@ -422,12 +422,12 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
   class MixinTransformer(unit : CompilationUnit) extends AstTransformer with AccessorTreeSynthesis {
     /** The typer */
-    private var localTyper: erasure.Typer = _
+    private var localTyper: erasure.erasureAnalyzer.Typer = _
     protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
 
     /** The rootContext used for typing */
     private val rootContext =
-      erasure.NoContext.make(EmptyTree, rootMirror.RootClass, newScope)
+      erasure.erasureAnalyzer.NoContext.make(EmptyTree, rootMirror.RootClass, newScope)
 
     private val nullables = mutable.HashMap[Symbol, Map[Symbol, List[Symbol]]]()
 
@@ -441,7 +441,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       val sym = tree.symbol
       tree match {
         case Template(parents, self, body) =>
-          localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
+          localTyper = erasure.erasureAnalyzer.newTyper(rootContext.make(tree, currentOwner))
           exitingMixin(currentOwner.owner.info)//todo: needed?
 
           if (!currentOwner.isTrait && !isPrimitiveValueClass(currentOwner))
