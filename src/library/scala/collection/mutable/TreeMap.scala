@@ -232,6 +232,27 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     // `foreach(f, from, until)` and `transform(f, from, until)` methods can be created in `RedBlackTree`. See
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
     override def foreach[U](f: ((K, V)) => U): Unit = iterator.foreach(f)
+    override def foreachEntry[U](f: (K, V) => U): Unit = iterator.foreach(e => f(e._1, e._2))
+
+    override def minAfter(key: K): Option[(K, V)] = {
+      val it = iteratorFrom(key)
+      if (it.hasNext) Some(it.next()) else None
+    }
+    override def maxBefore(key: K): Option[(K, V)] = {
+      val entry = RB.maxBefore(tree, pickUpperBound(Some(key)).get)
+      (entry, from) match {
+        case (Some(e), Some(fr)) if ordering.compare(e._1, fr) < 0 => None
+        case _ => entry
+      }
+    }
+
+    // The binary tree steppers of the enclosing map traverse the whole tree, so use iterator-based steppers instead.
+    override def stepper[S <: Stepper[_]](implicit shape: StepperShape[(K, V), S]): S with EfficientSplit =
+      iterator.stepper(shape).asInstanceOf[S with EfficientSplit]
+    override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit =
+      keysIterator.stepper(shape).asInstanceOf[S with EfficientSplit]
+    override def valueStepper[S <: Stepper[_]](implicit shape: StepperShape[V, S]): S with EfficientSplit =
+      valuesIterator.stepper(shape).asInstanceOf[S with EfficientSplit]
 
     override def clone() = super.clone().rangeImpl(from, until)
   }

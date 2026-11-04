@@ -177,6 +177,22 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
     override def foreach[U](f: A => U): Unit = iterator.foreach(f)
 
+    override def minAfter(key: A): Option[A] = {
+      val it = iteratorFrom(key)
+      if (it.hasNext) Some(it.next()) else None
+    }
+    override def maxBefore(key: A): Option[A] = {
+      val elem = RB.maxKeyBefore(tree, pickUpperBound(Some(key)).get)
+      (elem, from) match {
+        case (Some(e), Some(fr)) if ordering.compare(e, fr) < 0 => None
+        case _ => elem
+      }
+    }
+
+    // The binary tree stepper of the enclosing set traverses the whole tree, so use an iterator-based stepper instead.
+    override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit =
+      iterator.stepper(shape).asInstanceOf[S with EfficientSplit]
+
     override def clone(): mutable.TreeSet[A] = super.clone().rangeImpl(from, until)
 
   }
@@ -195,7 +211,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def from[E](it: IterableOnce[E])(implicit ordering: Ordering[E]): TreeSet[E] =
     it match {
-      case ts: TreeSet[E] if ordering == ts.ordering =>
+      case ts: TreeSet[E] if ordering == ts.ordering && (ts.getClass eq classOf[TreeSet[_]]) => // not a range projection
         new TreeSet[E](ts.tree.treeCopy())
       case ss: scala.collection.SortedSet[E] if ordering == ss.ordering =>
         new TreeSet[E](RB.fromOrderedKeys(ss.iterator, ss.size))
