@@ -1270,6 +1270,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   override def kindCommandInternal(typeString: String, verbose: Boolean): String = {
     import scala.util.control.Exception.catching
+    import global.kinds.{Kind, TypeConKind, inferKind}
     val catcher = catching(classOf[MissingRequirementError],
       classOf[ScalaReflectionException])
 
@@ -1289,7 +1290,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
           val kind = exitingTyper {
             val sym = tpe.typeSymbol.asClass
             val owner = sym.owner
-            val kind0 = intp.global.inferKind(NoPrefix)(TypeRef(pre, sym, Nil), owner)
+            val kind0 = inferKind(NoPrefix)(TypeRef(pre, sym, Nil), owner)
             kind0 match {
               case TypeConKind(bounds, kargs) if args.size == kargs.size =>
                 TypeConKind(bounds, (args.toList zip kargs.toList) flatMap {
@@ -1306,7 +1307,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
           val kind = exitingTyper {
             val sym = tpe.typeSymbol.asClass
             val owner = sym.owner
-            intp.global.inferKind(NoPrefix)(tpe, owner)
+            inferKind(NoPrefix)(tpe, owner)
           }
           kindMsg(tpe, kind, verbose)
         }

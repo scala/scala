@@ -17,8 +17,8 @@ package internal
 import scala.annotation.nowarn
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 
-trait Kinds {
-  self: SymbolTable =>
+final class Kinds[U <: SymbolTable with Singleton](val self: U) {
+  import self._
 
   import definitions._
 

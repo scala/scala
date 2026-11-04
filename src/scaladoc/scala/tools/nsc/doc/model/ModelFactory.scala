@@ -814,7 +814,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     if (!localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
-      val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
+      val allSyms = docCommentsSupport.useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
         docComments.put(bSym, DocComment(bComment, bPos)) // put the comment in the list, don't parse it yet, closes scala/bug#4898
         bSym
       }
@@ -1044,7 +1044,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def typeShouldDocument(bSym: Symbol, inTpl: DocTemplateImpl) =
     (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
     (bSym.isAliasType || bSym.isAbstractType) &&
-    { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
+    { val rawComment = global.docCommentsSupport.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }
 }
 object ModelFactory {

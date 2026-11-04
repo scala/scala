@@ -17,7 +17,8 @@ package internal
 import Flags._
 import util._
 
-trait ReificationSupport { self: SymbolTable =>
+final class ReificationSupport[U <: SymbolTable with Singleton](val self: U) {
+  import self._
   import definitions._
 
   class ReificationSupportImpl extends ReificationSupportApi {

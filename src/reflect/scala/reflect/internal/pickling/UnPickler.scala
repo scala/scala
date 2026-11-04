@@ -605,7 +605,7 @@ abstract class UnPickler {
       }
 
       val tpe    = readTypeRef()
-      val sym    = if (isTreeSymbolPickled(tag)) readSymbolRef() else null
+      val sym    = if (translations.isTreeSymbolPickled(tag)) readSymbolRef() else null
       val result = readTree()
 
       if (sym ne null) fixOverload(result.setSymbol(sym), tpe)

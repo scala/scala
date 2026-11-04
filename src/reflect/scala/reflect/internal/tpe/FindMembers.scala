@@ -17,8 +17,8 @@ import util.ReusableInstance
 import Flags._
 import scala.runtime.Statics.releaseFence
 
-trait FindMembers {
-  this: SymbolTable =>
+final class FindMembers[U <: SymbolTable with Singleton](val self: U) {
+  import self._
   import statistics._
 
   /** Implementation of `Type#{findMember, findMembers}` */
@@ -321,7 +321,7 @@ trait FindMembers {
     private[this] var _member0Tpe: Type = null
     private[this] def member0Tpe: Type = {
       assert(member0 != null, "member0 must not be null for member type")
-      if (_member0Tpe eq null) _member0Tpe = self.memberType(member0)
+      if (_member0Tpe eq null) _member0Tpe = this.self.memberType(member0)
       _member0Tpe
     }
 

@@ -2859,9 +2859,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             case rt => " <: " + rt
           }
         tp match {
-          case _ if isType               => typeParamsString(tp) + typeRest
+          case _ if isType               => typeDebugging.typeParamsString(tp) + typeRest
           case _ if isModule             => "" //  avoid "object X of type X.type"
-          case PolyType(tparams, res)    => typeParamsString(tp) + loop(res, followsParens = true)
+          case PolyType(tparams, res)    => typeDebugging.typeParamsString(tp) + loop(res, followsParens = true)
           case NullaryMethodType(res)    => loop(res, followsParens = false)
           case MethodType(params, res)   => valueParamsString(tp) + loop(res, followsParens = true)
           case _ if isStructuralThisType => postnominalColon + owner.name

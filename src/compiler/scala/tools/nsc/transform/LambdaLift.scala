@@ -51,7 +51,7 @@ abstract class LambdaLift extends InfoTransform {
   }
 
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isCapturedVariable) capturedVariableType(sym, tpe = lifted(tp), erasedTypes = true)
+    if (sym.isCapturedVariable) capturedVariables.capturedVariableType(sym, tpe = lifted(tp), erasedTypes = true)
     else lifted(tp)
 
   protected def newTransformer(unit: CompilationUnit): AstTransformer =

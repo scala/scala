@@ -76,6 +76,19 @@ object MimaFilters extends AutoPlugin {
     // scala/bug#13203: thread-local override of internal state in the private[reflect] trait SynchronizedTypes
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.globalGlbDepth*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.globalGlbDepth*"),
+
+    // implementation traits of the reflect internal API (Kinds, Variances, GlbLubs, ...) are components of SymbolTable rather than
+    // mixins, so the private[reflect] runtime universe no longer has them as parents, nor their synthetic accessors
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.JavaUniverse"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.SymbolTable"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.SynchronizedOps"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.SynchronizedTypes"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SymbolTable.scala$reflect$internal$tpe$*"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedOps.scala$reflect$internal$tpe$*"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedTypes.scala$reflect$internal$tpe$*"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SymbolTable.GlbFailure*"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedOps.GlbFailure*"),
+    ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedTypes.GlbFailure*"),
   )
 
   override val buildSettings = Seq(

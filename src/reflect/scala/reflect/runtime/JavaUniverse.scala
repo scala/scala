@@ -57,7 +57,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
-  def currentFreshNameCreator = globalFreshNameCreator
+  def currentFreshNameCreator = freshNames.globalFreshNameCreator
 
   override lazy val internal: Internal = new SymbolTableInternal {
     override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: Universe # TypeTag[T]): Manifest[T] = {

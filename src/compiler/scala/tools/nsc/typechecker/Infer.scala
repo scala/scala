@@ -92,7 +92,7 @@ trait Infer extends Checkable {
       funTp <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
 
       // solve constraints tracked by tvars
-      val targs = solvedTypes(tvars, tparams, varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
+      val targs = solvedTypes(tvars, tparams, variances.varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
 
       debuglog(s"sam infer: $samTp --> ${appliedType(samTyCon, targs)} by ${funTp} <:< $samInfoWithTVars --> $targs for $tparams")
 
@@ -428,7 +428,7 @@ trait Infer extends Checkable {
           case _                                                     => restpe
         }
 
-        try solvedTypes(tvars, tparams, varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
+        try solvedTypes(tvars, tparams, variances.varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
         catch { case _: NoInstance => null }
       } else
         null
@@ -476,7 +476,7 @@ trait Infer extends Checkable {
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
-          try instantiateToBound(tvar, varianceInTypes(formals)(tparam))
+          try instantiateToBound(tvar, variances.varianceInTypes(formals)(tparam))
           catch { case _: NoInstance => WildcardType }
         )
       else
@@ -505,7 +505,7 @@ trait Infer extends Checkable {
       foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
         val retract = (
               targ.typeSymbol == NothingClass                                         // only retract Nothings
-          && (restpe.isWildcard || !varianceInType(restpe)(tparam).isPositive)  // don't retract covariant occurrences
+          && (restpe.isWildcard || !variances.varianceInType(restpe)(tparam).isPositive)  // don't retract covariant occurrences
         )
 
         if (retract) {
@@ -582,7 +582,7 @@ trait Infer extends Checkable {
           throw new DeferredNoInstance(() =>
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
       }
-      val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
+      val targs = solvedTypes(tvars, tparams, variances.varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
       // Any "top type" in the constraint mitigates the warning, instead of a precise match such as:
       // !tvar.constr.loBounds.contains(targ)
       // For example, don't require this arg, where the lub of `AnyRef` and `V` yields the `Any`.
@@ -977,7 +977,7 @@ trait Infer extends Checkable {
     }
 
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
-      checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
+      kinds.checkKindBounds0(tparams, targs, pre, owner, explainErrors = true) map {
         case (targ, tparam, kindErrors) =>
           kindErrors.errorMessage(targ, tparam)
       }
@@ -1123,7 +1123,7 @@ trait Infer extends Checkable {
             // debuglog("TVARS "+ (tvars map (_.constr)))
             // look at the argument types of the primary constructor corresponding to the pattern
             val varianceFun: Variance.Extractor[Symbol] =
-              if (ctorTp.paramTypes.isEmpty) varianceInType(ctorTp) else varianceInTypes(ctorTp.paramTypes)
+              if (ctorTp.paramTypes.isEmpty) variances.varianceInType(ctorTp) else variances.varianceInTypes(ctorTp.paramTypes)
 
             // Note: this is the only place where solvedTypes (or, indirectly, solve) is called
             // with upper = true.
@@ -1567,7 +1567,7 @@ trait Infer extends Checkable {
         case _ =>
           checkWithinBounds(matchingLength.filter { alt =>
             isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) &&
-              kindsConform(alt.typeParams, argtypes, pre, alt.owner)
+              kinds.kindsConform(alt.typeParams, argtypes, pre, alt.owner)
           })
       }
     }

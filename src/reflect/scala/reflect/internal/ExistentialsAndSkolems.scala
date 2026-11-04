@@ -20,8 +20,8 @@ import scala.annotation.tailrec
 /** The name of this trait defines the eventual intent better than
  *  it does the initial contents.
  */
-trait ExistentialsAndSkolems {
-  self: SymbolTable =>
+final class ExistentialsAndSkolems[U <: SymbolTable with Singleton](val self: U) {
+  import self._
 
   /** Map a list of type parameter symbols to skolemized symbols, which
    *  can be deskolemized to the original type parameter. (A skolem is a
