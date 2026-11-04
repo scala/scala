@@ -459,6 +459,19 @@ case class ParameterProducer(local: Int)                                        
 case class UninitializedLocalProducer(local: Int)                                       extends InitialProducer
 case class ExceptionProducer[V <: Value](handlerLabel: LabelNode, handlerStackTop: Int) extends InitialProducer
 
+/** A `ProdConsAnalyzer` of a method as it is now, for the method-local optimizations that need one: they share it
+ *  until one of them changes the method, rather than each analyzing the same instructions again.
+ */
+final class ProdConsCache(methodNode: MethodNode, classInternalName: InternalName) {
+  private[this] var analyzer: ProdConsAnalyzer = null
+  def get: ProdConsAnalyzer = {
+    if (analyzer == null) analyzer = new ProdConsAnalyzer(methodNode, classInternalName)
+    analyzer
+  }
+  /** The method changed: the next `get` analyzes it again. */
+  def invalidate(): Unit = analyzer = null
+}
+
 class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm.Opcodes.ASM7) {
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): SourceValue = {
     new SourceValue(tp.getSize, ParameterProducer(local))

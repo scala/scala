@@ -22,7 +22,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.{AsmAnalyzer, BackendUtils, ProdConsAnalyzer}
+import scala.tools.nsc.backend.jvm.analysis.{AsmAnalyzer, BackendUtils, ProdConsAnalyzer, ProdConsCache}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class BoxUnbox {
@@ -180,7 +180,10 @@ abstract class BoxUnbox {
    * Note: these tasks are not urgent because the call graph is not currently used during / after
    * method-local optimizations, only before to perform inlining and closure rewriting.
    */
-  def boxUnboxElimination(method: MethodNode, owner: InternalName): Boolean = {
+  def boxUnboxElimination(method: MethodNode, owner: InternalName): Boolean =
+    boxUnboxElimination(method, owner, new ProdConsCache(method, owner))
+
+  def boxUnboxElimination(method: MethodNode, owner: InternalName, prodConsCache: ProdConsCache): Boolean = {
     AsmAnalyzer.sizeOKForSourceValue(method) && {
       val toInsertBefore = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
       val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
@@ -188,7 +191,7 @@ abstract class BoxUnbox {
 
       val knownHandled = mutable.Set.empty[AbstractInsnNode]
 
-      lazy val prodCons = new ProdConsAnalyzer(method, owner)
+      lazy val prodCons = prodConsCache.get
 
       var nextLocal = BackendUtils.maxLocals(method)
       def getLocal(size: Int) = {
