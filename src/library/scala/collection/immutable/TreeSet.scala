@@ -18,7 +18,7 @@ import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.immutable.{RedBlackTree => RB}
-import scala.runtime.AbstractFunction1
+import scala.runtime.AbstractFunction2
 
 
 /** This class implements immutable sorted sets using a tree.
@@ -187,16 +187,106 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     case ts: TreeSet[A] if ordering == ts.ordering =>
       newSetOrSelf(RB.difference(tree, ts.tree))
     case _ =>
-      //TODO add an implementation of a mutable subtractor similar to TreeMap
-      //but at least this doesn't create a TreeSet for each iteration
-      object sub extends AbstractFunction1[A, Unit] {
-        var currentTree = tree
-        override def apply(k: A): Unit = {
-          currentTree = RB.delete(currentTree, k)
+      // Each `RB.delete` copies a root-to-leaf path, so deleting k elements one by one copies O(k log n) nodes, while
+      // one `RB.filterEntries` pass visits every node once and shares the subtrees that lose nothing. The argument is
+      // read once, so how many elements it holds is known only at its end, or from its `knownSize`:
+      // 1. Delete the first `limit` elements found one by one. Removing a few elements costs what it always did.
+      // 2. Keep the next `3 * limit` elements in an array without looking them up. If the argument ends there, or its
+      //    known size says it will, delete them one by one as well: the work of step 1, plus one store per element.
+      // 3. Past that, mark the ranks of the kept and the remaining elements in a bitmap over the tree, then drop the
+      //    marked nodes in one pass. If repeats and absent elements leave fewer than `limit` of them, delete those.
+      // The length of the array was measured: below it, the pass costs more than the deletes it saves.
+      // Membership is decided by `ordering` throughout, as in `RB.delete`.
+      val it = that.iterator
+      val n = RB.count(tree)
+      val limit = math.max(1, n / (2 * math.max(1, 32 - Integer.numberOfLeadingZeros(n))))
+      var t = tree
+      var hits = 0
+      while (hits < limit && it.hasNext) {
+        val t1 = RB.delete(t, it.next())
+        if (t1 ne t) {
+          t = t1
+          hits += 1
         }
       }
-      that.iterator.foreach(sub)
-      newSetOrSelf(sub.currentTree)
+      if (it.hasNext) {
+        // `RB.filterEntries` calls `apply` exactly once per node, in key order, so `i` is the rank of the node.
+        final class Marks(root: RB.Tree[A, Any]) extends AbstractFunction2[A, Any, Boolean] {
+          private[this] val bits = new Array[Long]((RB.count(root) + 63) >>> 6)
+          private[this] val firstMarked = new Array[Any](limit)
+          private[this] var marked = 0
+          private[this] var i = 0
+
+          def mark(elem: A): Unit = {
+            var node = root
+            var rank = 0
+            while (node ne null) {
+              val cmp = ordering.compare(elem, node.key)
+              if (cmp < 0) node = node.left
+              else {
+                rank += RB.count(node.left)
+                if (cmp > 0) {
+                  rank += 1
+                  node = node.right
+                } else {
+                  val bit = 1L << rank
+                  if ((bits(rank >>> 6) & bit) == 0) {
+                    bits(rank >>> 6) |= bit
+                    if (marked < firstMarked.length) firstMarked(marked) = node.key
+                    marked += 1
+                  }
+                  node = null
+                }
+              }
+            }
+          }
+
+          def apply(k: A, v: Any): Boolean = {
+            val keep = (bits(i >>> 6) & (1L << i)) == 0
+            i += 1
+            keep
+          }
+
+          def removed: RB.Tree[A, Any] =
+            if (marked < firstMarked.length) {
+              var res = root
+              var j = 0
+              while (j < marked) {
+                res = RB.delete(res, firstMarked(j).asInstanceOf[A])
+                j += 1
+              }
+              res
+            } else RB.filterEntries(root, this)
+        }
+        val bound = 3 * limit
+        val remaining = it.knownSize
+        if (remaining >= 0 && remaining <= bound) {
+          while (it.hasNext) t = RB.delete(t, it.next())
+        } else {
+          val kept = new Array[Any](bound)
+          var count = 0
+          while (count < bound && it.hasNext) {
+            kept(count) = it.next()
+            count += 1
+          }
+          var j = 0
+          if (!it.hasNext) {
+            while (j < count) {
+              t = RB.delete(t, kept(j).asInstanceOf[A])
+              j += 1
+            }
+          } else {
+            val marks = new Marks(t)
+            while (j < count) {
+              marks.mark(kept(j).asInstanceOf[A])
+              j += 1
+            }
+            while (it.hasNext) marks.mark(it.next())
+            t = marks.removed
+          }
+        }
+      }
+      newSetOrSelf(t)
   }
 
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {

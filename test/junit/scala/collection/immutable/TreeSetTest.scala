@@ -340,6 +340,100 @@ class TreeSetTest extends AllocationTest {
     }
   }
 
+  // `removedAll` deletes one by one up to a threshold of about n / (2 log2 n) elements found, then marks the rest
+  // and filters them out in one pass when there are many. These sizes put k on both sides of it.
+  private def removedAllSizes(n: Int): List[Int] =
+    List(0, 1, 2, 3, n / 64, n / 32, n / 16, n / 8, n / 4, n / 2, n - 1, n, 2 * n).filter(_ >= 0).distinct
+
+  private def assertSameElements[A](expected: TreeSet[A], actual: TreeSet[A]): Unit = {
+    RedBlackTree.validate(actual.tree)(actual.ordering)
+    assertEquals(expected.size, actual.size)
+    assertEquals(expected.toList, actual.toList)
+    expected.iterator.zip(actual.iterator).foreach { case (e, a) => assertSame(e, a) }
+  }
+
+  @Test def removedAllOnBothSidesOfThreshold(): Unit = {
+    val rnd = new scala.util.Random(42)
+    for (n <- List(0, 1, 2, 3, 10, 100, 1000, 5000); k <- removedAllSizes(n)) {
+      val src = TreeSet.from((0 until n).map(_ * 2))
+      // present elements, repeats and absent elements (odd numbers and out of range), in random order
+      val present = Vector.fill(k)(rnd.nextInt(n max 1) * 2)
+      val absent = Vector.fill(k / 2)(rnd.nextInt(2 * n + 10) * 2 - 9)
+      val arg = rnd.shuffle(present ++ present.take(k / 3) ++ absent)
+      val expected = arg.foldLeft(src)(_ excl _)
+      assertSameElements(expected, src.removedAll(arg))
+      assertSameElements(expected, src.removedAll(arg.toList))
+    }
+  }
+
+  // `removedAll` deletes the first `limit` elements found one by one, keeps the next `3 * limit` in an array, and only
+  // past that marks them and filters the tree
+  private def removedAllLimit(n: Int): Int = math.max(1, n / (2 * math.max(1, 32 - Integer.numberOfLeadingZeros(n))))
+
+  @Test def removedAllAroundTheKeptArray(): Unit = {
+    val rnd = new scala.util.Random(11)
+    for (n <- List(1000, 5000)) {
+      val limit = removedAllLimit(n)
+      val bound = 3 * limit
+      val src = TreeSet.from((0 until n).map(_ * 2))
+      val all = rnd.shuffle((0 until n).toVector).map(_ * 2)
+      for (k <- List(limit, limit + 1, limit + bound - 1, limit + bound, limit + bound + 1, limit + 2 * bound)) {
+        val present = all.take(k)
+        val expected = present.foldLeft(src)(_ excl _)
+        // a one-shot iterator of unknown size, one that ends exactly when the array is full included
+        var calls = 0
+        val it = present.iterator.filter { _ => calls += 1; true }
+        assertSameElements(expected, src.removedAll(it))
+        assertEquals(k, calls)
+        // a known size
+        assertSameElements(expected, src.removedAll(present))
+      }
+      // the array fills with absent elements and repeats, and only a few more are found: those are deleted
+      val few = all.take(limit) ++ Vector.fill(bound + 1)(1) ++ all.slice(limit, limit + 3) ++ all.take(5)
+      assertSameElements(few.foldLeft(src)(_ excl _), src.removedAll(few.iterator.filter(_ => true)))
+      // nothing more is found past the first `limit`
+      val none = all.take(limit) ++ Vector.fill(bound + 1)(-1)
+      assertSameElements(none.foldLeft(src)(_ excl _), src.removedAll(none.iterator.filter(_ => true)))
+    }
+  }
+
+  @Test def removedAllReadsOneShotIteratorOnce(): Unit = {
+    for (n <- List(0, 10, 1000); k <- removedAllSizes(n)) {
+      val src = TreeSet.from(0 until n)
+      val arg = (0 until k).map(i => (i * 7) % (n + 3))
+      var calls = 0
+      val it = arg.iterator.map { x => calls += 1; x }
+      val res = src.removedAll(it)
+      assertEquals(arg.length, calls)
+      assertFalse(it.hasNext)
+      assertSameElements(arg.foldLeft(src)(_ excl _), res)
+    }
+  }
+
+  @Test def removedAllReturnsReceiverWhenNothingIsRemoved(): Unit = {
+    for (n <- List(0, 1, 10, 1000); k <- removedAllSizes(n)) {
+      val src = TreeSet.from((0 until n).map(_ * 2))
+      assertSame(src, src.removedAll((0 until k).map(_ * 2 + 1)))
+      assertSame(src, src.removedAll(Iterator.from(-k).take(k)))
+    }
+  }
+
+  @Test def removedAllUsesTheOrdering(): Unit = {
+    // equality is identity, so only the ordering can tell that two of these are the same element
+    final class C(val a: Int) { override def toString = s"C($a)" }
+    implicit val ordering: Ordering[C] = Ordering.by(_.a % 1000)
+    val rnd = new scala.util.Random(7)
+    for (n <- List(1, 10, 1000); k <- removedAllSizes(n)) {
+      val src = TreeSet.from((0 until n).map(new C(_)))
+      // `new C(i + 1000)` is not equal to any element, but the ordering equates it with `C(i)`
+      val arg = Vector.fill(k)(new C(rnd.nextInt(n) + 1000 * rnd.nextInt(3)))
+      val expected = arg.foldLeft(src)(_ excl _)
+      val res = src.removedAll(arg)
+      assertSameElements(expected, res)
+      assertEquals(src.size - arg.map(_.a % 1000).distinct.size, res.size)
+    }
+  }
+
   @Test
   def builderAddAllTreeMapAddsEntries(): Unit = {
     val o: Ordering[Any] = Ordering.by(_.toString)
