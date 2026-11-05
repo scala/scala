@@ -18,6 +18,15 @@ class SymbolFinalMembersTest {
     assertSame(findMemberInstance.using(x => x), findMemberInstance.using(x => x))
   }
 
+  // ReflectGlobal is a compiler universe, but its symbols must keep runtime reflection's locks.
+  @Test def runtimeReflectionSymbolsLockAlsoInReflectGlobal(): Unit = {
+    assertFalse(hasSynchronizedSymbols)
+    assertTrue(scala.reflect.runtime.universe.asInstanceOf[scala.reflect.runtime.JavaUniverse].hasSynchronizedSymbols)
+    val rg = new scala.tools.reflect.ReflectGlobal(settings, new StoreReporter(settings), getClass.getClassLoader)
+    assertTrue(rg.isCompilerUniverse)
+    assertTrue(rg.hasSynchronizedSymbols)
+  }
+
   @Test def kindPredicates(): Unit = {
     definitions.init()
     import definitions._
@@ -60,5 +69,29 @@ class SymbolFinalMembersTest {
     assertFalse(reporter.hasErrors)
     assertSame(NoType, stub.info)
     assertTrue(reporter.hasErrors)
+  }
+
+  @Test def ownerAfterFlatten(): Unit = {
+    val pkg = rootMirror.RootClass.newPackage(TermName("p")).moduleClass
+    val outer = pkg.newClassSymbol(TypeName("Outer"))
+    val cls = outer.newClassSymbol(TypeName("Inner"))
+    val mod = outer.newModule(TermName("M"))
+    val modMethod = outer.newModule(TermName("N"), NoPosition, Flags.METHOD)
+    val term = outer.newValue(TermName("v"))
+
+    for (sym <- List[Symbol](cls, mod, modMethod, term)) assertSame(sym.name.toString, outer, sym.owner)
+    // not SomePhase: a Phase's constructor links itself into its predecessor
+    val flatten = new Phase(NoPhase) { def name = "flatten"; def run() = () }
+    val after = new Phase(flatten) { def name = "after"; def run() = () }
+    assertTrue(after.flatClasses)
+    val saved = phase
+    phase = after
+    try {
+      assertSame(pkg, cls.owner)
+      assertSame(pkg, mod.owner)
+      assertSame(outer, modMethod.owner)
+      assertSame(outer, term.owner)
+      assertSame(rootMirror.RootClass, outer.owner.owner)
+    } finally phase = saved
   }
 }

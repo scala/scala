@@ -253,7 +253,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     // unlike with typeConstructor, a lock is necessary here, because tpe calculation relies on
     // temporarily assigning NoType to tpeCache to detect cyclic reference errors
     private lazy val tpeLock = new Object
-    override def tpe_* : Type = gilSynchronizedIfNotThreadsafe { tpeLock.synchronized { super.tpe_* } }
+    override protected def synchronizedTpe: Type = gilSynchronizedIfNotThreadsafe { tpeLock.synchronized { unsynchronizedTpe } }
   }
 
   trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol
