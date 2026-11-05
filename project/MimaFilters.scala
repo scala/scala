@@ -99,6 +99,12 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.completeTypeParams"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$typeParams"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$completeTypeParams"),
+
+    // isCompilerUniverse is a val in a new mixin of the internal SymbolTable, and universes override computeIsCompilerUniverse.
+    // runtime.SymbolTable is private[scala]; it only escapes as a parent of JavaUniverse.
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.isCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.computeIsCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.computeIsCompilerUniverse"),
   )
 
   override val buildSettings = Seq(
