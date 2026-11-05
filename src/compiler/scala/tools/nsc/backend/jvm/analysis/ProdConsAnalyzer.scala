@@ -476,6 +476,8 @@ final class ProdConsCache(methodNode: MethodNode, classInternalName: InternalNam
   }
   /** The method changed: the next `get` analyzes it again. */
   def invalidate(): Unit = analyzer = null
+  /** Whether a `get` has analyzed the method as it is now. */
+  def isAnalyzed: Boolean = analyzer != null
 }
 
 class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm.Opcodes.ASM7) {

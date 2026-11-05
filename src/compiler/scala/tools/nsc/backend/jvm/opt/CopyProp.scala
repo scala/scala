@@ -169,7 +169,7 @@ abstract class CopyProp {
 
         case mi: MethodInsnNode =>
           // rewrite `ClassTag(classOf[X]).newArray` to `new Array[X]`
-          val newArrayCls = BackendUtils.classTagNewArrayArg(mi, prodCons)
+          val newArrayCls = BackendUtils.classTagNewArrayArg(mi, prodConsCache)
           if (newArrayCls != null) {
             val receiverProds = prodCons.producersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
             if (receiverProds.size == 1) {
