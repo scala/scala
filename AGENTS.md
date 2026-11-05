@@ -123,7 +123,6 @@ In sbt:
 - Don't @mention in commit messages (use PR comments)
 
 ### Commit History
-- Every commit must pass CI (for `git bisect`)
 - Amend and force-push for review feedback
 - Keep history clean and linear
 

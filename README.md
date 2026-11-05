@@ -241,11 +241,8 @@ If you see a spurious failure on Jenkins, you can post `/rebuild` as a PR commen
 The [scabot README](https://github.com/scala/scabot) lists all available commands.
 
 If you'd like to test your patch before having everything polished for review,
-feel free to submit a draft PR. In case your draft branch contains
-a large number of commits (that you didn't clean up / squash yet for review),
-consider adding `[ci: last-only]` to the PR title. That way only the last commit
-will be tested, saving some energy and CI-resources. Note that inactive draft PRs
-will be closed eventually, which does not mean the change is being rejected.
+feel free to submit a draft PR. Note that inactive draft PRs will be closed
+eventually, which does not mean the change is being rejected.
 
 CI performs a compiler bootstrap. The first task, `validatePublishCore`, publishes
 a build of your commit to the temporary repository
