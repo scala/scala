@@ -277,4 +277,70 @@ class ProdConsAnalyzerTest extends BytecodeTesting {
     testSingleInsn(a.consumersOfOutputsFrom(firstLoad), "IADD")
     testSingleInsn(a.consumersOfOutputsFrom(secondLoad), "ISTORE")
   }
+
+  @Test
+  def initialProducersDontDependOnQueryOrder(): Unit = {
+    import Opcodes._
+    // var a = p; do { a = if (d) a else null } while (d); a
+    val m = genMethod(descriptor = "(Ljava/lang/Object;Z)Ljava/lang/Object;")(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      Label(1),
+      VarOp(ILOAD, 2),
+      Jump(IFEQ, Label(2)),
+      VarOp(ALOAD, 3),
+      Jump(GOTO, Label(3)),
+      Label(2),
+      Op(ACONST_NULL),
+      Label(3),
+      VarOp(ASTORE, 3),
+      VarOp(ILOAD, 2),
+      Jump(IFNE, Label(1)),
+      VarOp(ALOAD, 3),
+      Op(ARETURN)
+    )
+    m.maxLocals = 4
+    m.maxStack = 1
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val areturn = findInstr(m, "ARETURN")
+    val loopStore = areturn.getPrevious.getPrevious.getPrevious.getPrevious
+    assert(loopStore.getOpcode == ASTORE)
+
+    testMultiInsns(a.initialProducersForInputsOf(loopStore), List("ParameterProducer(1)", "ACONST_NULL"))
+    testMultiInsns(a.initialProducersForValueAt(areturn, 4), List("ParameterProducer(1)", "ACONST_NULL"))
+  }
+
+  @Test
+  def ultimateConsumersDontDependOnQueryOrder(): Unit = {
+    import Opcodes._
+    // var a = p; while (true) { val x = a; if (d) return x; a = if (d) x else { x.drop; null } }
+    val m = genMethod(descriptor = "(Ljava/lang/Object;Z)Ljava/lang/Object;")(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      Label(1),
+      VarOp(ALOAD, 3),
+      VarOp(ILOAD, 2),
+      Jump(IFEQ, Label(2)),
+      VarOp(ILOAD, 2),
+      Jump(IFNE, Label(3)),
+      Op(POP),
+      Op(ACONST_NULL),
+      Jump(GOTO, Label(3)), // so that the frame after ACONST_NULL has only that producer
+      Label(3),
+      VarOp(ASTORE, 3),
+      Jump(GOTO, Label(1)),
+      Label(2),
+      Op(ARETURN)
+    )
+    m.maxLocals = 4
+    m.maxStack = 2
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val firstStore = findInstrs(m, "ASTORE").head
+    val aconstNull = findInstr(m, "ACONST_NULL")
+
+    testMultiInsns(a.ultimateConsumersOfOutputsFrom(firstStore), List("POP", "ARETURN"))
+    testMultiInsns(a.ultimateConsumersOfOutputsFrom(aconstNull), List("POP", "ARETURN"))
+  }
 }

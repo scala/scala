@@ -111,21 +111,11 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
    * returned instead.
    */
   def initialProducersForValueAt(insn: AbstractInsnNode, slot: Int): Set[AbstractInsnNode] = {
-    def initialProducers(insn: AbstractInsnNode, producedSlot: Int): Set[AbstractInsnNode] = {
-      if (isCopyOperation(insn)) {
-        val key = (insn, producedSlot)
-        _initialProducersCache.getOrElseUpdate(key, {
-          // prevent infinite recursion if an instruction is its own producer or consumer
-          // see cyclicProdCons in ProdConsAnalyzerTest
-          _initialProducersCache(key) = Set.empty
-          val (sourceValue, sourceValueSlot) = copyOperationSourceValue(insn, producedSlot)
-          sourceValue.insns.iterator.asScala.flatMap(initialProducers(_, sourceValueSlot)).toSet
-        })
-      } else {
-        Set(insn)
-      }
+    def sources(copyOp: AbstractInsnNode, producedSlot: Int): Iterator[(AbstractInsnNode, Int)] = {
+      val (sourceValue, sourceValueSlot) = copyOperationSourceValue(copyOp, producedSlot)
+      sourceValue.insns.iterator.asScala.map((_, sourceValueSlot))
     }
-    producersForValueAt(insn, slot).flatMap(initialProducers(_, slot))
+    producersForValueAt(insn, slot).flatMap(reachedThroughCopies(_, slot, _initialProducersCache, sources))
   }
 
   /**
@@ -133,24 +123,40 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
    * tracked through copying operations such as SOTRE and LOAD.
    */
   def ultimateConsumersOfValueAt(insn: AbstractInsnNode, slot: Int): Set[AbstractInsnNode] = {
-    def ultimateConsumers(insn: AbstractInsnNode, consumedSlot: Int): Set[AbstractInsnNode] = {
-      if (isCopyOperation(insn)) {
-        val key = (insn, consumedSlot)
-        _ultimateConsumersCache.getOrElseUpdate(key, {
-          // prevent infinite recursion if an instruction is its own producer or consumer
-          // see cyclicProdCons in ProdConsAnalyzerTest
-          _ultimateConsumersCache(key) = Set.empty
-          for {
-            producedSlot     <- copyOperationProducedValueSlots(insn, consumedSlot)
-            consumer         <- consumersOfValueAt(insn.getNext, producedSlot)
-            ultimateConsumer <- ultimateConsumers(consumer, producedSlot)
-          } yield ultimateConsumer
-        })
-      } else {
-        Set(insn)
+    def targets(copyOp: AbstractInsnNode, consumedSlot: Int): Iterator[(AbstractInsnNode, Int)] =
+      for {
+        producedSlot <- copyOperationProducedValueSlots(copyOp, consumedSlot).iterator
+        consumer     <- consumersOfValueAt(copyOp.getNext, producedSlot).iterator
+      } yield (consumer, producedSlot)
+    consumersOfValueAt(insn, slot).flatMap(reachedThroughCopies(_, slot, _ultimateConsumersCache, targets))
+  }
+
+  /**
+   * Returns the instructions other than copy operations that are reached from `(start, startSlot)`
+   * by following `edges` through copy operations.
+   *
+   * Copy operations can form a cycle, for example in `var a = p; while (c) a = if (b) a else q`.
+   * A search through a cycle comes back to a node it has already visited, so the answer it has so
+   * far for the nodes in between may be incomplete. Only the answer for `start` is complete, once
+   * the whole search has finished, so that is the only one that goes into the cache.
+   */
+  private def reachedThroughCopies(start: AbstractInsnNode, startSlot: Int,
+                                   cache: mutable.HashMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]],
+                                   edges: (AbstractInsnNode, Int) => Iterator[(AbstractInsnNode, Int)]): Set[AbstractInsnNode] = {
+    if (!isCopyOperation(start)) Set(start)
+    else cache.getOrElseUpdate((start, startSlot), {
+      val visited = mutable.Set.empty[(AbstractInsnNode, Int)]
+      var result = Set.empty[AbstractInsnNode]
+      def visit(insn: AbstractInsnNode, slot: Int): Unit = {
+        if (!isCopyOperation(insn)) result += insn
+        else if (visited.add((insn, slot))) cache.get((insn, slot)) match {
+          case Some(known) => result ++= known
+          case _           => edges(insn, slot).foreach { case (next, nextSlot) => visit(next, nextSlot) }
+        }
       }
-    }
-    consumersOfValueAt(insn, slot).flatMap(ultimateConsumers(_, slot))
+      visit(start, startSlot)
+      result
+    })
   }
 
   def initialProducersForInputsOf(insn: AbstractInsnNode): Set[AbstractInsnNode] = {
