@@ -134,29 +134,70 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
   /**
    * Returns the instructions other than copy operations that are reached from `(start, startSlot)`
    * by following `edges` through copy operations.
-   *
-   * Copy operations can form a cycle, for example in `var a = p; while (c) a = if (b) a else q`.
-   * A search through a cycle comes back to a node it has already visited, so the answer it has so
-   * far for the nodes in between may be incomplete. Only the answer for `start` is complete, once
-   * the whole search has finished, so that is the only one that goes into the cache.
    */
   private def reachedThroughCopies(start: AbstractInsnNode, startSlot: Int,
                                    cache: mutable.HashMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]],
                                    edges: (AbstractInsnNode, Int) => Iterator[(AbstractInsnNode, Int)]): Set[AbstractInsnNode] = {
     if (!isCopyOperation(start)) Set(start)
-    else cache.getOrElseUpdate((start, startSlot), {
-      val visited = mutable.Set.empty[(AbstractInsnNode, Int)]
-      var result = Set.empty[AbstractInsnNode]
-      def visit(insn: AbstractInsnNode, slot: Int): Unit = {
-        if (!isCopyOperation(insn)) result += insn
-        else if (visited.add((insn, slot))) cache.get((insn, slot)) match {
-          case Some(known) => result ++= known
-          case _           => edges(insn, slot).foreach { case (next, nextSlot) => visit(next, nextSlot) }
+    else cache.getOrElse((start, startSlot), {
+      cacheReachedThroughCopies((start, startSlot), cache, edges)
+      cache((start, startSlot))
+    })
+  }
+
+  /**
+   * Caches the answer of `reachedThroughCopies` for `root` and for every copy operation it reaches.
+   *
+   * Copy operations can form a cycle, for example in `var a = p; while (c) a = if (b) a else q`.
+   * All nodes of a strongly connected component reach the same instructions, so the search finds
+   * the components (Tarjan's algorithm) and caches the answer for every node once its component
+   * is complete.
+   */
+  private def cacheReachedThroughCopies(root: (AbstractInsnNode, Int),
+                                        cache: mutable.HashMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]],
+                                        edges: (AbstractInsnNode, Int) => Iterator[(AbstractInsnNode, Int)]): Unit = {
+    type Node = (AbstractInsnNode, Int)
+    // `reached` is what the node reaches outside its component, until the node turns out to be the
+    // component's root: then it is what the whole component reaches.
+    final class Visited(val node: Node, val index: Int, val position: Int) {
+      var low = index
+      var reached = Set.empty[AbstractInsnNode]
+    }
+    val index = mutable.HashMap.empty[Node, Int]
+    // Ordered by index. A visited node that is not cached is on this stack.
+    val unfinished = mutable.ArrayBuffer.empty[Visited]
+
+    def visit(node: Node): Visited = {
+      val v = new Visited(node, index.size, unfinished.length)
+      index(node) = v.index
+      unfinished += v
+      edges(node._1, node._2).foreach { case next @ (insn, _) =>
+        if (!isCopyOperation(insn)) v.reached += insn
+        else cache.get(next) match {
+          case Some(known) => v.reached ++= known
+          case _ => index.get(next) match {
+            case Some(nextIndex) => v.low = math.min(v.low, nextIndex)
+            case _ =>
+              val w = visit(next)
+              v.low = math.min(v.low, w.low)
+              if (w.low == w.index) v.reached ++= w.reached
+          }
         }
       }
-      visit(start, startSlot)
-      result
-    })
+      if (v.low == v.index) finish(v)
+      v
+    }
+
+    // Without loops, every component is a single node and there is nothing to union.
+    def finish(componentRoot: Visited): Unit = {
+      var i = componentRoot.position + 1
+      while (i < unfinished.length) { componentRoot.reached ++= unfinished(i).reached; i += 1 }
+      i = componentRoot.position
+      while (i < unfinished.length) { cache(unfinished(i).node) = componentRoot.reached; i += 1 }
+      unfinished.dropRightInPlace(unfinished.length - componentRoot.position)
+    }
+
+    visit(root)
   }
 
   def initialProducersForInputsOf(insn: AbstractInsnNode): Set[AbstractInsnNode] = {
