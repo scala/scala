@@ -89,6 +89,12 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SymbolTable.GlbFailure*"),
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedOps.GlbFailure*"),
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedTypes.GlbFailure*"),
+
+    // isCompilerUniverse is a val in a new mixin of the internal SymbolTable, and universes override computeIsCompilerUniverse.
+    // runtime.SymbolTable is private[scala]; it only escapes as a parent of JavaUniverse.
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.isCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.computeIsCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.computeIsCompilerUniverse"),
   )
 
   override val buildSettings = Seq(

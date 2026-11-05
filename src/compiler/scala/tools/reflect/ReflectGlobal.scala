@@ -38,7 +38,7 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
       erasure.transformInfo(sym,
         uncurry.transformInfo(sym, sym.info)))
 
-  override def isCompilerUniverse = true
+  override protected def computeIsCompilerUniverse = true
 
   // Typically `runtimeMirror` creates a new mirror for every new classloader
   // and shares symbols between the created mirrors.
