@@ -343,4 +343,20 @@ class ProdConsAnalyzerTest extends BytecodeTesting {
     testMultiInsns(a.ultimateConsumersOfOutputsFrom(firstStore), List("POP", "ARETURN"))
     testMultiInsns(a.ultimateConsumersOfOutputsFrom(aconstNull), List("POP", "ARETURN"))
   }
+
+  @Test
+  def longCopyChain(): Unit = {
+    import Opcodes._
+    // As many copies as fit in a method's 64K of bytecode, since ALOAD_2 and ASTORE_2 take a byte each
+    val copies = List.fill(30000)(List(VarOp(ASTORE, 2), VarOp(ALOAD, 2))).flatten
+    val m = genMethod(descriptor = "(Ljava/lang/Object;)Ljava/lang/Object;")(
+      VarOp(ALOAD, 1) :: copies ::: List(Op(ARETURN)): _*
+    )
+    m.maxLocals = 3
+    m.maxStack = 1
+    val a = new ProdConsAnalyzer(m, "C")
+
+    testSingleInsn(a.initialProducersForInputsOf(findInstr(m, "ARETURN")), "ParameterProducer(1)")
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(m.instructions.getFirst), "ARETURN")
+  }
 }

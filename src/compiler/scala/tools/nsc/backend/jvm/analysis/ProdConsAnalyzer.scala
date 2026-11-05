@@ -160,32 +160,21 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
     // `reached` is what the node reaches outside its component, until the node turns out to be the
     // component's root: then it is what the whole component reaches.
     final class Visited(val node: Node, val index: Int, val position: Int) {
+      val edgesLeft = edges(node._1, node._2)
       var low = index
       var reached = Set.empty[AbstractInsnNode]
     }
     val index = mutable.HashMap.empty[Node, Int]
     // Ordered by index. A visited node that is not cached is on this stack.
     val unfinished = mutable.ArrayBuffer.empty[Visited]
+    // The nodes being visited, innermost last, in place of recursion: a method can have thousands of copies in a row.
+    val path = mutable.ArrayBuffer.empty[Visited]
 
-    def visit(node: Node): Visited = {
+    def enter(node: Node): Unit = {
       val v = new Visited(node, index.size, unfinished.length)
       index(node) = v.index
       unfinished += v
-      edges(node._1, node._2).foreach { case next @ (insn, _) =>
-        if (!isCopyOperation(insn)) v.reached += insn
-        else cache.get(next) match {
-          case Some(known) => v.reached ++= known
-          case _ => index.get(next) match {
-            case Some(nextIndex) => v.low = math.min(v.low, nextIndex)
-            case _ =>
-              val w = visit(next)
-              v.low = math.min(v.low, w.low)
-              if (w.low == w.index) v.reached ++= w.reached
-          }
-        }
-      }
-      if (v.low == v.index) finish(v)
-      v
+      path += v
     }
 
     // Without loops, every component is a single node and there is nothing to union.
@@ -197,7 +186,30 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
       unfinished.dropRightInPlace(unfinished.length - componentRoot.position)
     }
 
-    visit(root)
+    enter(root)
+    while (path.nonEmpty) {
+      val v = path.last
+      if (v.edgesLeft.hasNext) {
+        val next @ (insn, _) = v.edgesLeft.next()
+        if (!isCopyOperation(insn)) v.reached += insn
+        else cache.get(next) match {
+          case Some(known) => v.reached ++= known
+          case _ => index.get(next) match {
+            case Some(nextIndex) => v.low = math.min(v.low, nextIndex)
+            case _               => enter(next)
+          }
+        }
+      } else {
+        path.dropRightInPlace(1)
+        val completesComponent = v.low == v.index
+        if (completesComponent) finish(v)
+        if (path.nonEmpty) {
+          val parent = path.last
+          parent.low = math.min(parent.low, v.low)
+          if (completesComponent) parent.reached ++= v.reached
+        }
+      }
+    }
   }
 
   def initialProducersForInputsOf(insn: AbstractInsnNode): Set[AbstractInsnNode] = {
