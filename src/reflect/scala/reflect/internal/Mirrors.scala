@@ -290,8 +290,9 @@ trait Mirrors extends api.Mirrors {
     // type and term symbols respectively.
     sealed trait RootSymbol extends WellKnownSymbol with thisUniverse.RootSymbol {
       final override def isRootSymbol = true
-      override def owner              = rootOwner
-      override def typeOfThis         = thisSym.tpe
+      // `owner` is `rawowner`, which is `rootOwner`. `typeOfThis` is the default, `thisSym.tpe_*`, also for RootClass,
+      // a module class.
+      override protected def customTypeOfThis = thisSym.tpe_*
       def mirror                      = thisMirror.asInstanceOf[Mirror]
     }
 

@@ -35,6 +35,11 @@ private[reflect] trait UniverseFlags {
 
   /** The value of `isCompilerUniverse`. An override can't refer to the state of its universe, which doesn't exist yet. */
   protected def computeIsCompilerUniverse: Boolean = false
+
+  /** Do symbols lock in `info`, `rawInfo` and `tpe_*`? Runtime reflection's do, including in `ReflectGlobal`. */
+  final val hasSynchronizedSymbols: Boolean = computeHasSynchronizedSymbols
+
+  protected def computeHasSynchronizedSymbols: Boolean = false
 }
 
 abstract class SymbolTable extends macros.Universe
