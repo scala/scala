@@ -23,7 +23,7 @@ import scala.util.chaining._
  *  @author  Martin Odersky
  */
 trait Unapplies extends ast.TreeDSL {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._

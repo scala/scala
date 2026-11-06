@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 import scala.util.matching.Regex
 
 trait SplainData {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
 

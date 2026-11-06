@@ -15,7 +15,7 @@ package scala.tools.nsc.typechecker
 import scala.tools.nsc.Reporting.WarningCategory
 
 // imported from scalamacros/paradise
-trait MacroAnnotationNamers { self: Analyzer =>
+trait MacroAnnotationNamers { self: AbstractAnalyzer =>
   import global._
   import scala.reflect.internal.Flags._
   import scala.reflect.internal.Mode._

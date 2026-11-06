@@ -25,7 +25,7 @@ import scala.util.chaining._
  *  @author Martin Odersky
  */
 trait Namers extends MethodSynthesis {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import definitions._
