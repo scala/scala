@@ -280,6 +280,44 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testAnnotationDefaultArg(): Unit = {
+    // A use of an annotation gets the default expression of the annotation class, whether that class is typed
+    // before the use, after it, or loaded from a classfile.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |class Annot1(s: String = "") extends scala.annotation.StaticAnnotation
+          |class Annot2[T](x: Int = D.k, y: Int = D.i, zs: List[T] = Nil) extends scala.annotation.StaticAnnotation
+          |class Annot3(x: Int = 1)(y: Int = x + 1) extends scala.annotation.StaticAnnotation
+          |class Annot4(x: Int, y: => Int) extends scala.annotation.StaticAnnotation {
+          |  def this(s: String = "") = this(s.length, 0)
+          |}
+          |class Annot5(x: Int = 1) extends scala.annotation.ConstantAnnotation
+          |class Annot6(x: Int = 1, y: => Int = D.i, f: Int => Int = i => i + 1) extends scala.annotation.StaticAnnotation
+          |class Annot7(c: Class[_] = classOf[String], s: String = null, b: Boolean = !D.b) extends scala.annotation.StaticAnnotation
+          |class Annot8(x: 1 = 1, s: "a" = "a") extends scala.annotation.StaticAnnotation
+          |object D { final val k = 42; final val b = true; def i = 0 }
+      """.stripMargin),
+      source("b.scala",
+        """
+          |class Test {
+          |  @Annot1 def f1 = 1
+          |  @Annot1() def f2 = 2
+          |  @Annot2 def f3 = 3
+          |  @Annot2(y = 2) def f4 = 4
+          |  @Annot3()() def f5 = 5
+          |  @Annot4() def f6 = 6
+          |  @Annot5 def f7 = 7
+          |  @Annot6 def f8 = 8
+          |  @Annot7 def f9 = 9
+          |  def f10: Int @Annot1 = 10
+          |  @Annot8 def f11 = 11
+          |}
+        """.stripMargin)
+    )
+    test(List(code))
+  }
+
   @Test def testAnnotationsJava(): Unit = {
     def code = List[SourceFile](
       source("Annot1.java",

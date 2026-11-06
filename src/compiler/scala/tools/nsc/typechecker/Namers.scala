@@ -1501,6 +1501,9 @@ trait Namers extends MethodSynthesis {
         checkDependencies check vparamSymss
       }
 
+      if (meth.isConstructor && !meth.isJavaDefined && methOwner.isNonBottomSubClass(AnnotationClass))
+        mforeach(vparamss)(vparam => if (vparam.symbol.hasDefault) addDefaultArgAnnotation(vparam))
+
       val resTp = {
         // When return type is inferred, we don't just use resTpFromOverride -- it must be packed and widened.
         // Here, C.f has type String (unless -Xsource-features:infer-override):
@@ -1695,6 +1698,22 @@ trait Namers extends MethodSynthesis {
         if (overrides) baseParamss = baseParamss.tail
         previous :+ vparams
       }
+    }
+
+    /** Add `@defaultArg` to a parameter of a constructor of an annotation class. `NamesDefaults.addDefaults` reads it
+     *  to insert the default expression into a use of the annotation. Adding it here and not when the typer reaches the
+     *  class means that a use sees it however the sources are ordered, as it does for a class loaded from a classfile.
+     *
+     *  The annotation is lazy because typing the default can refer to anything in the run, including uses of annotations.
+     */
+    private def addDefaultArgAnnotation(vparam: ValDef): Unit = {
+      var typing = false
+      def computeInfo = enteringTyper {
+        if (typing) throw new TypeError(vparam.rhs.pos, s"recursive default argument: annotation parameter ${vparam.name} is needed to type its own default")
+        typing = true
+        typer.defaultArgAnnotation(vparam)
+      }
+      vparam.symbol.initialize.addAnnotation(AnnotationInfo.lazily(DefaultArgAttr, computeInfo))
     }
 
     private object DefaultGetterNamerSearch {
