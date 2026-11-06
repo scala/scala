@@ -300,9 +300,10 @@ abstract class ByteCodeRepository extends PerRunInit {
     val fullName = internalName.replace('/', '.')
     backendClassPath.findClassFile(fullName).flatMap { classFile =>
       val classNode = new ClassNode1
-      val classReader = new asm.ClassReader(classFile.toByteArray)
 
       try {
+        // Fails for classfiles with a version unsupported by ASM, e.g., from a newer JDK (scala/bug#13204)
+        val classReader = new asm.ClassReader(classFile.toByteArray)
         // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`
         // method of the InlineInfoAttribute class, instead of putting the byte array into a generic
         // Attribute.
@@ -321,7 +322,8 @@ abstract class ByteCodeRepository extends PerRunInit {
       } catch {
         case ex: Exception =>
           if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
-          backendReporting.warning(NoPosition, s"Error while reading InlineInfoAttribute from ${fullName}\n${ex.getMessage}")
+          if (frontendAccess.compilerSettings.optWarningNoInlineMissingBytecode)
+            backendReporting.optimizerWarning(NoPosition, s"Error while reading the classfile of ${fullName} for the optimizer\n${ex.getMessage}", site = "")
           None
       }
     } match {
