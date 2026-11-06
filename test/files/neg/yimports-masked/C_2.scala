@@ -2,7 +2,7 @@
 
 // import at top level or top of package disables implicit import.
 // the import can appear at any statement position, here, end of package.
-// Update: with new trick, the import has to be completed before usages.
+// It masks the whole unit, even if a usage is typed before the import is completed.
 
 import hello.world.minidef.{Magic => Answer}
 
