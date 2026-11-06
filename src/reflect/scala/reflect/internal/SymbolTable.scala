@@ -343,23 +343,32 @@ abstract class SymbolTable extends macros.Universe
   def slowButSafeEnteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (isCompilerUniverse) enteringPhaseNotLaterThan(target)(op) else op
 
+  /** `nextFrom` and `next` wrap around to the head of the circular list, at `NoPhase.id`, when nothing
+   *  follows. Seen from a phase after `NoPhase`, the head is the end of the list.
+   */
+  @inline private def isEnd(it: InfoTransformer, from: Phase#Id): Boolean =
+    it.pid == NoPhase.id && from != NoPhase.id
+
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
-      if (phase.id > pid) nextFrom(pid).pid >= phase.id
-      else nextFrom(phase.id).pid >= pid
+      val lo = Math.min(pid, phase.id)
+      val hi = Math.max(pid, phase.id)
+      val it = nextFrom(lo)
+      isEnd(it, lo) || it.pid >= hi
     }
 
   final def isValidForBaseClasses(period: Period): Boolean = {
     @tailrec
-    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
-      it.pid >= limit ||
-      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
+    def noChangeInBaseClasses(it: InfoTransformer, from: Phase#Id, limit: Phase#Id): Boolean = (
+      isEnd(it, from) || it.pid >= limit ||
+      !it.changesBaseClasses && noChangeInBaseClasses(it.next, from, limit)
     )
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
-      if (phase.id > pid) noChangeInBaseClasses(nextFrom(pid), phase.id)
-      else noChangeInBaseClasses(nextFrom(phase.id), pid)
+      val lo = Math.min(pid, phase.id)
+      val hi = Math.max(pid, phase.id)
+      noChangeInBaseClasses(nextFrom(lo), lo, hi)
     }
   }
 
