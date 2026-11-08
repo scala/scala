@@ -1,17 +1,17 @@
 trait AnnotationTest {
   @IntAnnotation(Constants.ConstInt) // ok
-  @IntAnnotation(Constants.ConstIdent)
-  @IntAnnotation(Constants.ConstSelect)
-  @IntAnnotation(Constants.NegatedInt) // ok
-  @IntAnnotation(Constants.ConstOpExpr1)
-  @IntAnnotation(Constants.ConstOpExpr2)
-  @BooleanAnnotation(Constants.ConstOpExpr3)
-  @IntAnnotation(Constants.ConstOpExpr4)
+  @IntAnnotation(Constants.ConstIdent) // ok
+  @IntAnnotation(Constants.ConstSelect) // ok
+  @IntAnnotation(Constants.NegatedInt)
+  @IntAnnotation(Constants.ConstOpExpr1) // ok
+  @IntAnnotation(Constants.ConstOpExpr2) // ok
+  @BooleanAnnotation(Constants.ConstOpExpr3) // ok
+  @IntAnnotation(Constants.ConstOpExpr4) // ok
   @IntAnnotation(Constants.NonFinalConst)
   @IntAnnotation(Constants.NonStaticConst)
   @IntAnnotation(Constants.NonConst)
-  @ShortAnnotation(Constants.ConstCastExpr)
+  @ShortAnnotation(Constants.ConstCastExpr) // ok
   @StringAnnotation(Constants.ConstString) // ok
-  @StringAnnotation(Constants.StringAdd)
+  @StringAnnotation(Constants.StringAdd) // ok
   def test: Unit
 }
