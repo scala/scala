@@ -338,6 +338,14 @@ trait Types
     /** True for WildcardType or BoundedWildcardType. */
     def isWildcard = false
 
+    // OPT: tests for the singleton types that avoid their accessors, which read a volatile field twice. The class is a
+    //      constant in the bytecode, and C2 reduces `getClass eq` to a comparison of this object's klass. These fail for
+    //      a null receiver, unlike `eq`.
+    final def isNoType: Boolean       = getClass eq classOf[NoType.type]
+    final def isNoPrefix: Boolean     = getClass eq classOf[NoPrefix.type]
+    final def isWildcardType: Boolean = getClass eq classOf[WildcardType.type]
+    final def isErrorType: Boolean    = getClass eq classOf[ErrorType.type]
+
     /** Is this type produced as a repair for an error? */
     def isError: Boolean = typeSymbol.isError || termSymbol.isError
 
@@ -822,7 +830,7 @@ trait Types
       def map[T](f: Type => T): List[T]  = this.collect(Type.this).map(f)
     }
 
-    @inline final def orElse(alt: => Type): Type = if (this ne NoType) this else alt
+    @inline final def orElse(alt: => Type): Type = if (!isNoType) this else alt
 
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
@@ -1400,7 +1408,7 @@ trait Types
           case _                       => ABORT // different HO argument types encountered
         }
 
-      if ((sameHoArgTypesFolded eq WildcardType) || (sameHoArgTypesFolded eq NoType)) WildcardType
+      if (sameHoArgTypesFolded.isWildcardType || sameHoArgTypesFolded.isNoType) WildcardType
       else functionOrPfOrSamArgTypes(toWild(sameHoArgTypesFolded)) match {
         case Nil     =>
           // Ok, it's not a function proto, but we did collapse to only one type -- why not use that as our expected type?
@@ -2574,7 +2582,7 @@ trait Types
 
     final override def normalize: Type = {
       // arises when argument-dependent types are approximated (see def depoly in implicits)
-      if (pre eq WildcardType) WildcardType
+      if (pre.isWildcardType) WildcardType
       else if (phase.erasedTypes) normalizeImpl
       else {
         if (normalized eq null) {
@@ -3827,7 +3835,7 @@ trait Types
     private def levelString = if (settings.explaintypes.value) level else ""
     override def safeToString = (
       if ((constr eq null) || (inst eq null)) "TVar<" + originName + "=null>"
-      else if (inst ne NoType) "=?" + inst
+      else if (!inst.isNoType) "=?" + inst
       else (if(untouchable) "!?" else "?") + levelString + originName
     )
     def originString = s"$originName in $originLocation"
@@ -4148,7 +4156,7 @@ trait Types
       if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
         throw new RecoverableCyclicReference(sym)
 
-      if ((args eq Nil) && (pre eq NoPrefix))
+      if ((args eq Nil) && pre.isNoPrefix)
         sym.tpeHK // opt lean on TypeSymbol#tyconCache, rather than interning a type ref.
       else
         TypeRef(pre, sym, args)
@@ -4372,7 +4380,7 @@ trait Types
         if (closed.length == tparams.length) tparams else closed.toList
     }
 
-    if (tparams.isEmpty || (tpe0 eq NoType)) tpe0
+    if (tparams.isEmpty || tpe0.isNoType) tpe0
     else {
       val tpe           = normalizeAliases(tpe0)
       val extrapolation = new ExistentialExtrapolation(tparams)
@@ -4689,7 +4697,7 @@ trait Types
     case _                     => false
   }
 
-  def isErrorOrWildcard(tp: Type) = (tp eq ErrorType) || (tp eq WildcardType)
+  def isErrorOrWildcard(tp: Type) = tp.isErrorType || tp.isWildcardType
 
   /** This appears to be equivalent to tp.isInstanceof[SingletonType],
    *  except it excludes FoldableConstantTypes.

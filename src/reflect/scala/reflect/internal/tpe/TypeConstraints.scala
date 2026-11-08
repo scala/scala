@@ -172,7 +172,7 @@ private[internal] trait TypeConstraints {
 
     var inst: Type = NoType // @M reduce visibility?
 
-    def instValid = (inst ne null) && (inst ne NoType)
+    def instValid = (inst ne null) && !inst.isNoType
 
     def cloneInternal = {
       val tc = new TypeConstraint(lobounds, hibounds, numlo, numhi, avoidWidening)
@@ -194,7 +194,7 @@ private[internal] trait TypeConstraints {
         }
         lo + hi
       }
-      if (inst eq NoType) boundsStr
+      if (inst.isNoType) boundsStr
       else boundsStr + " _= " + inst.safeToString
     }
   }

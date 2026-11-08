@@ -1479,7 +1479,7 @@ abstract class RefChecks extends Transform {
         case TypeRef(pre, _, args) =>
           // checking the prefix here gives us spurious errors on e.g. a private[process]
           // object which contains a type alias, which normalizes to a visible type.
-          args.filterNot(_ eq NoPrefix).flatMap(lessAccessibleSymsInType(_, memberSym))
+          args.filterNot(_.isNoPrefix).flatMap(lessAccessibleSymsInType(_, memberSym))
         case _ =>
           Nil
       }

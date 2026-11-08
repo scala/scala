@@ -3000,7 +3000,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   NoType
               }
 
-            if (samTp eq NoType) false
+            if (samTp.isNoType) false
             else {
               /* Make a synthetic class symbol to represent the synthetic class that
              * will be spun up by LMF for this function. This is necessary because
@@ -3254,7 +3254,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else {
           val resTp =
             packedType(bodyTyped, fun.symbol).resultType.deconst match {
-              case ct: ConstantType if (bodyPt eq WildcardType) || (ct.widen <:< bodyPt) => ct.widen
+              case ct: ConstantType if bodyPt.isWildcardType || (ct.widen <:< bodyPt) => ct.widen
               case tp                                                                    => tp
             }
 

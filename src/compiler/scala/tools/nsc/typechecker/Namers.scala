@@ -1096,7 +1096,7 @@ trait Namers extends MethodSynthesis {
       // Only widen if the definition can't keep its inferred singleton type,
       // (Also keep singleton type if so indicated by the expected type `pt`
       //  OPT: 99.99% of the time, `pt` will be `WildcardType`).
-      if (mayKeepSingletonType || (sym.isFinal && sym.isVal && !sym.isLazy) || ((pt ne WildcardType) && !(tpe.widen <:< pt)) || sym.isDefaultGetter) keepSingleton
+      if (mayKeepSingletonType || (sym.isFinal && sym.isVal && !sym.isLazy) || (!pt.isWildcardType && !(tpe.widen <:< pt)) || sym.isDefaultGetter) keepSingleton
       else tpe.widen
     }
 
@@ -1784,7 +1784,7 @@ trait Namers extends MethodSynthesis {
         }
 
         def patchSymInfo(tp: Type): Unit =
-          if (pt ne WildcardType) // no patching up to do if we didn't infer a prototype
+          if (!pt.isWildcardType) // no patching up to do if we didn't infer a prototype
             vdef.symbol.setInfo { if (isGetter) NullaryMethodType(tp) else tp }
 
         patchSymInfo(pt)
