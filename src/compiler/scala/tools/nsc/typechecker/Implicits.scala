@@ -776,7 +776,7 @@ trait Implicits extends splain.SplainData {
                 // we can't usefully prune views any further because we would need to type an application
                 // of the view to the term as is done in the computation of itree2 in typedImplicit1.
                 tvars.foreach(_.constr.stopWideningIfPrecluded())
-                val targs = solvedTypes(tvars, allUndetparams, varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
+                val targs = solvedTypes(tvars, allUndetparams, variances.varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
                 val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
                 if(!matchesPt(tpSubst, wildPt, adjusted.undetParams)) {
@@ -976,7 +976,7 @@ trait Implicits extends splain.SplainData {
             if (tvars.nonEmpty)
               typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
-            val targs = solvedTypes(tvars, undetParams, varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
+            val targs = solvedTypes(tvars, undetParams, variances.varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")

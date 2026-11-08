@@ -33,6 +33,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   import global._
   import definitions._
   import statistics._
+  import kinds.Kind
 
   final def forArgMode(fun: Tree, mode: Mode) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
@@ -52,7 +53,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private val superConstructorCalls: mutable.HashMap[Symbol, collection.Map[Symbol, Symbol]] = perRunCaches.newMap()
 
   // allows override of the behavior of the resetTyper method w.r.t comments
-  def resetDocComments() = clearDocComments()
+  def resetDocComments() = docCommentsSupport.clearDocComments()
 
   def resetTyper(): Unit = {
     //println("resetTyper called")
@@ -2699,9 +2700,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
       else packedTypes(casesTyped) match {
-        case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
+        case packed if glbLubs.sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
         case packed                             =>
-          val lub = weakLub(packed)
+          val lub = glbLubs.weakLub(packed)
           finish(casesTyped.map(adaptCase(_, mode, lub)), lub)
       }
     }
@@ -4331,7 +4332,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
-    def packSymbols(hidden: List[Symbol], tp: Type): Type = global.packSymbols(hidden, tp, context.owner)
+    def packSymbols(hidden: List[Symbol], tp: Type): Type = existentialsAndSkolems.packSymbols(hidden, tp, context.owner)
 
     def isReferencedFrom(ctx: Context, sym: Symbol): Boolean =
        ctx.owner.isTerm && ctx.scope.exists(dcl => dcl.isInitialized && dcl.info.contains(sym)) || {
@@ -4379,7 +4380,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
-        else containsDef(owner, sym) || isRawParameter(sym) || isCapturedExistential(sym)
+        else containsDef(owner, sym) || existentialsAndSkolems.isRawParameter(sym) || isCapturedExistential(sym)
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
 
@@ -4459,7 +4460,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (vd.symbol.tpe.isVolatile)
           AbstractionFromVolatileTypeError(vd)
       val tpt1 = typedType(tree.tpt, mode)
-      existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) => {
+      existentialsAndSkolems.existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) => {
         val original = tpt1 match {
           case tpt : TypeTree => atPos(tree.pos)(ExistentialTypeTree(tpt.original, tree.whereClauses))
           case _ =>
@@ -4896,9 +4897,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (scala/bug#6331)
         else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
           case tp :: _ if samePackedTypes     => finish(tp)
-          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+          case tpes if glbLubs.sameWeakLubAsLub(tpes) => finish(lub(tpes))
           case tpes                           =>
-            val lub = weakLub(tpes)
+            val lub = glbLubs.weakLub(tpes)
             treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
         }
       }
@@ -5979,9 +5980,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (isFullyDefined(pt))
             finish(pt)
           else block1 :: catches1 map (_.tpe.deconst) match {
-            case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+            case tpes if glbLubs.sameWeakLubAsLub(tpes) => finish(lub(tpes))
             case tpes                           =>
-              val lub      = weakLub(tpes)
+              val lub      = glbLubs.weakLub(tpes)
               val block2   = adapt(block1, mode, lub)
               val catches2 = catches1 map (adaptCase(_, mode, lub))
               treeCopy.Try(tree, block2, catches2, fin1) setType lub
@@ -6085,7 +6086,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val id1 = typed1(id, mode, pt).asInstanceOf[Ident]
         // [Eugene] am I doing it right?
         val erasedTypes = phaseId(currentPeriod) >= currentRun.erasurePhase.id
-        val tpe = capturedVariableType(id.symbol, erasedTypes = erasedTypes)
+        val tpe = capturedVariables.capturedVariableType(id.symbol, erasedTypes = erasedTypes)
         treeCopy.ReferenceToBoxed(tree, id1) setType tpe
       }
 

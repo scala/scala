@@ -546,7 +546,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       staticModule setInfo moduleClass.tpe
       staticModule setFlag JAVA
 
-      propagatePackageBoundary(jflags, clazz, staticModule, moduleClass)
+      packageAccessBoundaries.propagatePackageBoundary(jflags, clazz, staticModule, moduleClass)
 
       val fieldsStartBp = in.bp
       skipMembers() // fields
@@ -598,7 +598,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         if (jflags.isEnum) ConstantType(Constant(sym))
         else lazyInfo
       }
-      propagatePackageBoundary(jflags, sym)
+      packageAccessBoundaries.propagatePackageBoundary(jflags, sym)
       parseAttributes(sym, lazyInfo)
       addJavaFlagsAnnotations(sym, jflags)
       getScope(jflags) enter sym
@@ -626,7 +626,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       // parsed from SignatureATTR
       val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2()).value)
       sym.info = lazyInfo
-      propagatePackageBoundary(jflags, sym)
+      packageAccessBoundaries.propagatePackageBoundary(jflags, sym)
       parseAttributes(sym, lazyInfo)
       addJavaFlagsAnnotations(sym, jflags)
       getScope(jflags) enter sym

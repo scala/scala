@@ -790,7 +790,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
 
         assignAssociatedFile(clazz, module, jclazz)
-        propagatePackageBoundary(jclazz, relatedSymbols: _*)
+        packageAccessBoundaries.propagatePackageBoundary(jclazz, relatedSymbols: _*)
         copyAnnotations(clazz, jclazz)
         // to do: annotations to set also for module?
 
@@ -1204,7 +1204,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           .setInfo(typeToScala(jfield.getGenericType))
 
       fieldCache.enter(jfield, field)
-      propagatePackageBoundary(jfield, field)
+      packageAccessBoundaries.propagatePackageBoundary(jfield, field)
       copyAnnotations(field, jfield)
       markAllCompleted(field)
       field
@@ -1231,7 +1231,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val params = jparamsAsScala(meth, jmeth.getParameters.toList)
       val resulttpe = typeToScala(jmeth.getGenericReturnType)
       setMethType(meth, tparams, params, resulttpe)
-      propagatePackageBoundary(jmeth.javaFlags, meth)
+      packageAccessBoundaries.propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
       if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
       if (jmeth.getDefaultValue != null) meth.addAnnotation(AnnotationDefaultAttr)
@@ -1256,7 +1256,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val tparams = jconstr.getTypeParameters.toList map createTypeParameter
       val params = jparamsAsScala(constr, jconstr.getParameters.toList)
       setMethType(constr, tparams, params, clazz.tpe)
-      propagatePackageBoundary(jconstr.javaFlags, constr)
+      packageAccessBoundaries.propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
       if (jconstr.javaFlags.isVarargs) constr modifyInfo arrayToRepeated
       markAllCompleted(constr)

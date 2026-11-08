@@ -142,7 +142,7 @@ trait GenSymbols {
       if (!sym.isMutable) sym setFlag STABLE
       if (sym.isCapturedVariable) {
         assert(binding.isInstanceOf[Ident], showRaw(binding))
-        val capturedBinding = referenceCapturedVariable(sym)
+        val capturedBinding = capturedVariables.referenceCapturedVariable(sym)
         Reification(name, capturedBinding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), capturedBinding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
       } else {
         Reification(name, binding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), binding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))

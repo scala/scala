@@ -30,37 +30,60 @@ abstract class SymbolTable extends macros.Universe
                               with Names
                               with Symbols
                               with Types
-                              with Variances
-                              with Kinds
-                              with ExistentialsAndSkolems
                               with FlagSets
                               with Scopes
                               with Mirrors
                               with Definitions
                               with Constants
                               with BaseTypeSeqs
-                              with InfoTransformers
                               with transform.Transforms
                               with StdNames
                               with AnnotationInfos
-                              with AnnotationCheckers
                               with Trees
                               with Printers
                               with Positions
-                              with TypeDebugging
                               with Importers
-                              with CapturedVariables
                               with StdAttachments
-                              with StdCreators
-                              with ReificationSupport
-                              with PrivateWithin
-                              with pickling.Translations
-                              with FreshNames
                               with Internals
                               with Reporting
 {
 
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
+
+  val reificationSupport: ReificationSupport[SymbolTable.this.type] = new ReificationSupport[SymbolTable.this.type](this)
+  val build: reificationSupport.ReificationSupportImpl = reificationSupport.build
+
+  val typeDebugging: TypeDebugging[SymbolTable.this.type] = new TypeDebugging[SymbolTable.this.type](this)
+  final val noPrint: typeDebugging.noPrint.type = typeDebugging.noPrint
+  final val typeDebug: typeDebugging.typeDebug.type = typeDebugging.typeDebug
+
+  val capturedVariables: CapturedVariables[SymbolTable.this.type] = new CapturedVariables[SymbolTable.this.type](this)
+
+  val packageAccessBoundaries: PrivateWithin[SymbolTable.this.type] = new PrivateWithin[SymbolTable.this.type](this)
+
+  val variances: Variances[SymbolTable.this.type] = new Variances[SymbolTable.this.type](this)
+  type VarianceValidator = variances.VarianceValidator
+
+  val existentialsAndSkolems: ExistentialsAndSkolems[SymbolTable.this.type] = new ExistentialsAndSkolems[SymbolTable.this.type](this)
+
+  val translations: pickling.Translations[SymbolTable.this.type] = new pickling.Translations[SymbolTable.this.type](this)
+
+  val kinds: Kinds[SymbolTable.this.type] = new Kinds[SymbolTable.this.type](this)
+
+  val infoTransformerSupport: InfoTransformers[SymbolTable.this.type] = new InfoTransformers[SymbolTable.this.type](this)
+  type InfoTransformer = infoTransformerSupport.InfoTransformer
+
+  val annotationCheckerSupport: AnnotationCheckers[SymbolTable.this.type] = new AnnotationCheckers[SymbolTable.this.type](this)
+  type AnnotationChecker = annotationCheckerSupport.AnnotationChecker
+  final def addAnnotationChecker(checker: AnnotationChecker): Unit = annotationCheckerSupport.addAnnotationChecker(checker)
+  final def removeAllAnnotationCheckers(): Unit = annotationCheckerSupport.removeAllAnnotationCheckers()
+
+  val freshNames: FreshNames[SymbolTable.this.type] = new FreshNames[SymbolTable.this.type](this)
+  // default fresh name creator used to abstract over currentUnit.fresh and runtime fresh name creator
+  def currentFreshNameCreator: FreshNameCreator
+  final def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX)(implicit creator: FreshNameCreator): TermName = freshNames.freshTermName(prefix)(creator)
+  final def freshTypeName(prefix: String)(implicit creator: FreshNameCreator): TypeName = freshNames.freshTypeName(prefix)(creator)
+  type FreshNameExtractor = freshNames.FreshNameExtractor
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats

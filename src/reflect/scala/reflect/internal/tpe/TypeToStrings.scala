@@ -15,23 +15,14 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.mutable.HashSet
-
-private[internal] trait TypeToStrings {
-  self: SymbolTable =>
+private[internal] final class TypeToStrings[U <: SymbolTable with Singleton](val self: U) {
+  import self._
 
   /** The maximum number of recursions allowed in toString
     */
   final val maxToStringRecursions = 50
 
-  private[this] var _toStringRecursions = 0
-  def toStringRecursions = _toStringRecursions
-  def toStringRecursions_=(value: Int) = _toStringRecursions = value
-
-  private[this] val _toStringSubjects = HashSet[Type]()
-  def toStringSubjects = _toStringSubjects
-
-  protected def typeToString(tpe: Type): String =
+  def typeToString(tpe: Type): String =
     // if (toStringSubjects contains tpe) {
     //   // handles self-referential anonymous classes and who knows what else
     //   "..."

@@ -16,8 +16,8 @@ package internal
 
 import scala.annotation.tailrec
 
-trait InfoTransformers {
-  self: SymbolTable =>
+final class InfoTransformers[U <: SymbolTable with Singleton](val self: U) {
+  import self._
 
   /* Syncnote: This should not need to be protected, as reflection does not run in multiple phases.
    */

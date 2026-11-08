@@ -78,6 +78,9 @@ object Test extends App {
         |
         |${forceCode("uncurry", typeOf[scala.reflect.internal.transform.UnCurry])}
         |${forceCode("erasure", typeOf[scala.reflect.internal.transform.Erasure])}
+        |${forceCode("typeDebugging", typeOf[scala.reflect.internal.TypeDebugging[_]])}
+        |${forceCode("kinds", typeOf[scala.reflect.internal.Kinds[_]])}
+        |${forceCode("freshNames", typeOf[scala.reflect.internal.FreshNames[_]])}
         |  }
         |}""".stripMargin
 

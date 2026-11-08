@@ -1939,7 +1939,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       // skolemize type parameters
       val oldTparams = tparams.map(_.symbol)
-      val newTparams = deriveFreshSkolems(oldTparams)
+      val newTparams = existentialsAndSkolems.deriveFreshSkolems(oldTparams)
       map2(tparams, newTparams)(_ setSymbol _)
 
       // create fresh symbols for value parameters to hold the skolem types

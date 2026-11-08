@@ -86,16 +86,64 @@ import scala.util.chaining._
 trait Types
   extends api.Types
   with tpe.TypeComparers
-  with tpe.TypeToStrings
-  with tpe.CommonOwners
-  with tpe.GlbLubs
   with tpe.TypeMaps
   with tpe.TypeConstraints
-  with tpe.FindMembers
   with util.Collections { self: SymbolTable =>
 
   import definitions._
   import statistics._
+
+  private[internal] val typeToStrings: tpe.TypeToStrings[Types.this.type] = new tpe.TypeToStrings[Types.this.type](this)
+  private[this] var _toStringRecursions = 0
+  def toStringRecursions = _toStringRecursions
+  def toStringRecursions_=(value: Int) = _toStringRecursions = value
+  private[this] val _toStringSubjects = mutable.HashSet[Type]()
+  def toStringSubjects = _toStringSubjects
+
+  private[internal] val commonOwners: tpe.CommonOwners[Types.this.type] = new tpe.CommonOwners[Types.this.type](this)
+  type CommonOwnerMap = commonOwners.CommonOwnerMap
+  protected[reflect] def commonOwnerMap: CommonOwnerMap = commonOwners.commonOwnerMapObj
+
+  val glbLubs: tpe.GlbLubs[Types.this.type] = new tpe.GlbLubs[Types.this.type](this)
+  /** Memo tables and recursion guards for one outermost `lub` or `glb`. Entries are only
+   *  valid within that call: they may be in-progress placeholders (`Any` / `Nothing`) and
+   *  were computed at the current phase.
+   */
+  final class LubGlbCaches(val outer: LubGlbCaches) {
+    val lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+    val glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+    var inUse = false
+    /** The arguments of the top-level `lub` (`ownerIsLub`) or `glb` that claimed these caches,
+     *  `null` if a call with explicit depth claimed them.
+     */
+    var ownerTs: List[Type] = null
+    var ownerIsLub = false
+    def clear(): Unit = { lubResults.clear(); glbResults.clear() }
+    /** How many enclosing top-level calls, including the owner, compute this `lub` or `glb`. */
+    def inProgress(isLub: Boolean, ts: List[Type]): Int = {
+      val here = if (ownerIsLub == isLub && ownerTs == ts) 1 else 0
+      if (outer eq null) here else here + outer.inProgress(isLub, ts)
+    }
+  }
+  private[this] var _lubGlbCaches = new LubGlbCaches(null)
+  def lubGlbCaches: LubGlbCaches = _lubGlbCaches
+  def lubGlbCaches_=(caches: LubGlbCaches): Unit = _lubGlbCaches = caches
+
+  def lubResults = lubGlbCaches.lubResults
+  def glbResults = lubGlbCaches.glbResults
+  private[this] var _globalGlbDepth = Depth.Zero
+  def globalGlbDepth: Depth = _globalGlbDepth
+  def globalGlbDepth_=(value: Depth): Unit = _globalGlbDepth = value
+
+  final def lub(ts: List[Type]): Type = glbLubs.lub(ts)
+  protected[internal] final def lub(ts: List[Type], depth: Depth): Type = glbLubs.lub(ts, depth)
+  final def glb(ts: List[Type]): Type = glbLubs.glb(ts)
+  protected[internal] final def glb(ts: List[Type], depth: Depth): Type = glbLubs.glb(ts, depth)
+
+  private[internal] val findMembers: tpe.FindMembers[Types.this.type] = new tpe.FindMembers[Types.this.type](this)
+  private[reflect] type FindMembers = findMembers.FindMembers
+  private[scala] type HasMember = findMembers.HasMember
+  private[reflect] final def findMemberInstance: ReusableInstance[findMembers.FindMember] = findMembers.findMemberInstance
 
   private[this] var explainSwitch = false
   @unused private final val emptySymbolSet = Set.empty[Symbol]
@@ -369,7 +417,7 @@ trait Types
     /*
     def narrow: Type =
       if (phase.erasedTypes) this
-      else commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
+      else commonOwners.commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
     */
 
     /** Map to a singleton type which is a subtype of this type.
@@ -382,7 +430,7 @@ trait Types
     def narrow: Type =
       if (phase.erasedTypes) this
       else {
-        val cowner = commonOwner(this)
+        val cowner = commonOwners.commonOwner(this)
         refinedType(this :: Nil, cowner, EmptyScope, cowner.pos).narrow
       }
 
@@ -933,7 +981,7 @@ trait Types
     override final def toString: String = {
       // see comments to internal#Symbol.typeSignature for an explanation why this initializes
       if (!isCompilerUniverse) fullyInitializeType(this)
-      typeToString(this)
+      typeToStrings.typeToString(this)
     }
 
     /** Method to be implemented in subclasses.
@@ -2908,7 +2956,7 @@ trait Types
 
     //Format (a: A)(b: B)(implicit c: C, d: D): E
     override def safeToString = {
-      s"${paramString(this)}${
+      s"${typeDebugging.paramString(this)}${
         resultType match { case _: MethodType => "" case _ => ": "}
       }$resultType"
     }
@@ -3014,7 +3062,7 @@ trait Types
 
     override def isHigherKinded = !typeParams.isEmpty
 
-    override def safeToString = typeParamsString(this) + resultType
+    override def safeToString = typeDebugging.typeParamsString(this) + resultType
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbolsAtOwner(typeParams, owner)
@@ -3495,7 +3543,7 @@ trait Types
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
-      //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
+      //println("addLoBound: "+(safeToString, typeDebugging.debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
         undoLog record this
         constr.addLoBound(tp, isNumericBound)
@@ -3504,7 +3552,7 @@ trait Types
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // assert(tp != this)
-      //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
+      //println("addHiBound: "+(safeToString, typeDebugging.debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
         undoLog record this
         constr.addHiBound(tp, isNumericBound)
@@ -3546,7 +3594,7 @@ trait Types
      *  If isNumericBound is true, the subtype check is performed with weak_<:< instead of <:<.
      */
     def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
-      // println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
+      // println("regBound: "+(safeToString, typeDebugging.debugString(tp), isLowerBound)) //@MDEBUG
       if (isLowerBound) assert(tp != this, "Lower bound of this type")
 
       // side effect: adds the type to upper or lower bounds
@@ -3692,7 +3740,7 @@ trait Types
         )
 
         case skolems =>
-          val existential = existentialTransform(skolems, tp)(existentialAbstraction(_, _, flipVariance = !isLowerBound))
+          val existential = existentialsAndSkolems.existentialTransform(skolems, tp)(existentialAbstraction(_, _, flipVariance = !isLowerBound))
           // `isRelatable(existential)` defends against F-bounds. We've added one layer of existential abstraction to remove
           // skolems that occur immediately in the underlying type `tp`. If after this transformation, the type still
           // contains skolems from another level, it could be F-bounded, and we give up to avoid looping.
@@ -3702,7 +3750,7 @@ trait Types
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
-//      println("regTypeEq: "+(safeToString, debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (instValid) "IV" else "")) //@MDEBUG
+//      println("regTypeEq: "+(safeToString, typeDebugging.debugString(tp), tp.getClass, if (typeVarLHS) "in LHS" else "in RHS", if (suspended) "ZZ" else if (instValid) "IV" else "")) //@MDEBUG
       def checkIsSameType(tp: Type) = (
         if (typeVarLHS) inst =:= tp
         else            tp   =:= inst
@@ -3985,7 +4033,7 @@ trait Types
 
   abstract class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
     override def safeToString =
-      (if (typeParams.isEmpty) "" else typeParamsString(this)) + super.safeToString
+      (if (typeParams.isEmpty) "" else typeDebugging.typeParamsString(this)) + super.safeToString
   }
 
 // Creators ---------------------------------------------------------------
@@ -4126,7 +4174,7 @@ trait Types
    */
   def intersectionType(tps: List[Type]): Type = tps match {
     case tp :: Nil  => tp
-    case _          => refinedType(tps, commonOwner(tps))
+    case _          => refinedType(tps, commonOwners.commonOwner(tps))
   }
   def intersectionTypeForLazyBaseType(tps: List[Type]) = tps match {
     case tp :: Nil  => tp
@@ -4182,7 +4230,7 @@ trait Types
       case tv@TypeVar(_, _)                               => tv.applyArgs(args)
       case AnnotatedType(annots, underlying)              => AnnotatedType(annots, appliedType(underlying, args))
       case ErrorType | WildcardType                       => tycon
-      case _                                              => abort(debugString(tycon))
+      case _                                              => abort(typeDebugging.debugString(tycon))
     }
   }
 
@@ -4838,7 +4886,7 @@ trait Types
             (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
         else if (symHi.isAbstractType)
           ((tpHi.bounds containsType tpLo) &&
-            kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+            kinds.kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
         else // we know `symHi.isAliasType` (see above)
           tpLo =:= tpHi
       }
@@ -4984,7 +5032,7 @@ trait Types
 
     if (targs.exists(!_.annotations.isEmpty)){
       var bounds = mapList(tparams)(instantiatedBound)
-      bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
+      bounds = annotationCheckerSupport.adaptBoundsToAnnotations(bounds, tparams, targs)
       (bounds corresponds targs)(_ containsType _)
     } else
       (tparams corresponds targs){ (tparam, targ) =>
@@ -5139,7 +5187,7 @@ trait Types
                       capturedParamIds += 1
                       val capturedParamId = capturedParamIds
                       val bounds = if (hktParams.isEmpty) TypeBounds(g, l) else bindHK(TypeBounds(applyHK(g), applyHK(l)))
-                      val qvar = commonOwner(as).freshExistential("", capturedParamId) setInfo bounds
+                      val qvar = commonOwners.commonOwner(as).freshExistential("", capturedParamId) setInfo bounds
                       capturedParams += qvar
                       qvar.tpe
                     }
@@ -5216,8 +5264,8 @@ trait Types
 
   /** The current indentation string for traces */
   private[this] var _indent: String = ""
-  protected def indent = _indent
-  protected def indent_=(value: String) = _indent = value
+  protected[reflect] def indent = _indent
+  protected[reflect] def indent_=(value: String) = _indent = value
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {

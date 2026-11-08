@@ -348,7 +348,7 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
 
   /** @see AnalyzerPlugin.pluginsTyped */
   def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
-    var result = addAnnotations(tree, tpe)
+    var result = global.annotationCheckerSupport.addAnnotations(tree, tpe)
     var plugins = analyzerPlugins
     while (!plugins.isEmpty) { // OPT use loop rather than the invoke combinator to reduce allocations
       result = plugins.head.pluginsTyped(result, typer, tree, mode, pt)
@@ -372,20 +372,20 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
   /** @see AnalyzerPlugin.canAdaptAnnotations */
   def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = invoke(new CumulativeOp[Boolean] {
     // support deprecated methods in annotation checkers
-    def default = global.canAdaptAnnotations(tree, mode, pt)
+    def default = global.annotationCheckerSupport.canAdaptAnnotations(tree, mode, pt)
     def accumulate = (curr, p) => curr || p.canAdaptAnnotations(tree, typer, mode, pt)
   })
 
   /** @see AnalyzerPlugin.adaptAnnotations */
   def adaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Tree = invoke(new CumulativeOp[Tree] {
     // support deprecated methods in annotation checkers
-    def default = global.adaptAnnotations(tree, mode, pt)
+    def default = global.annotationCheckerSupport.adaptAnnotations(tree, mode, pt)
     def accumulate = (tree, p) => p.adaptAnnotations(tree, typer, mode, pt)
   })
 
   /** @see AnalyzerPlugin.pluginsTypedReturn */
   def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = invoke(new CumulativeOp[Type] {
-    def default = adaptTypeOfReturn(tree.expr, pt, tpe)
+    def default = global.annotationCheckerSupport.adaptTypeOfReturn(tree.expr, pt, tpe)
     def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
   })
 

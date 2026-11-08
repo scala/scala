@@ -16,7 +16,8 @@ package internal
 
 import Flags._
 
-trait CapturedVariables { self: SymbolTable =>
+final class CapturedVariables[U <: SymbolTable with Singleton](val self: U) {
+  import self._
 
   import definitions._
 
