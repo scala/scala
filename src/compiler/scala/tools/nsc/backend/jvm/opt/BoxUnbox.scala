@@ -700,7 +700,8 @@ abstract class BoxUnbox {
               yield (ModuleFactory(predefLoad, mi), kind)
           else None
 
-        // checking the class before the instance creation, which needs the method's producers and consumers
+        // checking the class first: `checkInstanceCreation` queries the consumers of the NEW and the DUP, and each kind
+        // of box would otherwise do that for every NEW in the method
         case ti: TypeInsnNode if ti.getOpcode == NEW && isPrimitiveBoxClass(ti.desc) =>
           for ((dupOp, initCall) <- BoxKind.checkInstanceCreation(ti, prodCons) if isPrimitiveBoxConstructor(initCall); kind <- checkKind(initCall))
             yield (InstanceCreation(ti, dupOp, initCall), kind)
