@@ -406,14 +406,16 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
       }
   }
 
-  /** For each instruction, a set of potential consumers of the produced values. */
   /** The slots a producer writes, and the consumers of the value in each. */
   private final class Outputs(val slots: Seq[Int]) {
     val consumers: Array[Set[AbstractInsnNode]] = Array.fill(slots.size)(Set.empty)
   }
 
-  // Built in place: updating an immutable map and vector for every value consumed was most of its cost, as was
-  // computing a producer's output slots again for each of its consumers.
+  /** For each instruction, a set of potential consumers of the produced values.
+   *
+   *  Built in place: updating an immutable map and vector for every value consumed was most of its cost, as was
+   *  computing a producer's output slots again for each of its consumers.
+   */
   private lazy val _consumersOfOutputsFrom: collection.Map[AbstractInsnNode, Outputs] = {
     val res = mutable.HashMap.empty[AbstractInsnNode, Outputs]
     for {
