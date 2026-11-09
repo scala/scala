@@ -409,4 +409,17 @@ class BoxUnboxTest extends BytecodeTesting {
     val m = getMethod(compileClass(code), "waitForIt")
     assertSameCode(m, List(VarOp(ILOAD, 2), TableSwitch(TABLESWITCH, 0, 0, Label(4), List(Label(4))), Label(4), Op(RETURN)))
   }
+
+  @Test
+  def primitiveBoxCreatedWithNew(): Unit = {
+    val code =
+      """class C {
+        |  def t(x: Int): Int = {
+        |    val b = new java.lang.Integer(x)
+        |    b.intValue
+        |  }
+        |}""".stripMargin
+    val c = compileClass(code, allowMessage = ignoreDeprecations)
+    assertSameCode(getMethod(c, "t"), List(VarOp(ILOAD, 1), Op(IRETURN)))
+  }
 }
