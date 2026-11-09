@@ -1,0 +1,7 @@
+annot-default-recursive.scala:1: error: recursive default argument: annotation parameter x is needed to type its own default
+class self(x: Int = (1: @self)) extends scala.annotation.StaticAnnotation
+                         ^
+annot-default-recursive.scala:3: error: recursive default argument: annotation parameter x is needed to type its own default
+class a(x: Int = (1: @b)) extends scala.annotation.StaticAnnotation
+                      ^
+2 errors
