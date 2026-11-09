@@ -370,6 +370,9 @@ abstract class BackendUtils extends PerRunInit {
    *     static field should not be inlined.
    */
   def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode, owner: InternalName, allowPrivateCalls: Boolean): Int = {
+    // A method without instructions comes from a signature file (ct.sym, a Bazel hjar), it cannot be inlined
+    if (method.instructions.size == 0) return -1
+
     val paramTypes = Type.getArgumentTypes(method.desc)
     val numPrimitives = paramTypes.count(_.getSort < Type.ARRAY) + (if (Type.getReturnType(method.desc).getSort < Type.ARRAY) 1 else 0)
 
