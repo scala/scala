@@ -161,7 +161,7 @@ object SeqView {
     @volatile private[this] var evaluated = false
 
     private[this] lazy val _sorted: Seq[A] = {
-      val res = {
+      val res: Seq[A] = {
         val len = this.len
         if (len == 0) Nil
         else if (len == 1) List(underlying.head)
