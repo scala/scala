@@ -1141,8 +1141,9 @@ object BackendUtils {
     else 0
   }
 
-  def classTagNewArrayArg(mi: MethodInsnNode, prodCons: ProdConsAnalyzer): InternalName = {
+  def classTagNewArrayArg(mi: MethodInsnNode, prodConsCache: ProdConsCache): InternalName = {
     if (mi.name == "newArray" && mi.owner == "scala/reflect/ClassTag" && mi.desc == "(I)Ljava/lang/Object;") {
+      val prodCons = prodConsCache.get
       val prods = prodCons.initialProducersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
       if (prods.size == 1) prods.head match {
         case ctApply: MethodInsnNode =>
