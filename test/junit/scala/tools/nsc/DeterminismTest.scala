@@ -257,6 +257,29 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testAnnotationLiteralArgRepickled(): Unit = {
+    // The inferred result types of `Test` carry a type annotation read from `a.scala`, either typed from source or
+    // unpickled. Its literal arguments must be pickled the same way in both cases.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |class Annot1(s: String, i: Int, c: Class[_]) extends scala.annotation.StaticAnnotation with scala.annotation.TypeConstraint
+          |class A {
+          |  def x: Int @Annot1("foo", 42, classOf[String]) = 1
+          |  def y: String @Annot1(null, -1, classOf[Int]) = ""
+          |}
+      """.stripMargin),
+      source("b.scala",
+        """
+          |class Test {
+          |  def x = new A().x
+          |  def y = new A().y
+          |}
+        """.stripMargin)
+    )
+    test(List(code))
+  }
+
   @Test def testAnnotationsJava(): Unit = {
     def code = List[SourceFile](
       source("Annot1.java",
