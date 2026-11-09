@@ -19,11 +19,11 @@ class SortedSetTest extends AllocationTest{
   }
   @Test def apply1(): Unit ={
     val ord = Ordering[String]
-    exactAllocates(sizeFor(152, 136))(SortedSet("a")(ord))
+    exactAllocates(sizeFor(144, 120))(SortedSet("a")(ord))
   }
   @Test def apply2(): Unit ={
     val ord = Ordering[String]
-    exactAllocates(sizeFor(216, 208))(SortedSet("a", "b")(ord))
+    exactAllocates(sizeFor(176, 160))(SortedSet("a", "b")(ord))
   }
 
   @Test def redBlackValidate(): Unit = {
