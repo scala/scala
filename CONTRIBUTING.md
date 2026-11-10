@@ -298,7 +298,7 @@ https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 
 ### Pass Scabot
 
-Our pull request bot, Scabot, automatically builds all of the PR's commits individually on Jenkins. Every commit is expected to pass CI, so we can `git bisect` later.
+Our pull request bot, Scabot, automatically builds the PR on Jenkins.
 
 Click on the little x next to a commit sha to go to the overview of the PR validation job. To diagnose a failure, consult the console output of the job that failed.
 
