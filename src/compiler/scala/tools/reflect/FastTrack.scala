@@ -14,14 +14,14 @@ package scala.tools
 package reflect
 
 import scala.reflect.reify.Taggers
-import scala.tools.nsc.typechecker.{ Analyzer, Macros }
+import scala.tools.nsc.typechecker.{ AbstractAnalyzer, Macros }
 import scala.reflect.runtime.Macros.currentMirror
 import scala.reflect.quasiquotes.{ Quasiquotes => QuasiquoteImpls }
 
 /** Optimizes system macro expansions by hardwiring them directly to their implementations
  *  bypassing standard reflective load and invoke to avoid the overhead of Java/Scala reflection.
  */
-class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAndAnalyzer) {
+class FastTrack[MacrosAndAnalyzer <: Macros with AbstractAnalyzer](val macros: MacrosAndAnalyzer) {
 
   import macros._
   import global._

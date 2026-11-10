@@ -17,7 +17,7 @@ import Mode._
 import scala.annotation._
 
 trait TypersTracking {
-  self: Analyzer =>
+  self: AbstractAnalyzer =>
 
   import global._
   import typeDebug._
