@@ -11,9 +11,11 @@
  */
 
 package scala
-package collection.concurrent
+package collection
+package concurrent
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 /** A template trait for mutable maps that allow concurrent access.
   *
@@ -35,7 +37,11 @@ import scala.annotation.tailrec
   *  @define atomicop
   *  This is an atomic operation.
   */
-trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
+trait Map[K, V] extends mutable.Map[K, V]
+  with mutable.MapOps[K, V, Map, Map[K, V]]
+  with MapFactoryDefaults[K, V, Map, mutable.Iterable] {
+
+  override def mapFactory: MapFactory[Map] = Map
 
   /**
     * Associates the given key with a given value, unless the key was already
@@ -188,3 +194,5 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     this
   }
 }
+
+object Map extends MapFactory.Delegate[Map](TrieMap)
