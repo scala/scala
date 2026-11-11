@@ -37,5 +37,6 @@ private[scala] trait SymbolTable extends internal.SymbolTable with JavaMirrors w
    *  will differ from the conventional ones. For example, we have to do additional cleanup
    *  in order to prevent memory leaks: https://groups.google.com/group/scala-internals/browse_thread/thread/eabcf3d406dab8b2.
    */
-  override def isCompilerUniverse = false
+  override protected def computeIsCompilerUniverse = false
+  override protected def computeHasSynchronizedSymbols = true
 }

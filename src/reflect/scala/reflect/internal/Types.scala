@@ -1460,6 +1460,8 @@ trait Types
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
+    // `TypeMap.mapOverType` skips the call, relying on this being the identity
+    final override def mapOver(map: TypeMap): Type = this
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) { }
@@ -2406,7 +2408,7 @@ trait Types
    * \@M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
-    override def mapOver(map: TypeMap): Type = {
+    final override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
       val args1 = map match {
         case map: VariancedTypeMap if !args.isEmpty && ! map.variance.isInvariant =>

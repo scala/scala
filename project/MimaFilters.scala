@@ -89,6 +89,31 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SymbolTable.GlbFailure*"),
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedOps.GlbFailure*"),
     ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("scala.reflect.runtime.SynchronizedTypes.GlbFailure*"),
+
+    // isCompilerUniverse and hasSynchronizedSymbols are vals in a new mixin of the internal SymbolTable, and universes override their compute methods.
+    // runtime.SymbolTable is private[scala]; it only escapes as a parent of JavaUniverse.
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.isCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.computeIsCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.computeIsCompilerUniverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SymbolTable.computeHasSynchronizedSymbols"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.computeHasSynchronizedSymbols"),
+
+    // scala.reflect.api: ClassSymbolApi's final override of isClass conflicts with Symbol's final isClass, so it is now abstract.
+    // Only a Universe implementation can mix ClassSymbolApi in (its self type is ClassSymbol), and scala-reflect is the only one.
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.reflect.api.Symbols#ClassSymbolApi.isClass"),
+
+    // Final Symbol.info and rawInfo: runtime reflection's locking moves behind hooks, in the private[reflect] trait SynchronizedSymbol
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.info"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.rawInfo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.synchronizedInfo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.synchronizedRawInfo"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$info"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$rawInfo"),
+
+    // Final Symbol.tpe_*: runtime reflection's locking moves behind a hook, in the private[reflect] trait SynchronizedTypeSymbol
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedTypeSymbol.tpe_*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedTypeSymbol.synchronizedTpe"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedTypeSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedTypeSymbol$$super$tpe_*"),
   )
 
   override val buildSettings = Seq(
