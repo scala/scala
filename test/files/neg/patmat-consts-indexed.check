@@ -1,0 +1,12 @@
+patmat-consts-indexed.scala:26: warning: non-variable type argument String in type pattern java.util.List[String] is unchecked since it is eliminated by erasure
+    case _: java.util.List[String] => 11
+                      ^
+patmat-consts-indexed.scala:38: warning: fruitless type test: every non-null value will be a Singleton dynamically
+    case _: Singleton => 23
+            ^
+patmat-consts-indexed.scala:17: warning: unreachable code
+    case _: Alias1 => 2
+                      ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error
