@@ -185,11 +185,6 @@ trait Implicits extends splain.SplainData {
               context.warning(result.tree.pos, s"Implicit resolves to enclosing $encl$help", WFlagSelfImplicit)
           }
       }
-      if (infoSym.exists && infoSym.owner.isModuleClass) {
-        val companion = companionSymbolOf(infoSym.owner, context)
-        if (companion.exists && !context.isAccessible(companion, result.implicitInfo.pre.prefix))
-          context.deprecationWarning(result.tree.pos, infoSym, s"Usage of implicit $infoSym defined in $companion, which is not accessible here. In Scala 2.13.20, this implicit will no longer be found.", "2.13.19")
-      }
       if (result.inPackagePrefix && currentRun.isScala3) {
         val msg =
           s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3 (or with -Xsource-features:package-prefix-implicits).
@@ -1410,13 +1405,19 @@ trait Implicits extends splain.SplainData {
             if (symInfos.exists(_.isSearchedPrefix))
               infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: symInfos
             else if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-              val (pre1, inPackagePrefix) =
-                if (sym.isPackageClass) (sym.packageObject.typeOfThis, true)
-                else (singleType(pre, companionSymbolOf(sym, context)), false)
-              val preInfos = {
-                if (currentRun.sourceFeatures.packagePrefixImplicits && inPackagePrefix) Iterator.empty
+              var inPackagePrefix = false
+              val pre1 =
+                if (sym.isPackageClass) {
+                  inPackagePrefix = true
+                  sym.packageObject.typeOfThis
+                } else {
+                  val companion = companionSymbolOf(sym, context)
+                  if (companion.exists && context.isAccessible(companion, pre)) singleType(pre, companion)
+                  else null
+                }
+              val preInfos =
+                if (pre1 == null || currentRun.sourceFeatures.packagePrefixImplicits && inPackagePrefix) Iterator.empty
                 else pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem, inPackagePrefix = inPackagePrefix))
-              }
               val mergedInfos = if (symInfos.isEmpty) preInfos else {
                 if (shouldLogAtThisPhase && symInfos.exists(!_.dependsOnPrefix)) log {
                   val nonDepInfos = symInfos.iterator.filterNot(_.dependsOnPrefix).mkString("(", ", ", ")")
