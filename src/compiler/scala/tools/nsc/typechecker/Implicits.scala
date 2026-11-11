@@ -1657,7 +1657,7 @@ trait Implicits extends splain.SplainData {
               val suffix = classarg :: (args map findSubManifest)
               manifestFactoryCall(
                 "classType", tp,
-                (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
+                (if (pre.isNoPrefix || pre.typeSymbol.isStaticOwner) suffix
                  else findSubManifest(pre) :: suffix): _*)
             } else if (sym.isExistentiallyBound && full) {
               manifestFactoryCall("wildcardType", tp,

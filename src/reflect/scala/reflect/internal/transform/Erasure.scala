@@ -433,7 +433,7 @@ trait Erasure {
 
         def unapply(tp: Type): Option[Type] = {
           val superTpe = translucentSuperType(tp)
-          if (superTpe ne NoType) Some(superTpe) else None
+          if (!superTpe.isNoType) Some(superTpe) else None
         }
 
         def translucentSuperType(tp: Type): Type = tp match {

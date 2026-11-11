@@ -98,7 +98,7 @@ trait PatternExpansion {
     def productArity = productTypes.length // values coming from the fixed-length content
 
     def elementArity = nonStarArity - productArity // number of elements picked off from the sequence (the variable-length values of the extracted parts)
-    def isSeq = elementType ne NoType
+    def isSeq = !elementType.isNoType
 
     def isBool   = !isSeq && productTypes.isEmpty
     def isSingle = !isSeq && totalArity == 1 // a Tuple1 is not decomposed
@@ -236,7 +236,7 @@ trait PatternExpansion {
       }
 
     private def arityError(mismatch: String) = {
-      val isErroneous = (productTypes contains NoType) && !(isSeq && (elementType ne NoType))
+      val isErroneous = (productTypes contains NoType) && !(isSeq && !elementType.isNoType)
 
       val offeringString = if (isErroneous) "<error>" else productTypes match {
         case tps if isSeq => (tps.map(_.toString) :+ s"${elementType}*").mkString("(", ", ", ")")
