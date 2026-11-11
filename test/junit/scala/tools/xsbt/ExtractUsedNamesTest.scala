@@ -206,6 +206,26 @@ class ExtractUsedNamesTest extends BridgeTesting {
     assertEquals(usedNames("A"), expectedNames)
   }
 
+  @Test
+  def `Used names extraction should extract names from annotations of definitions`(): Unit = {
+    val srcConsts = "object Consts { final val I = 1 }"
+    val srcAnn = "class MyAnn(x: Int) extends scala.annotation.StaticAnnotation"
+    val srcOnClass = "@MyAnn(Consts.I) class OnClass"
+    val srcOnMethod = "class OnMethod { @MyAnn(Consts.I) def f: Int = 1 }"
+    val srcOnParam = "class OnParam { def f(@MyAnn(Consts.I) x: Int): Int = x }"
+    val usedNames = extractUsedNamesFromSrc(srcConsts, srcAnn, srcOnClass, srcOnMethod, srcOnParam)
+    for (name <- List("OnClass", "OnMethod", "OnParam"))
+      assertTrue(s"$name: ${usedNames(name)}", Set("MyAnn", "Consts", "I").subsetOf(usedNames(name)))
+  }
+
+  @Test
+  def `Used names extraction should extract names from annotations without an original tree`(): Unit =
+    withTemporaryDirectory { tempDir =>
+      val (_, callback) = compileSrcss(tempDir, mkReporter, AnnotationWithoutOriginal.groupedSrcs)
+      val usedNames = callback.usedNames("C")
+      assertTrue(usedNames.toString, Set("MyAnn", "Consts", "I").subsetOf(usedNames))
+    }
+
   // pending test for https://issues.scala-lang.org/browse/SI-7173
   @Test @Ignore
   def `Used names extraction should extract names of constants`(): Unit = {

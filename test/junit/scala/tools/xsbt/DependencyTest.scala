@@ -7,7 +7,7 @@ import xsbti.api.DependencyContext.DependencyByMacroExpansion
 
 import scala.tools.xsbt.TestCallback.ExtractedClassDependencies
 import xsbti.NameKind
-import xsbti.api.DependencyContext.DependencyByInheritance
+import xsbti.api.DependencyContext.{DependencyByInheritance, DependencyByMemberRef}
 
 class DependencyTest extends BridgeTesting {
 
@@ -66,6 +66,34 @@ class DependencyTest extends BridgeTesting {
     assertEquals(inheritance("E"), Set.empty)
     assertEquals(localInheritance("E"), Set("B"))
   }
+
+  @Test
+  def `Dependency phase should extract class dependencies from annotations of definitions`(): Unit = {
+    val srcConsts = "object Consts { final val Uid = 1L; final val I = 1 }"
+    val srcAnn = "class MyAnn(x: Int) extends scala.annotation.StaticAnnotation"
+    val srcFoo = "@SerialVersionUID(Consts.Uid) class Foo extends Serializable"
+    val srcOnClass = "@MyAnn(Consts.I) class OnClass"
+    val srcOnMethod = "class OnMethod { @MyAnn(Consts.I) def f: Int = 1 }"
+    val srcOnParam = "class OnParam { def f(@MyAnn(Consts.I) x: Int): Int = x }"
+    val memberRef =
+      extractDependenciesFromSrcs(srcConsts, srcAnn, srcFoo, srcOnClass, srcOnMethod, srcOnParam).memberRef
+    def includes(name: String, expected: Set[String]): Unit =
+      assertTrue(s"memberRef($name) = ${memberRef(name)}", expected.subsetOf(memberRef(name)))
+    includes("Foo", Set("Consts"))
+    includes("OnClass", Set("MyAnn", "Consts"))
+    includes("OnMethod", Set("MyAnn", "Consts"))
+    includes("OnParam", Set("MyAnn", "Consts"))
+  }
+
+  @Test
+  def `Dependency phase should extract class dependencies from annotations without an original tree`(): Unit =
+    withTemporaryDirectory { tempDir =>
+      val (_, callback) = compileSrcss(tempDir, mkReporter, AnnotationWithoutOriginal.groupedSrcs)
+      val memberRef = callback.classDependencies.toList.collect {
+        case (target, "C", DependencyByMemberRef) => target
+      }.toSet
+      assertTrue(memberRef.toString, Set("MyAnn", "Consts").subsetOf(memberRef))
+    }
 
   @Test
   def `Dependency phase should extract class dependencies with trait as first parent`(): Unit = {
