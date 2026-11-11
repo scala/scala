@@ -4,7 +4,7 @@ package top {
     import bottom.B.b
     class C {
       def p() = println("hello, world")
-      def f = b     // comment me to see Predef exclusion
+      def f = b     // completes b before the typer reaches the import that masks Set
     }
   }
 }
