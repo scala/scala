@@ -1824,23 +1824,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
+    // OPT: final, so C2 can bind calls to this method, whose receivers are too many Symbol classes for a type profile to do so.
+    //      Only the slow path, completeTypeParams, is overridden: SynchronizedSymbols copies it without enteringPhase.
+    final def typeParams: List[Symbol] =
+      if (validTo != NoPeriod) rawInfo.typeParams else completeTypeParams
+
     // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
     // don't forget to modify the code over there if you modify this method
-    def typeParams: List[Symbol] = {
-      def completeTypeParams = {
-        if (isMonomorphicType) Nil
-        else {
-          // analogously to the "info" getter, here we allow for two completions:
-          //   one: sourceCompleter to LazyType, two: LazyType to completed type
+    protected def completeTypeParams: List[Symbol] =
+      // A skolem uses its own info, not its origin's, completed through `info`: Type.load does nothing for its lazy type
+      if (isSkolem) info.typeParams
+      else if (isMonomorphicType) Nil
+      else {
+        // analogously to the "info" getter, here we allow for two completions:
+        //   one: sourceCompleter to LazyType, two: LazyType to completed type
+        enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
+        if (validTo == NoPeriod)
           enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-          if (validTo == NoPeriod)
-            enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
-          rawInfo.typeParams
-        }
+        rawInfo.typeParams
       }
-      if (validTo != NoPeriod) rawInfo.typeParams else completeTypeParams
-    }
 
     /** The value parameter sections of this symbol.
      */
@@ -3356,9 +3359,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** If type skolem comes from an existential, the tree where it was created */
     override def unpackLocation = origin
-
-    //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
-    override def typeParams = info.typeParams
 
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSkolem =
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
