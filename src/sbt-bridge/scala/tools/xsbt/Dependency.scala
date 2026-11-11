@@ -460,7 +460,31 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      */
     private val inspectedOriginalTrees = new JavaSet[Tree]()
 
-    override def traverse(tree: Tree): Unit = tree match {
+    override def traverse(tree: Tree): Unit = {
+      traverseAnnotations(tree)
+      traverseTree(tree)
+    }
+
+    /**
+     * After typer, the annotations of a definition only live in its symbol, so the annotation
+     * class and the arguments (including constants folded into them) are traversed from there.
+     */
+    private def traverseAnnotations(tree: Tree): Unit = tree match {
+      case md: MemberDef if md.symbol != null && md.symbol != NoSymbol =>
+        val annotations = md.symbol.annotations
+        if (annotations.nonEmpty) atOwner(md.symbol) {
+          annotations.foreach { annot =>
+            if (annot.original != EmptyTree) traverse(annot.original)
+            else {
+              addTypeDependencies(annot.atp)
+              annot.args.foreach(traverse)
+            }
+          }
+        }
+      case _ =>
+    }
+
+    private def traverseTree(tree: Tree): Unit = tree match {
       case Import(expr, selectors) =>
         inImportNode = true
         traverse(expr)
