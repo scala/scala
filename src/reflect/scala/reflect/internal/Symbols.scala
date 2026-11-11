@@ -1993,16 +1993,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** A total ordering between symbols that refines the class
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
-     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id`.
+     *  Terms precede types. Types are ordered by: classes after abstract types and refinements,
+     *  then longer base type sequences first, then `id`.
      */
     final def isLess(that: Symbol): Boolean = (this ne that)  && {
       def baseTypeSeqLength(sym: Symbol) =
         if (sym.isAbstractType) 1 + sym.info.upperBound.baseTypeSeq.length
         else sym.info.baseTypeSeq.length
+      // The length rank alone can put a class before an abstract type bounded by it: seen from a
+      // prefix, the bound may be a class with a longer base type sequence than the declared bound.
+      // Refinements group with abstract types, as they precede the abstract types among their parents.
+      def isClassProper(sym: Symbol) = sym.isClass && !sym.isRefinementClass
       if (this.isType)
-        (that.isType &&
-         { val diff = baseTypeSeqLength(this) - baseTypeSeqLength(that)
-           diff > 0 || diff == 0 && this.id < that.id })
+        (that.isType && (
+          if (isClassProper(this) != isClassProper(that)) isClassProper(that)
+          else {
+            val diff = baseTypeSeqLength(this) - baseTypeSeqLength(that)
+            diff > 0 || diff == 0 && this.id < that.id
+          }))
       else
         that.isType || this.id < that.id
     }
