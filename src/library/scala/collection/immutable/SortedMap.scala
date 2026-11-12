@@ -140,6 +140,8 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
     case _ => super.from(it)
   }
 
+  // The ID the JVM computed in 2.13.10 to 2.13.18, so data serialized by those releases stays readable
+  @SerialVersionUID(-6097983817400713428L)
   final class WithDefault[K, +V](underlying: SortedMap[K, V], defaultValue: K => V)
     extends Map.WithDefault[K, V](underlying, defaultValue)
       with SortedMap[K, V]
