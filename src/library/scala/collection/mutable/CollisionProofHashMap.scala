@@ -36,7 +36,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   extends AbstractMap[K, V]
     with MapOps[K, V, Map, CollisionProofHashMap[K, V]] //--
     with StrictOptimizedIterableOps[(K, V), Iterable, CollisionProofHashMap[K, V]]
-    with StrictOptimizedMapOps[K, V, Map, CollisionProofHashMap[K, V]] { //--
+    with StrictOptimizedMapOps[K, V, Map, CollisionProofHashMap[K, V]] //--
+    with Serializable {
 
   private[this] final def sortedMapFactory: SortedMapFactory[CollisionProofHashMap] = CollisionProofHashMap
 

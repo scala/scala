@@ -29,6 +29,12 @@ class SerializationTest {
   }
 
   @Test
+  def collisionProofHashMap(): Unit = {
+    assertEqualsAfterDeserialization(mutable.CollisionProofHashMap.empty[Int, String], classOf[mutable.CollisionProofHashMap[_, _]])
+    assertEqualsAfterDeserialization(mutable.CollisionProofHashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[mutable.CollisionProofHashMap[_, _]])
+  }
+
+  @Test
   def linkedHashMap(): Unit = {
     assertEqualsAfterDeserialization(mutable.LinkedHashMap.empty[Int, String], classOf[mutable.LinkedHashMap[_, _]])
     assertEqualsAfterDeserialization(mutable.LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[mutable.LinkedHashMap[_, _]])
