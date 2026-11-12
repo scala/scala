@@ -66,6 +66,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SortedMapOps#KeySortedSet.writeReplace"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SortedMapOps$ImmutableKeySortedSet"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.SortedMapOps#ImmutableKeySortedSet.writeReplace"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.TreeSeqMap"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeSeqMap.writeReplace"),
 
     // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),

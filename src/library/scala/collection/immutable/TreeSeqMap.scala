@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements an immutable map that preserves order using
   * a hash map for the key to value mapping to provide efficient lookup,
@@ -52,7 +53,8 @@ final class TreeSeqMap[K, +V] private (
     with MapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeSeqMap[K, V]]
     with StrictOptimizedMapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
-    with MapFactoryDefaults[K, V, TreeSeqMap, Iterable] {
+    with MapFactoryDefaults[K, V, TreeSeqMap, Iterable]
+    with Serializable {
 
   import TreeSeqMap._
 
@@ -285,6 +287,8 @@ final class TreeSeqMap[K, +V] private (
 
   @`inline` private[this] def value(p: (_, V)) = p._2
   @`inline` private[this] def binding(k: K) = mapping(k).copy(_1 = k)
+
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new TreeSeqMap.DeserializationFactory[K, V](orderedBy), this)
 }
 object TreeSeqMap extends MapFactory[TreeSeqMap] {
   sealed trait OrderBy
@@ -312,6 +316,12 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
 
   def newBuilder[K, V]: mutable.Builder[(K, V), TreeSeqMap[K, V]] = newBuilder(OrderBy.Insertion)
   def newBuilder[K, V](orderedBy: OrderBy): mutable.Builder[(K, V), TreeSeqMap[K, V]] = new Builder[K, V](orderedBy)
+
+  @SerialVersionUID(3L)
+  private final class DeserializationFactory[K, V](val orderedBy: OrderBy) extends Factory[(K, V), TreeSeqMap[K, V]] with Serializable {
+    def fromSpecific(it: IterableOnce[(K, V)]): TreeSeqMap[K, V] = (newBuilder ++= it).result()
+    def newBuilder: mutable.Builder[(K, V), TreeSeqMap[K, V]] = TreeSeqMap.newBuilder(orderedBy)
+  }
 
   final class Builder[K, V](orderedBy: OrderBy) extends mutable.Builder[(K, V), TreeSeqMap[K, V]] {
     private[this] val bdr = new MapBuilderImpl[K, (Int, V)]
