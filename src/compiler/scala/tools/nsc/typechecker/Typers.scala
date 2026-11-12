@@ -2572,8 +2572,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedBlock(block0: Block, mode: Mode, pt: Type): Block = {
       val syntheticPrivates = new ListBuffer[Symbol]
       try {
-        namer.enterSyms(block0.stats)
-        val block = treeCopy.Block(block0, pluginsEnterStats(this, namer.expandMacroAnnotations(block0.stats)), block0.expr)
+        // The completers of the block's definitions run whenever their info is first needed, which may be while
+        // a statement of the block is being typed with a mode set in place on `context` (for instance,
+        // `typedTypeSelectionQualifier` disables implicit views). Give them a context of their own, as class
+        // members and definitions after an import already have, so they don't inherit that mode. `make` with
+        // these four arguments always makes a new context, unlike the overload that returns `this` when nothing changes.
+        val blockNamer = newNamer(context.make(block0, context.owner, context.scope, context.unit))
+        blockNamer.enterSyms(block0.stats)
+        val block = treeCopy.Block(block0, pluginsEnterStats(this, blockNamer.expandMacroAnnotations(block0.stats)), block0.expr)
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {

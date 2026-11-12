@@ -1,0 +1,4 @@
+block-completer-silent-reporter.scala:14: error: not found: type NoSuchType
+    implicit def conv(f: Foo): NoSuchType = ???
+                               ^
+1 error
