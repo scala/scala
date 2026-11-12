@@ -15,6 +15,7 @@ package collection
 
 import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
 
@@ -915,7 +916,7 @@ object IterableOps {
 @SerialVersionUID(3L)
 object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
 
-  def single[A](a: A): Iterable[A] = new AbstractIterable[A] {
+  def single[A](a: A): Iterable[A] = new AbstractIterable[A] with DefaultSerializable {
     override def iterator = Iterator.single(a)
     override def knownSize = 1
     override def head = a
