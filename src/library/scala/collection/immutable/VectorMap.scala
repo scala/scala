@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.{nowarn, tailrec}
+import scala.collection.generic.DefaultSerializable
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
   *
@@ -34,7 +35,8 @@ final class VectorMap[K, +V] private (
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
-    with MapFactoryDefaults[K, V, VectorMap, Iterable] {
+    with MapFactoryDefaults[K, V, VectorMap, Iterable]
+    with DefaultSerializable {
 
   import VectorMap._
 
@@ -213,7 +215,8 @@ final class VectorMap[K, +V] private (
   @nowarn("msg=overriding method keys")
   override def keys: Vector[K] = keysIterator.toVector
 
-  override def values: Iterable[V] = new Iterable[V] with IterableFactoryDefaults[V, Iterable] {
+  override def values: Iterable[V] = new Iterable[V] with IterableFactoryDefaults[V, Iterable] with DefaultSerializable {
+    override def knownSize: Int = VectorMap.this.knownSize
     override def iterator: Iterator[V] = keysIterator.map(underlying(_)._2)
   }
 }
