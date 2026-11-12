@@ -57,6 +57,17 @@ class SerializationTest {
   }
 
   @Test
+  def sortedMapKeySet(): Unit = {
+    val m = SortedMap(1 -> "one", 2 -> "two", 3 -> "three")(Ordering.Int.reverse).withDefaultValue("none")
+    for (ks <- List(m.keySet, m.keySet.rangeFrom(2))) {
+      val after = serializeDeserialize(ks)
+      assertEquals(ks, after)
+      assertEquals(ks.toList, after.toList)
+      assertEquals(ks.ordering, after.ordering)
+    }
+  }
+
+  @Test
   def treeMap(): Unit = {
     assertEqualsAfterDeserialization(TreeMap.empty[Int, String], classOf[TreeMap[_, _]])
     assertEqualsAfterDeserialization(TreeMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[TreeMap[_, _]])

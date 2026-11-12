@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.Builder
 
 /** An immutable map whose key-value pairs are sorted according to an [[scala.math.Ordering]] on the keys.
@@ -93,7 +94,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
   override def keySet: SortedSet[K] = new ImmutableKeySortedSet
 
   /** The implementation class of the set returned by `keySet` */
-  protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
+  protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet with DefaultSerializable {
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
       val map = self.rangeImpl(from, until)
       new map.ImmutableKeySortedSet
