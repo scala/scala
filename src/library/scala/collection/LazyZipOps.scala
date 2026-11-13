@@ -60,8 +60,8 @@ final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterabl
         def hasNext = current.hasNext
         def next() = current.next()
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0) 0 else super.knownSize
-      override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 
@@ -88,7 +88,7 @@ final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterabl
           } else Iterator.empty.next()
         }
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0) 0 else super.knownSize
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
       override def isEmpty: Boolean = iterator.isEmpty
     })
   }
@@ -190,7 +190,7 @@ final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
         def hasNext = current.hasNext
         def next() = current.next()
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0) 0 else super.knownSize
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
       override def isEmpty: Boolean = iterator.isEmpty
     })
   }
@@ -220,7 +220,7 @@ final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
           } else Iterator.empty.next()
         }
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0) 0 else super.knownSize
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
       override def isEmpty: Boolean = iterator.isEmpty
     })
   }
@@ -324,7 +324,7 @@ final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
         def hasNext = current.hasNext
         def next() = current.next()
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0 || coll4.knownSize == 0) 0 else super.knownSize
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
       override def isEmpty: Boolean = iterator.isEmpty
     })
   }
@@ -356,7 +356,7 @@ final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
           } else Iterator.empty.next()
         }
       }
-      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0 || coll4.knownSize == 0) 0 else super.knownSize
+      override def knownSize: Int = if (zipKnownSize == 0) 0 else super.knownSize
       override def isEmpty: Boolean = iterator.isEmpty
     })
   }

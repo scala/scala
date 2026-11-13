@@ -298,4 +298,15 @@ class LazyZipOpsTest {
     assertFalse(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 1).isEmpty)
     assertTrue(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 3).isEmpty)
   }
+
+  @Test
+  def lazyZipFlatMapIsEmpty(): Unit = {
+    val v = List(1, 2, 3).view
+    assertFalse(v.lazyZip(v).flatMap((a, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).flatMap((_, _) => Nil).isEmpty)
+    assertFalse(v.lazyZip(v).lazyZip(v).flatMap((a, _, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).flatMap((_, _, _) => Nil).isEmpty)
+    assertFalse(v.lazyZip(v).lazyZip(v).lazyZip(v).flatMap((a, _, _, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).lazyZip(v).flatMap((_, _, _, _) => Nil).isEmpty)
+  }
 }
