@@ -29,6 +29,12 @@ class SerializationTest {
   }
 
   @Test
+  def collisionProofHashMap(): Unit = {
+    assertEqualsAfterDeserialization(mutable.CollisionProofHashMap.empty[Int, String], classOf[mutable.CollisionProofHashMap[_, _]])
+    assertEqualsAfterDeserialization(mutable.CollisionProofHashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[mutable.CollisionProofHashMap[_, _]])
+  }
+
+  @Test
   def linkedHashMap(): Unit = {
     assertEqualsAfterDeserialization(mutable.LinkedHashMap.empty[Int, String], classOf[mutable.LinkedHashMap[_, _]])
     assertEqualsAfterDeserialization(mutable.LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[mutable.LinkedHashMap[_, _]])
@@ -44,6 +50,19 @@ class SerializationTest {
   def treeMap(): Unit = {
     assertEqualsAfterDeserialization(mutable.TreeMap.empty[Int, String], classOf[mutable.TreeMap[_, _]])
     assertEqualsAfterDeserialization(mutable.TreeMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[mutable.TreeMap[_, _]])
+  }
+
+  @Test
+  def sortedMapKeySet(): Unit = {
+    val m = mutable.TreeMap(1 -> "one", 2 -> "two", 3 -> "three")(Ordering.Int.reverse)
+    val sets = List(m.keySet, m.keySet.rangeFrom(2), m.withDefaultValue("none").keySet)
+    for (ks <- sets) {
+      val after = serializeDeserialize(ks)
+      assertEquals(ks, after)
+      assertEquals(ks.toList, after.toList)
+      assertEquals(ks.ordering, after.ordering)
+    }
+    assertEquals(m.keys.toList, serializeDeserialize(m.keys).toList)
   }
 
   @Test

@@ -1642,6 +1642,8 @@ final class StringOps(private val s: String) extends AnyVal {
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
 
+// The ID the JVM computed in 2.13.1 to 2.13.18, so data serialized by those releases stays readable
+@SerialVersionUID(-5717940071591303528L)
 final case class StringView(s: String) extends AbstractIndexedSeqView[Char] {
   def length = s.length
   @throws[StringIndexOutOfBoundsException]

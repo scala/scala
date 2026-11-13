@@ -502,4 +502,15 @@ class IterableTest {
     assertEquals(1,   reductive.min)
     assertEquals(32,  reductive.max)
   }
+
+  @Test def singleSerializable(): Unit = {
+    import java.io._
+    def roundTrip[A <: AnyRef](a: A): A = {
+      val bos = new ByteArrayOutputStream
+      new ObjectOutputStream(bos).writeObject(a)
+      new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray)).readObject().asInstanceOf[A]
+    }
+    assertEquals(List(1), roundTrip(Iterable.single(1)).toList)
+    assertEquals(List(1), roundTrip(Option.option2Iterable(Some(1))).toList)
+  }
 }
