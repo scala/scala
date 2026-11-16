@@ -688,8 +688,16 @@ trait MacroAnnotationNamers { self: AbstractAnalyzer =>
         // upd. actually, i don't think we should skip the second context
         // that doesn't buy us absolutely anything wrt robustness
         else if (sym.owner.isClass) newTyper(rollThroughImports(context).outer)
-             // expanding at block level => only allow to see outside of the block
-        else newTyper(rollThroughImports(context).outer)
+        // expanding at block level => only allow to see outside of the block.
+        // `typedBlock` enters the block's definitions with a namer whose context is a child of the block
+        // context, with the same tree and scope; skip that one as well.
+        else {
+          val namerContext = rollThroughImports(context)
+          val blockContext =
+            if ((namerContext.tree eq namerContext.outer.tree) && (namerContext.scope eq namerContext.outer.scope)) namerContext.outer
+            else namerContext
+          newTyper(blockContext.outer)
+        }
       }
       def onlyIfExpansionAllowed[T](expand: => Option[T]): Option[T] = {
         if (settings.Ymacroexpand.value == settings.MacroExpand.None) None
