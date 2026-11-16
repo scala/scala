@@ -14,6 +14,7 @@ package scala
 package collection
 
 import scala.annotation.{implicitNotFound, nowarn}
+import scala.collection.generic.DefaultSerializable
 
 /** A Map whose keys are sorted according to a [[scala.math.Ordering]]*/
 trait SortedMap[K, +V]
@@ -131,7 +132,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   override def keySet: SortedSet[K] = new KeySortedSet
 
   /** The implementation class of the set returned by `keySet` */
-  protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
+  protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet with DefaultSerializable {
     def diff(that: Set[K]): SortedSet[K] = fromSpecific(view.filterNot(that))
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
       val map = SortedMapOps.this.rangeImpl(from, until)
