@@ -434,6 +434,13 @@ trait Namers extends MethodSynthesis {
     }
 
     def enterModuleDef(tree: ModuleDef): Unit = {
+      val intrinsic = intrinsicClassFor(tree)
+      if (intrinsic != NoSymbol) {
+        context.error(tree.pos, s"${intrinsic.fullName} is compiler-defined and cannot have a companion object")
+        tree.symbol = this.owner.newErrorValue(tree.name)
+        tree.setType(ErrorType)
+        return
+      }
       val sym = enterModuleSymbol(tree)
       sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
@@ -788,7 +795,36 @@ trait Namers extends MethodSynthesis {
       }
     }
 
+    /** The compiler-defined class in package `scala` that a class or object named `tree.name`
+     *  would redefine or become the companion of, or `NoSymbol`.
+     *
+     *  These classes have no source file, so `isCoDefinedWith` would accept a user-defined
+     *  `object scala.Any` as the companion of `Any`, putting its implicits in the implicit scope of every type.
+     */
+    private def intrinsicClassFor(tree: ImplDef): Symbol =
+      if (this.owner ne ScalaPackageClass) NoSymbol
+      else {
+        val name = tree.name.toTypeName
+        val intrinsic = name match {
+          case tpnme.Any       => AnyClass
+          case tpnme.AnyRef    => AnyRefClass
+          case tpnme.Nothing   => NothingClass
+          case tpnme.Null      => NullClass
+          case tpnme.Singleton => SingletonClass
+          case _               => NoSymbol
+        }
+        if (intrinsic != NoSymbol && (context.scope.lookup(name) eq intrinsic)) intrinsic else NoSymbol
+      }
+
     def enterClassDef(tree: ClassDef): Unit = {
+      val intrinsic = intrinsicClassFor(tree)
+      if (intrinsic != NoSymbol) {
+        // These auxiliary sources document permanent compiler definitions; they cannot replace them.
+        context.error(tree.pos, s"${intrinsic.fullName} is compiler-defined and cannot be redefined")
+        tree.symbol = this.owner.newErrorClass(tree.name)
+        tree.setType(ErrorType)
+        return
+      }
       val ClassDef(mods, _, _, impl) = tree
       val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
       tree.symbol = enterClassSymbol(tree)

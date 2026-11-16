@@ -1,0 +1,16 @@
+redefine-intrinsic-types.scala:2: error: scala.Any is compiler-defined and cannot be redefined
+abstract class Any
+               ^
+redefine-intrinsic-types.scala:3: error: scala.AnyRef is compiler-defined and cannot be redefined
+trait AnyRef extends Any
+      ^
+redefine-intrinsic-types.scala:4: error: scala.Nothing is compiler-defined and cannot be redefined
+sealed trait Nothing
+             ^
+redefine-intrinsic-types.scala:5: error: scala.Null is compiler-defined and cannot be redefined
+sealed trait Null
+             ^
+redefine-intrinsic-types.scala:6: error: scala.Singleton is compiler-defined and cannot be redefined
+final trait Singleton extends Any
+            ^
+5 errors
