@@ -523,6 +523,33 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testPredefImportMask(): Unit = {
+    // The import masks the root import of `Predef` whether or not it has been completed when `s` is, so `String` in
+    // the pickle of `A` is always `java.lang.String`.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |import scala.Predef.{assert}
+          |class A { def s(x: String) = x }
+        """.stripMargin),
+      source("b.scala", "class B { def f = new A().s(\"\") }")
+    )
+    test(List(code))
+  }
+
+  @Test def testPredefImportMaskCompletedBySelector(): Unit = {
+    // Looking up `genericArrayOps` completes the import, and typing its qualifier consults the mask in progress.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |import scala.Predef.{genericArrayOps}
+          |class A { def s(x: String, xs: Array[Int]) = (x, xs.head) }
+        """.stripMargin),
+      source("b.scala", "class B { def f = new A().s(\"\", null) }")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
