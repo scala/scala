@@ -523,6 +523,20 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testSpecializedOverrideCallSite(): Unit = {
+    // `IntBox.get` has no specialized type variables in its info, so transforming the call reads `overloads` directly.
+    // That map is filled by the info transform of `IntBox`, so it only finds `get$mcI$sp` if `IntBox` was forced first.
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |class Box[@specialized(Int) T] { def get: T = ??? }
+          |class IntBox extends Box[Int] { override def get: Int = 1 }
+      """.stripMargin),
+      source("b.scala", "object Use { def use = new IntBox().get }")
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 

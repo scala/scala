@@ -85,8 +85,28 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   // read-only map, where missing value defaults to empty immutable.Map
   def specializationOf(sym: Symbol) = specializedClass.getOrElse(sym, Map.empty[TypeEnv, Symbol])
 
-  /** Map a method symbol to a list of its specialized overloads in the same class. */
-  private val overloads = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
+  /** Map a method symbol to a list of its specialized overloads in the same class.
+   *
+   *  The map is filled by the info transform of the method's class, so `apply` forces that info first. Without this,
+   *  whether a call is rewritten to the overload would depend on the order of the units: a class defined in a later unit
+   *  that nothing has forced yet would appear to have no overloads.
+   *
+   *  The info is forced only when the method could have overloads: when it mentions specialized type variables, or
+   *  when its class or a base class has specialized type parameters. Forcing the info of any other class would
+   *  needlessly complete all of its members, which for a class unpickled from TASTy can report errors for members
+   *  the program never uses.
+   */
+  private object overloads {
+    private val map = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
+    def add(method: Symbol, om: Overload): Unit = map(method) ::= om
+    def apply(method: Symbol): List[Overload] = {
+      if (mayHaveOverloads(method)) method.owner.info
+      map(method)
+    }
+    private def mayHaveOverloads(method: Symbol): Boolean = enteringSpecialize {
+      specializedTypeVars(method).nonEmpty || method.owner.baseClasses.exists(hasSpecializedParams)
+    }
+  }
 
   /** Map a symbol to additional information on specialization. */
   private val info = perRunCaches.newMap[Symbol, SpecializedInfo]()
@@ -187,7 +207,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def newOverload(method: Symbol, specializedMethod: Symbol, env: TypeEnv) = {
     assert(!specializedMethod.isOverloaded, specializedMethod.defString)
     val om = Overload(specializedMethod, env)
-    overloads(method) ::= om
+    overloads.add(method, om)
     om
   }
 
