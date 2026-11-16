@@ -679,6 +679,46 @@ abstract class Erasure extends InfoTransform
     }
   }
 
+  /** For `this` in a trait whose self type erases to a class that derives from the owner of `member`, that class;
+   *  otherwise `NoType`.
+   *
+   *  A trait's `this` erases to the trait, so selecting a member of another part of the self type needs a cast. The
+   *  cast to `owner` gives `checkcast Owner; invokeinterface Owner.m`; when the self type erases to a class, casting
+   *  to it gives a cheaper class check and lets the backend use `invokevirtual`, as it already does for the same
+   *  selection through an inner class's `$outer`, which is typed with the erased self type. In a cake whose traits
+   *  are self-typed with its class (`self: SymbolTable =>`), the interface checks on a class with many interfaces
+   *  are slow once its secondary supers table is full (JDK 23+) and its type profile is polluted.
+   *
+   *  Only members of traits are retargeted: a member of a class is already called with `invokevirtual`.
+   *
+   *  The JVM resolves `Cls.m` in the superclasses of `Cls` before its interfaces. If `Cls` has no forwarder for `m`
+   *  (the member is abstract, or `-Xmixin-force-forwarders:false`), resolution stops at the first superclass that
+   *  declares a method with the same name and descriptor. Unless that method is a public instance method, the call
+   *  fails to link (a private or a static method) or may fail the access check (a protected one), so we cast to the
+   *  owner. If no superclass declares one, resolution continues in the interfaces and finds `m`. Scala classes have
+   *  no static methods and only their private methods are not public in bytecode. The private methods of a Java
+   *  class are not entered by the classfile parser, so a Java superclass other than `Object` that declares no
+   *  public method with the descriptor may still declare a private one.
+   */
+  private def selfTypeClass(qual: Tree, member: Symbol, context: Context): Type = qual match {
+    case This(_) if qual.symbol.isTrait && member.owner.isTrait =>
+      val selfErased = erasure(qual.symbol)(qual.symbol.typeOfThis)
+      val cls = selfErased.typeSymbol
+      lazy val memberErased = erasure(member)(member.info)
+      def sameDescriptor(owner: Symbol) =
+        owner.info.decl(member.name).alternatives.filter(alt => alt.isMethod && (erasure(alt)(alt.info) matches memberErased))
+      @tailrec def resolvesToMember(c: Symbol): Boolean =
+        if (c == NoSymbol) true
+        else if (c.isJavaDefined && sameDescriptor(c.companionModule.moduleClass).nonEmpty) false
+        else sameDescriptor(c) match {
+          case alt :: _ => if (c.isJavaDefined) alt.isPublic else !alt.isPrivate
+          case Nil      => (c == ObjectClass || !c.isJavaDefined) && resolvesToMember(c.superClass)
+        }
+      if (cls.isClass && !cls.isTrait && cls.isSubClass(member.owner) && isJvmAccessible(cls, context) && resolvesToMember(cls)) selfErased
+      else NoType
+    case _ => NoType
+  }
+
   /** The modifier typer which retypes with erased types. */
   class Eraser(_context: Context) extends Typer(_context) {
     val typeAdapter = new TypeAdapter { def typedPos(pos: Position)(tree: Tree): Tree = Eraser.this.typedPos(pos)(tree) }
@@ -773,6 +813,9 @@ abstract class Erasure extends InfoTransform
               //     erasure, but a non-accessible type `Y` after erasure (scala/bug#10450). Again
               //     we cast to the owner of `c`, or, if that is not accessible either, to the
               //     class stored in the `QualTypeSymAttachment`.
+              //   - In a trait, `this` has the trait's type, so selecting a member of another part of
+              //     the self type needs a cast. If the owner is a trait and the self type erases to a
+              //     class that derives from it, we may cast to that class instead (see `selfTypeClass`).
               //
               // A `QualTypeSymAttachment` is present if the selected member's owner is not an
               // accessible (java-defined) class, see `preErase`.
@@ -781,7 +824,7 @@ abstract class Erasure extends InfoTransform
               // legal code. Instead there's a special case in `typedSelectInternal`.
               val qualTpe = tree.getAndRemoveAttachment[QualTypeSymAttachment] match {
                 case Some(a) => a.sym.tpe
-                case None => tree.symbol.owner.tpe
+                case None => selfTypeClass(qual1, tree.symbol, context).orElse(tree.symbol.owner.tpe)
               }
               selectFrom(cast(qual1, qualTpe))
             } else {
