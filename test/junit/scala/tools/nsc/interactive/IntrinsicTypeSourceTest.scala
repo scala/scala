@@ -116,6 +116,10 @@ class IntrinsicTypeSourceTest {
     exercise("package scala; case class Any(x: Int = 1)", macros = true, expectedError = "cannot be redefined", deleteInput = true)
   @Test def ordinaryUserNames(): Unit =
     exercise("package example; " + intrinsicNames.map("class " + _).mkString("; "), macros = true, expectedError = "", deleteInput = true)
+  @Test def companionObjects(): Unit =
+    exercise("package scala; " + intrinsicNames.map("object " + _).mkString("; "), macros = true, expectedError = "cannot have a companion object", deleteInput = true)
+  @Test def ordinaryUserObjects(): Unit =
+    exercise("package example; " + intrinsicNames.map("object " + _).mkString("; "), macros = true, expectedError = "", deleteInput = true)
   @Test def ordinarySourceError(): Unit =
     exercise("class Broken extends Broken", macros = true, expectedError = "illegal cyclic reference", deleteInput = true)
 
