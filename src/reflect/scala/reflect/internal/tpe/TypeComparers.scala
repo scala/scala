@@ -75,7 +75,7 @@ trait TypeComparers {
   }
 
   private def isSubPre(pre1: Type, pre2: Type, sym: Symbol) =
-    if ((pre1 ne pre2) && (pre1 ne NoPrefix) && (pre2 ne NoPrefix) && pre1 <:< pre2) {
+    if ((pre1 ne pre2) && !pre1.isNoPrefix && !pre2.isNoPrefix && pre1 <:< pre2) {
       if (settings.isDebug) println(s"new isSubPre $sym: $pre1 <:< $pre2")
       true
     } else
@@ -352,15 +352,15 @@ trait TypeComparers {
          (tp1 eq tp2)
       || isErrorOrWildcard(tp1)
       || isErrorOrWildcard(tp2)
-      || (tp1 eq NoPrefix) && tp2.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
-      || (tp2 eq NoPrefix) && tp1.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+      || tp1.isNoPrefix && tp2.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
+      || tp2.isNoPrefix && tp1.typeSymbol.isPackageClass // !! I do not see how this would be warranted by the spec
     )
     // isFalse, assuming !isTrue
     def isFalse = (
-         (tp1 eq NoType)
-      || (tp2 eq NoType)
-      || (tp1 eq NoPrefix)
-      || (tp2 eq NoPrefix)
+         tp1.isNoType
+      || tp2.isNoType
+      || tp1.isNoPrefix
+      || tp2.isNoPrefix
     )
 
     if (isTrue) TriState.True
@@ -500,7 +500,7 @@ trait TypeComparers {
                 val base = tr1 baseType sym2
                 // During bootstrap, `base eq NoType` occurs about 2.5 times as often as `base ne NoType`.
                 // The extra check seems like a worthwhile optimization (about 2.5M useless calls to isSubType saved during that run).
-                (base ne tr1) && (base ne NoType) && isSubType(base, tr2, depth)
+                (base ne tr1) && !base.isNoType && isSubType(base, tr2, depth)
               }
               ||
               thirdTryRef(tr1, tr2))

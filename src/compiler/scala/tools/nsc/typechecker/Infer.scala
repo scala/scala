@@ -337,7 +337,7 @@ trait Infer extends Checkable {
       )
       def isCompatibleSam(tp: Type, pt: Type): Boolean = (definitions.isFunctionType(tp) || definitions.isPartialFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
         val samFun = samToFunctionType(pt)
-        (samFun ne NoType) && isCompatible(tp, samFun)
+        !samFun.isNoType && isCompatible(tp, samFun)
       }
 
       // can only compare if both types are repeated or neither is (T* is not actually a first-class type, even though it has a BTS and thus participates in subtyping)
@@ -1381,7 +1381,7 @@ trait Infer extends Checkable {
             val tp1 = memberTypeForSpecificity(pre, sym1, tree)
             val tp2 = memberTypeForSpecificity(pre, sym2, tree)
 
-            (    (tp2 eq ErrorType)
+            (    tp2.isErrorType
               || isWeaklyCompatible(tp1, pt) && !isWeaklyCompatible(tp2, pt)
               || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
             )

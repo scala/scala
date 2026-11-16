@@ -394,7 +394,7 @@ trait PatternTypers {
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
     def extractorForUncheckedType(pos: Position, pt: Type): Tree = {
-      if (isPastTyper || (pt eq NoType)) EmptyTree else {
+      if (isPastTyper || pt.isNoType) EmptyTree else {
         pt match {
           case RefinedType(parents, decls) if !decls.isEmpty || (parents exists isUncheckable) => return EmptyTree
           case _                                                                               =>

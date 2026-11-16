@@ -1661,7 +1661,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // TODO: give this a better name if you understand the intent of the caller.
     //       Is it something to do with `reallyExists` or `isStale`?
     final def rawInfoIsNoType: Boolean = {
-      hasRawInfo && (infos.info eq NoType)
+      hasRawInfo && infos.info.isNoType
     }
 
     /** Return info without checking for initialization or completing */
