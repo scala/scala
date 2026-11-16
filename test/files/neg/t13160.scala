@@ -1,5 +1,3 @@
-//> using options -deprecation -Werror
-
 package p
 
 import scala.language.implicitConversions
