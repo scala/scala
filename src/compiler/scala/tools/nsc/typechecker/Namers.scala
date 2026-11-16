@@ -789,6 +789,23 @@ trait Namers extends MethodSynthesis {
     }
 
     def enterClassDef(tree: ClassDef): Unit = {
+      val intrinsic: Symbol =
+        if (this.owner ne ScalaPackageClass) NoSymbol
+        else tree.name match {
+          case tpnme.Any       => AnyClass
+          case tpnme.AnyRef    => AnyRefClass
+          case tpnme.Nothing   => NothingClass
+          case tpnme.Null      => NullClass
+          case tpnme.Singleton => SingletonClass
+          case _              => NoSymbol
+        }
+      if (intrinsic != NoSymbol && (context.scope.lookup(tree.name) eq intrinsic)) {
+        // These auxiliary sources document permanent compiler definitions; they cannot replace them.
+        context.error(tree.pos, s"${intrinsic.fullName} is compiler-defined and cannot be redefined")
+        tree.symbol = this.owner.newErrorClass(tree.name)
+        tree.setType(ErrorType)
+        return
+      }
       val ClassDef(mods, _, _, impl) = tree
       val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
       tree.symbol = enterClassSymbol(tree)
