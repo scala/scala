@@ -463,7 +463,7 @@ trait NamesDefaults { self: AbstractAnalyzer =>
         val defaultArgs = missing flatMap { p =>
           val annDefault =
             if (mode.in(Mode.ANNOTmode) && p.owner.isConstructor && p.enclClass.isNonBottomSubClass(AnnotationClass) && !p.enclClass.isNonBottomSubClass(ConstantAnnotationClass))
-              p.getAnnotation(DefaultArgAttr).flatMap(_.args.headOption).map(dflt => atPos(pos) {
+              defaultArgAnnotation(p).flatMap(_.args.headOption).map(dflt => atPos(pos) {
                 // The `arg.tpe` is tagged with the `@defaultArg` annotation, see AnnotationInfo.argIsDefault
                 val arg = dflt.duplicate.setType(dflt.tpe.withAnnotation(AnnotationInfo(DefaultArgAttr.tpe, Nil, Nil)))
                 if (positional) arg
