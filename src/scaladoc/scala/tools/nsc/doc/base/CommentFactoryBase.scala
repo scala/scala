@@ -162,11 +162,37 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     }
   }
 
+  /** Attributes a safe tag may carry. */
+  private val SafeAttribute = {
+    val anyValue = raw"""(?:"[^"]*"|'[^']*'|[^\s"'<>`=]+)"""
+
+    // Browsers decode entities (`&#58;`) and drop whitespace before resolving a URL's scheme,
+    // so a URL without a known scheme must not have `:`, `&` or whitespace before any `?` or `#`.
+    def quotedUrl(q: Char) = {
+      val knownScheme = raw"(?i:https?|ftp|mailto):[^$q]*"
+      val noScheme    = raw"[^$q\s:&?#]*(?:[?#][^$q]*)?"
+      s"$q(?:$knownScheme|$noScheme)$q"
+    }
+    val url = s"(?:${quotedUrl('"')}|${quotedUrl('\'')})"
+
+    val urlAttr   = raw"(?i:href|src)\s*=\s*$url"
+    val plainAttr = raw"(?i:alt|title|class|style|id|name|width|height|align|valign|colspan|rowspan|border|target)\s*=\s*$anyValue"
+    raw"\s+(?:$urlAttr|$plainAttr)"
+  }
+
   /** Safe HTML tags that can be kept. */
   private val SafeTags =
-    raw"((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))".r
+    raw"((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|b|caption|cite|code|col|colgroup|dd|del|dfn|em|hr|img|ins|i|kbd|label|legend|pre|q|samp|small|span|strong|sub|sup|table|tbody|td|tfoot|th|thead|tr|tt|var)(?:$SafeAttribute)*\s*/?>))".r
+
+  /** Safe tags are emitted as raw HTML, everything else is escaped. Markers only tell the parser
+    * where tags might be: splitting the comment into lines, sections and code blocks can cut a
+    * tag in two, so the parser checks each piece between markers again with `isSafeTag`. */
+  private def isSafeTag(s: String) = SafeTags.matches(s)
 
   private val safeTagMarker = '\u000E'  // control-N
+
+  /** URL schemes that run script when a reader follows a `[[scheme:...]]` link. */
+  private val ScriptSchemes = Set("javascript", "vbscript", "data")
 
   /** A Scaladoc tag not linked to a symbol and not followed by text */
   private val SingleTagRegex =
@@ -844,6 +870,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     /* INLINES */
 
+    private def escapeHtmlText(s: String): String =
+      s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
     val OPEN_TAG = "^<([A-Za-z]+)( [^>]*)?(/?)>$".r
     val CLOSE_TAG = "^</([A-Za-z]+)>$".r
     private def readHTMLFrom(begin: HtmlTag): String = {
@@ -861,9 +890,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val str = readUntil { char == safeTagMarker || char == endOfText }
         nextChar()
 
-        list += str
+        val safe = isSafeTag(str)
+        list += (if (safe) str else escapeHtmlText(str))
 
-        str match {
+        if (safe) str match {
           case OPEN_TAG(s, _, standalone) =>
             if (standalone != "/") {
               stack += s
@@ -882,10 +912,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     def inline(isInlineEnd: => Boolean, textTransform: String => String = identity): Inline = {
 
       def inline0(): Inline = {
-        if (char == safeTagMarker) {
-          val tag = htmlTag()
-          HtmlTag(tag.data + readHTMLFrom(tag))
-        }
+        if (char == safeTagMarker) htmlTag()
         else if (check("'''")) bold()
         else if (check("''")) italic()
         else if (check("`"))  monospace()
@@ -941,11 +968,12 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     }
 
-    def htmlTag(): HtmlTag = {
+    def htmlTag(): Inline = {
       jump(safeTagMarker)
       val read = readUntil(safeTagMarker)
       if (char != endOfText) jump(safeTagMarker)
-      HtmlTag(read)
+      if (isSafeTag(read)) HtmlTag(read + readHTMLFrom(HtmlTag(read)))
+      else Text(read)
     }
 
     def bold(): Inline = {
@@ -1004,7 +1032,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     }
 
     def link(): Inline = {
-      val SchemeUri = """([a-z]+:.*)""".r
+      val SchemeUri = """(([a-z]+):.*)""".r
       jump("[[")
       val parens = 2 + repeatJump('[')
       val stop  = "]" * parens
@@ -1018,8 +1046,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       jump(stop)
 
       (target, title) match {
-        case (SchemeUri(uri), optTitle) =>
-          Link(uri, optTitle getOrElse Text(uri))
+        case (SchemeUri(uri, scheme), optTitle) =>
+          if (ScriptSchemes(scheme)) optTitle getOrElse Text(uri)
+          else Link(uri, optTitle getOrElse Text(uri))
         case (qualName, optTitle) =>
           makeEntityLink(optTitle getOrElse Text(target), pos, target, site)
       }

@@ -1,0 +1,34 @@
+goodTags:
+Body(List(Paragraph(Chain(List(Summary(Chain(List(HtmlTag(<img src='http://example.com/a.png' alt="kept">), Text(
+), HtmlTag(<a href="../b.html?x=1&y=2#frag">relative</a>), Text(
+), HtmlTag(<a href="https://example.com/?x=1&y=2">absolute</a>), Text(
+), HtmlTag(<br/>), Text(
+), HtmlTag(<b><i>ab</i> bab</b>), Text(
+), Text()))))))))
+badTags:
+Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(<img src=x onerror="alert(1)">
+<img src="x"/ONLOAD=alert(1) title=t>
+<img src=x/onerror=alert(1)>
+<a href="javascript:alert(1)">a), HtmlTag(</a>), Text(
+), Text(<a href="jav&#x61;script:alert(1)">b), HtmlTag(</a>), Text(
+), Text(<a href=" JavaScript:alert(1)">c), HtmlTag(</a>), Text(
+), Text(<img src="data:text/html,x">
+<form action="https://example.com"><input name=q></form>
+<img src="x title=t>), Text(
+), HtmlTag(<b>&lt;img src=x onerror="alert(1)"&gt;</b>), Text(
+), HtmlTag(<i>&lt;script&gt;alert(1)&lt;/script&gt;</i>), Text(
+), Text(<img src=x onerror="alert(1)">), Text(
+), HtmlTag(<code>&lt;img src=x onerror="alert(1)"&gt;</code>), Text(
+), Text()))))))))
+badSplitTag:
+Body(List(Paragraph(Chain(List(Summary(Text(A tag split by a section:
+<b title=")))))))
+Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(">), Text(<img src=x onerror="alert(1)">)))))))))
+badCodeSplitTag:
+Body(List(Paragraph(Chain(List(Summary(Text(A tag split by the end of a code block:))))), Code(<b title="), Paragraph(Chain(List(Text(">), Text(<img src=x onerror="alert(1)">
+))))))
+goodLinks:
+Body(List(Paragraph(Chain(List(Summary(Link(https://example.com,Text(ok))))))))
+badLinks:
+Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(js), Text( ), Text(data:text/html,x)))))))))
+Done.
