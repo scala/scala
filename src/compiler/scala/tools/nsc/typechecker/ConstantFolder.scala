@@ -35,9 +35,10 @@ abstract class ConstantFolder {
     @inline private def effectless(sym: Symbol): Boolean = sym != null && !sym.isLazy && (sym.isVal || sym.isGetter && sym.accessed.isVal)
 
     def unapply(tree: Tree): Option[Constant] = tree match {
-      case Literal(x)                      => Some(x)
-      case term if effectless(term.symbol) => extractConstant(term.tpe)
-      case _                               => None
+      case Literal(x) => Some(x)
+      // `make().X` has a side effect even though `X` is a val
+      case term if effectless(term.symbol) && treeInfo.isExprSafeToInline(term) => extractConstant(term.tpe)
+      case _ => None
     }
   }
 
