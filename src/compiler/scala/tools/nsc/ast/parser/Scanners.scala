@@ -1389,10 +1389,12 @@ trait Scanners extends ScannersCommon {
           runReporting.codeAction("use uppercase L", unit.position(o).withEnd(o + 1), "L", msg, expected = Some(("l", unit))))
       }
       // after int: 5e7f, 42L, 42.toDouble but not 42b.
+      // Only a decimal literal takes an exponent or a float suffix: 0b101f is not 101f.
+      // (In a hex literal these letters are digits.)
       def restOfNumber(): Unit = {
         ch match {
           case 'e' | 'E' | 'f' | 'F' |
-               'd' | 'D' => getFraction()
+               'd' | 'D' if base == 10 => getFraction()
           case 'l' | 'L' => lintel() ; token = LONGLIT ; setStrVal() ; nextChar()
           case _         => token = INTLIT  ; setStrVal() ; checkNoLetter()
         }
