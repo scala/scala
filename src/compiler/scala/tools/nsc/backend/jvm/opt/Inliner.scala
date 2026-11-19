@@ -1233,7 +1233,11 @@ abstract class Inliner {
             // private method and super calls can only be inlined into the same class.
             Right(destinationClass == calleeDeclarationClass)
           else // INVOKEVIRTUAL, INVOKESTATIC, INVOKEINTERFACE and INVOKESPECIAL of constructors
-            memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
+            memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass).flatMap(memberAccessible =>
+              // The descriptor differs from the one of the resolved method only for signature polymorphic
+              // methods. It is then resolved as a method type in the class containing the instruction.
+              if (memberAccessible && desc != methodNode.desc) allTypesAccessible(Type.getMethodType(desc) :: Nil)
+              else Right(memberAccessible))
       } yield {
         if (res) {
           // ensure the result ClassBType is cached (for stack map frame calculation)
@@ -1242,6 +1246,19 @@ abstract class Inliner {
         }
         res
       }
+    }
+
+    // Are the classes named by `types` accessible? For a method type, the classes in its descriptor.
+    def allTypesAccessible(types: List[Type]): Either[OptimizerWarning, Boolean] = types match {
+      case Nil => Right(true)
+      case t :: ts =>
+        val r =
+          if (t.getSort == Type.METHOD) allTypesAccessible(t.getReturnType :: t.getArgumentTypes.toList)
+          else classIsAccessible(bTypeForDescriptorFromClassfile(t.getDescriptor), destinationClass)
+        r match {
+          case Right(true) => allTypesAccessible(ts)
+          case _ => r
+        }
     }
 
     /*
@@ -1332,7 +1349,15 @@ abstract class Inliner {
         // the implMethod is public, lambdaMetaFactory doesn't use the Lookup object's extended
         // capability, and we can safely inline the instruction into a different class.
 
-        isAccessibleMethod(implMethod.getOwner, implMethod.getName, implMethod.getDesc, Type.getReturnType(indy.desc).getDescriptor)
+        //
+        // The classes named in the descriptor of the indy instruction (which includes the functional
+        // interface) and in the static arguments (the method types, and for `altMetafactory` the
+        // marker interfaces and bridge method types) are resolved in the class containing the
+        // instruction, so they need to be accessible as well.
+
+        isAccessibleMethod(implMethod.getOwner, implMethod.getName, implMethod.getDesc, Type.getReturnType(indy.desc).getDescriptor).flatMap(implAccessible =>
+          if (!implAccessible) Right(false)
+          else allTypesAccessible(Type.getMethodType(indy.desc) :: indy.bsmArgs.toList.collect { case t: Type => t }))
 
       case _: InvokeDynamicInsnNode => Left(UnknownInvokeDynamicInstruction)
 
