@@ -277,6 +277,63 @@ class MethodLevelOptsTest extends BytecodeTesting {
   }
 
   @Test
+  def instanceOfArrayTypes(): Unit = {
+    // static type of the value / target of the type test, as Scala source and as runtime class
+    val types = List[(String, Class[_])](
+      "AnyRef"                       -> classOf[AnyRef],
+      "String"                       -> classOf[String],
+      "java.io.Serializable"         -> classOf[java.io.Serializable],
+      "Cloneable"                    -> classOf[Cloneable],
+      "Array[Int]"                   -> classOf[Array[Int]],
+      "Array[Short]"                 -> classOf[Array[Short]],
+      "Array[AnyRef]"                -> classOf[Array[AnyRef]],
+      "Array[String]"                -> classOf[Array[String]],
+      "Array[java.io.Serializable]"  -> classOf[Array[java.io.Serializable]],
+      "Array[Cloneable]"             -> classOf[Array[Cloneable]],
+      "Array[Array[Int]]"            -> classOf[Array[Array[Int]]],
+      "Array[Array[AnyRef]]"         -> classOf[Array[Array[AnyRef]]],
+      "Array[Array[String]]"         -> classOf[Array[Array[String]]],
+      "Array[Array[Cloneable]]"      -> classOf[Array[Array[Cloneable]]],
+      "Array[Array[Array[Int]]]"     -> classOf[Array[Array[Array[Int]]]],
+      "Array[Array[Array[AnyRef]]]"  -> classOf[Array[Array[Array[AnyRef]]]])
+    val values = new Object :: "" :: types.collect { case (_, c) if c.isArray => java.lang.reflect.Array.newInstance(c.getComponentType, 1) }
+
+    val methods = for (((s, _), i) <- types.zipWithIndex; ((t, _), j) <- types.zipWithIndex) yield
+      s"def t_${i}_$j(a: $s): Boolean = (a: Any).isInstanceOf[$t]"
+    val bytes = compileToBytes(s"class C {\n${methods.mkString("\n")}\n}", allowMessage = _ => true)
+    val loader = new ClassLoader(getClass.getClassLoader) {
+      override def findClass(name: String): Class[_] = bytes.collectFirst {
+        case (f, bs) if f == name + ".class" => defineClass(name, bs, 0, bs.length)
+      }.getOrElse(throw new ClassNotFoundException(name))
+    }
+    val cls = loader.loadClass("C")
+    val inst = cls.getDeclaredConstructor().newInstance()
+
+    val wrong = for {
+      ((s, sc), i) <- types.zipWithIndex
+      ((t, tc), j) <- types.zipWithIndex
+      v <- values if sc.isInstance(v)
+      res = cls.getMethod(s"t_${i}_$j", sc).invoke(inst, v)
+      if res != tc.isInstance(v)
+    } yield s"(${v.getClass.getSimpleName}: $s).isInstanceOf[$t] is $res"
+    assertTrue(wrong.mkString("\n"), wrong.isEmpty)
+
+    // type tests that are known to fail are still folded
+    val cn = readAsmClasses(bytes).head
+    def folded(s: String, t: String) = {
+      val List(i, j) = List(s, t).map(n => types.indexWhere(_._1 == n))
+      getInstructions(cn, s"t_${i}_$j").dropNonOp == List(Op(ICONST_0), Op(IRETURN))
+    }
+    assertTrue(folded("Array[String]", "Array[Array[Int]]"))
+    assertTrue(folded("Array[Array[Int]]", "Array[String]"))
+    assertTrue(folded("Array[Array[Int]]", "Array[Int]"))
+    assertTrue(folded("Array[Int]", "Array[Short]"))
+    assertTrue(folded("Array[Array[Int]]", "Array[Array[Array[Int]]]"))
+    assertTrue(folded("String", "Array[AnyRef]"))
+    assertTrue(folded("Array[Array[String]]", "String"))
+  }
+
+  @Test
   def elimRedundantNullCheck(): Unit = {
     val code =
       """class C {
