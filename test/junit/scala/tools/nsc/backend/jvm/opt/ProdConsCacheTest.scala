@@ -16,16 +16,20 @@ class ProdConsCacheTest extends BytecodeTesting {
 
   private def localOpt = global.genBCode.postProcessor.localOpt
 
-  private def analyzedBy(source: String)(pass: (MethodNode, ProdConsCache) => Unit): Boolean = {
+  private def inJvmPhase[T](source: String)(op: MethodNode => T): T = {
     val run = new global.Run()
     global.enteringPhase(run.jvmPhase) {
       global.genBCode.postProcessor.initialize()
-      val method = compileAsmMethod(source, allowMessage = _.msg.contains("deprecation"))
+      op(compileAsmMethod(source, allowMessage = _.msg.contains("deprecation")))
+    }
+  }
+
+  private def analyzedBy(source: String)(pass: (MethodNode, ProdConsCache) => Unit): Boolean =
+    inJvmPhase(source) { method =>
       val cache = new ProdConsCache(method, "C")
       pass(method, cache)
       cache.isAnalyzed
     }
-  }
 
   private def boxUnboxAnalyzes(source: String) =
     analyzedBy(source)((method, cache) => localOpt.boxUnbox.boxUnboxElimination(method, "C", cache))
@@ -55,5 +59,17 @@ class ProdConsCacheTest extends BytecodeTesting {
     assertTrue(staleStoresAnalyzes("def t(s: String): Int = { val l = s.length; l }"))
     assertTrue(staleStoresAnalyzes("def t(i: Int): Int = { var j = i; j += 1; j }"))
     assertTrue(staleStoresAnalyzes("def t(c: scala.reflect.ClassTag[String]): Any = c.newArray(1)"))
+  }
+
+  @Test
+  def staleStoresNoChangeForDeadNullStoreToLiveLocal(): Unit = {
+    // `x = null` has no consumer, but `x` is live and the store already writes null: nothing to rewrite.
+    // Reporting a change would discard the shared producers-consumers analysis for nothing.
+    inJvmPhase("def t(s: String): Int = { var x: String = s; val n = x.length; x = null; n + s.length }") { method =>
+      val before = AsmUtils.textify(method.instructions)
+      val (storesRemoved, _, _) = localOpt.copyProp.eliminateStaleStoresAndRewriteSomeIntrinsics(method, "C")
+      assertEquals(before, AsmUtils.textify(method.instructions))
+      assertFalse(storesRemoved)
+    }
   }
 }
