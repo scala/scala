@@ -1066,6 +1066,21 @@ abstract class Inliner {
       callsiteStackHeight > expectedArgs
     }
 
+    // The catch types of the callee's handlers are resolved in the callsite class when an exception
+    // is matched against them, so they need to be accessible there. Unlike an instruction, a handler
+    // cannot be fixed by inlining further, so it is not reported as `IllegalAccessInstructions`.
+    def illegalAccessHandler: Option[CannotInlineWarning] =
+      callee.tryCatchBlocks.asScala.iterator.map(_.`type`).filter(_ != null).flatMap { handlerType =>
+        def warning(cause: Option[OptimizerWarning]) = IllegalAccessHandler(
+          calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
+          callsiteClass.internalName, handlerType, cause)
+        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(handlerType), callsiteClass) match {
+          case Right(true)  => None
+          case Right(false) => Some(warning(None))
+          case Left(cause)  => Some(warning(Some(cause)))
+        }
+      }.nextOption()
+
     if (callsiteTooLargeAfterInlining(callsiteMethod, callee)) {
       val warning = ResultingMethodTooLarge(
         calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
@@ -1076,7 +1091,7 @@ abstract class Inliner {
         calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc)
       Some(warning)
-    } else findIllegalAccess(callee.instructions, calleeDeclarationClass, callsiteClass) match {
+    } else illegalAccessHandler orElse (findIllegalAccess(callee.instructions, calleeDeclarationClass, callsiteClass) match {
       case Right(Nil) =>
         None
 
@@ -1091,7 +1106,7 @@ abstract class Inliner {
           calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
           callsiteClass.internalName, illegalAccessIns, cause)
         Some(warning)
-    }
+    })
   }
 
   /**

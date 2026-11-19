@@ -191,6 +191,34 @@ class InlinerTest extends BytecodeTesting {
   }
 
   @Test
+  def illegalAccessHandler(): Unit = {
+    val code =
+      """class C {
+        |  final def f: Int = try { println(); 1 } catch { case _: RuntimeException => 2 }
+        |  final def g: Int = f
+        |}
+      """.stripMargin
+
+    def canInlineWithHandler(handlerType: String) = canInlineTest(code, c =>
+      getAsmMethod(c, "f").tryCatchBlocks.asScala.foreach(_.`type` = handlerType))
+
+    assertEquals(None, canInlineWithHandler("java/lang/RuntimeException"))
+
+    // not public
+    canInlineWithHandler("java/lang/AbstractStringBuilder") match {
+      case Some(w @ IllegalAccessHandler(_, "f", _, _, "C", "java/lang/AbstractStringBuilder", None)) =>
+        assertTrue(w.toString, w.toString.contains("contains an exception handler for java/lang/AbstractStringBuilder\nthat would cause an IllegalAccessError"))
+      case r => fail(s"$r")
+    }
+
+    canInlineWithHandler("p/Gone") match {
+      case Some(w @ IllegalAccessHandler(_, "f", _, _, "C", "p/Gone", Some(_))) =>
+        assertTrue(w.toString, w.toString.contains("Checking failed for the exception handler for p/Gone:\nThe classfile for p/Gone could not be found"))
+      case r => fail(s"$r")
+    }
+  }
+
+  @Test
   def inlineSimpleAtInline(): Unit = {
     val code =
       """class C {
