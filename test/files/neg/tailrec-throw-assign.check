@@ -1,0 +1,25 @@
+tailrec-throw-assign.scala:6: error: could not optimize @tailrec annotated method thr: it contains a recursive call not in tail position
+  @tailrec final def thr(n: Int): Exception = if (n == 0) new Exception else throw thr(n - 1)
+                                                                                      ^
+tailrec-throw-assign.scala:7: error: could not optimize @tailrec annotated method thrMatch: it contains a recursive call not in tail position
+  @tailrec final def thrMatch(n: Int): Exception = if (n == 0) new Exception else throw (n match { case _ => thrMatch(n - 1) })
+                                                                                                                     ^
+tailrec-throw-assign.scala:8: error: could not optimize @tailrec annotated method asg: it contains a recursive call not in tail position
+  @tailrec final def asg(n: Int): Unit = if (n > 0) x = asg(n - 1)
+                                                           ^
+tailrec-throw-assign.scala:11: error: could not optimize @tailrec annotated method asg: it contains a recursive call not in tail position
+    @tailrec def asg(n: Int): Unit = if (n > 0) y = asg(n - 1)
+                                                       ^
+tailrec-throw-assign.scala:15: error: could not optimize @tailrec annotated method asgUncaptured: it contains a recursive call not in tail position
+  @tailrec final def asgUncaptured(n: Int): Unit = { var z: Any = null; if (n > 0) z = asgUncaptured(n - 1) }
+                                                                                                    ^
+tailrec-throw-assign.scala:16: error: could not optimize @tailrec annotated method assignMatch: it contains a recursive call not in tail position
+  @tailrec final def assignMatch(n: Int): Unit = { var x: Any = null; x = n match { case 0 => 0; case _ => assignMatch(n - 1) } }
+                                                                                                                      ^
+tailrec-throw-assign.scala:17: error: could not optimize @tailrec annotated method assignMatchP: it contains a recursive call not in tail position
+  @tailrec final def assignMatchP(n: Int): Unit = { var x: Any = null; x = Option(n) match { case Some(0) => 0; case _ => assignMatchP(n - 1) } }
+                                                                                                                                      ^
+tailrec-throw-assign.scala:19: error: could not optimize @tailrec annotated method thrReturn: it contains a recursive call not in tail position
+  @tailrec final def thrReturn(n: Int): Int = if (n == 0) 0 else throw (if (n < 0) new Exception else return thrReturn(n - 1))
+                                                                                                                      ^
+8 errors
