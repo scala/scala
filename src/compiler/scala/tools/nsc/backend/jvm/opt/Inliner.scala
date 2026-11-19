@@ -1173,7 +1173,13 @@ abstract class Inliner {
       }
     }
 
-    classIsAccessible(memberDeclClass, from) match { // B0
+    // B0 is about memberRefClass. Requiring memberDeclClass to be accessible as well is stricter than the JVMS.
+    val classesAccessible = for {
+      refClassAccessible  <- classIsAccessible(memberRefClass, from)
+      declClassAccessible <- if (refClassAccessible) classIsAccessible(memberDeclClass, from) else Right(false)
+    } yield declClassAccessible
+
+    classesAccessible match {
       case Right(true) => memberIsAccessibleImpl
       case r => r
     }
@@ -1252,8 +1258,8 @@ abstract class Inliner {
         if (mi.owner.charAt(0) == '[') {
           // ensure the result ClassBType is cached (for stack map frame calculation)
           if (mi.name == "getClass") bTypeForDescriptorFromClassfile("Ljava/lang/Class;")
-          // array methods are accessible
-          Right(true)
+          // array methods are accessible if the array class named in the reference is
+          classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(mi.owner), destinationClass)
         } else {
           isAccessibleMethod(mi.owner, mi.name, mi.desc, Type.getReturnType(mi.desc).getDescriptor, mi.getOpcode == INVOKESPECIAL)
         }
