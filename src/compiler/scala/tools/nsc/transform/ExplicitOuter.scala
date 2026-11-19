@@ -388,7 +388,12 @@ abstract class ExplicitOuter extends InfoTransform
       tree match {
         case Template(_, _, _) =>
           val newDefs = new ListBuffer[Tree]
-          atOwner(tree, currentOwner) {
+          // The new definitions are members of `currentClass`; references to outer instances in them
+          // must be paths from `this`, not from the outer parameter of an enclosing constructor.
+          // `super.transform` below clears `outerParam` for the template body, do the same here.
+          val savedOuterParam = outerParam
+          outerParam = NoSymbol
+          try atOwner(tree, currentOwner) {
             if (!currentClass.isInterface) {
               if (isInner(currentClass)) {
                 if (hasOuterField(currentClass))
@@ -400,7 +405,7 @@ abstract class ExplicitOuter extends InfoTransform
                   if (outerAccessor(mc) != NoSymbol && !skipMixinOuterAccessor(currentClass, mc))
                     newDefs += mixinOuterAccessorDef(mc)
             }
-          }
+          } finally outerParam = savedOuterParam
           super.transform(
             deriveTemplate(tree)(decls =>
               if (newDefs.isEmpty) decls
