@@ -39,6 +39,11 @@ class JavaConstantsTest {
     |  public static final double D2 = 1.0 / 0;
     |  public static final double D3 = 5.5 % 2;
     |  public static final int MOD = -7 % 3, DIV = -7 / 2;
+    |  public static final int UNSPACED = 6/2+1, UNSPACED2 = I1/2-1, UNSPACED3 = 8/ 2, UNSPACED4 = 8 /2, UNSPACED5 = 8/(2)/-2;
+    |  public static final int COMMENTED = 8/ /* / */2//
+    |    /2, COMMENTED2 = 8/**//2;
+    |  public static final double UNSPACEDD = 1/2.0, UNSPACEDD2 = 1/.5;
+    |  public static final String UNSPACEDS = "a"+6/2+1;
     |  public static final int SHR = -16 >> 2, USHR = -16 >>> 28, SHL = 1 << 33L;
     |  public static final long LUSHR = -1L >>> 63;
     |  public static final boolean Z1 = I1 > 100 && !false || I2 == 3;

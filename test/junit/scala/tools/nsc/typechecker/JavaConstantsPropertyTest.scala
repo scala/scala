@@ -90,7 +90,13 @@ object JavaConstantsPropertyTest {
     def chance(p: Double) = rnd.nextDouble() < p
 
     def paren(e: E, min: Int): String = if (e.prec >= min) e.code else s"(${e.code})"
-    def binary(x: E, op: String, y: E, prec: Int) = E(s"${paren(x, prec)} $op ${paren(y, prec + 1)}", prec)
+    def binary(x: E, op: String, y: E, prec: Int) = {
+      val (l, r) = (paren(x, prec), paren(y, prec + 1))
+      // with and without spaces around the operator, except where `a - -b` would become `a--b`
+      val before = if (chance(0.3)) "" else " "
+      val after = if (chance(0.3) && r.head != op.last) "" else " "
+      E(s"$l$before$op$after$r", prec)
+    }
     def unary(op: String, x: E) = {
       val operand = paren(x, Unary)
       E(if (operand.startsWith("+") || operand.startsWith("-")) s"$op $operand" else s"$op$operand", Unary)
