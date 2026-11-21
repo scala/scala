@@ -152,6 +152,11 @@ abstract class ClosureOptimizer {
       }
     }
 
+    // A rewrite can make later rewritten invocations unreachable, but the inliner needs a frame for
+    // every callsite in the call graph. DCE removes them; it must run after all rewrites in a method.
+    for (closureInit <- toRewrite.keysIterator)
+      localOpt.minimalRemoveUnreachableCode(closureInit.ownerMethod, closureInit.ownerClass.internalName)
+
     changedMethods
   }
 
@@ -431,6 +436,7 @@ abstract class ClosureOptimizer {
 
     // Rewriting a closure invocation may render code unreachable. For example, the body method of
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
+    // The unreachable code is removed in `rewriteClosureApplyInvocations`.
     BackendUtils.clearDceDone(ownerMethod)
   }
 
