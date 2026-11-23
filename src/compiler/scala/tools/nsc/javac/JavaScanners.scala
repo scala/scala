@@ -501,7 +501,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                 in.next()
                 if (!skipComment()) {
                   token = SLASH
-                  in.next()
                   if (in.ch == '=') {
                     token = SLASHEQ
                     in.next()
