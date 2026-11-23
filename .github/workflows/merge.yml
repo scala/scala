@@ -38,7 +38,7 @@ jobs:
           cache: sbt
 
       - name: Setup SBT
-        uses: sbt/setup-sbt@b113b960ba361e87e08ce02a390d51871b7ee459 # v1.5.13
+        uses: sbt/setup-sbt@7e114eae4f32ec3f93c851c2793376a77f384409 # v1.5.15
 
       - name: Build
         run: |
