@@ -199,6 +199,38 @@ trait StdAttachments {
    * track of other adapted trees.
    */
   case class OriginalTreeAttachment(original: Tree)
+
+  /** Computes the `@defaultArg` annotation of an annotation class parameter. See `Namer.addDefaultArgAnnotation`.
+   *
+   *  A clone of the parameter made before then, as in the constructor type of `ann[Int]`, shares the attachment and
+   *  never gets the annotation itself, so read it through `defaultArgAnnotation`.
+   */
+  final class DefaultArgAnnotationCompleter(param: Symbol, pos: Position, compute: () => AnnotationInfo) {
+    private[this] var result: AnnotationInfo = null
+    private[this] var computing = false
+
+    def annotation: AnnotationInfo = {
+      if (result == null) {
+        if (computing)
+          throw new TypeError(pos, s"recursive default argument: annotation parameter ${param.name} is needed to type its own default")
+        computing = true
+        try result = compute()
+        finally computing = false
+      }
+      result
+    }
+  }
+
+  /** The `@defaultArg` annotation of `param`, computing it if needed. */
+  def defaultArgAnnotation(param: Symbol): Option[AnnotationInfo] =
+    param.attachments.get[DefaultArgAnnotationCompleter] match {
+      case Some(completer) => Some(completer.annotation)
+      case _               => param.getAnnotation(definitions.DefaultArgAttr)
+    }
+
+  /** Compute the `@defaultArg` annotation of `param` if pending. */
+  def completeDefaultArgAnnotation(param: Symbol): Unit =
+    param.attachments.get[DefaultArgAnnotationCompleter].foreach(_.annotation)
 }
 
 

@@ -2139,7 +2139,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      *  This typer must be the constructor's, the one that `typedValDef` creates a parameter's typer from.
      */
-    def defaultArgAnnotation(vparam: ValDef): AnnotationInfo = {
+    def typedDefaultArgAnnotation(vparam: ValDef): AnnotationInfo = {
       val sym  = vparam.symbol
       val rhs1 = newTyper(context.makeConstructorContext.makeNonSilent(vparam).makeNewScope(vparam, sym))
         .typed(vparam.rhs, EXPRmode | BYVALmode, defaultArgPt(sym, sym.tpe))
@@ -2159,6 +2159,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       sym.annotations.foreach(_.completeInfo())
       sym.filterAnnotations(_ != UnmappableAnnotation)
+      // Types the default of an annotation class parameter; `transformedOrTyped` below picks it up
+      if (!isPastTyper) completeDefaultArgAnnotation(sym)
 
       val tpt1 = checkNoEscapingPrivates(this, sym, transformedOr(vdef.tpt, typedType(vdef.tpt)))
       checkNonCyclic(vdef, tpt1)
