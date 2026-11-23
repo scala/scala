@@ -711,16 +711,27 @@ abstract class LocalOpt {
         bTypeForDescriptorOrInternalNameFromClassfile(aDescOrIntN).conformsTo(bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN)).getOrElse(false)
     }
 
+    // The supertypes of an array type that are not arrays are Object, Cloneable and Serializable
+    // (JLS 4.10.3). An interface is never considered unrelated, see the ClassBType case below.
+    def isUnrelatedToArrays(ct: ClassBType): Boolean =
+      ct != ObjectRef && !ct.isInterface.getOrElse(true)
+
     // precondition: !isSubType(aDescOrIntN, bDescOrIntN)
     def isUnrelated(aDescOrIntN: String, bDescOrIntN: String): Boolean = {
       @tailrec
       def impl(aTp: BType, bTp: BType): Boolean = {
         ((aTp, bTp): @unchecked) match {
           case (aa: ArrayBType, ba: ArrayBType) =>
-            impl(aa.elementType, ba.elementType)
+            // One dimension at a time: comparing the element types would call [Ljava/lang/Object;
+            // and [[I unrelated, but an int[][] is an Object[].
+            impl(aa.componentType, ba.componentType)
           case (act: ClassBType, bct: ClassBType) =>
             val noItf = act.isInterface.flatMap(aIf => bct.isInterface.map(bIf => !aIf && !bIf)).getOrElse(false)
             noItf && !bct.conformsTo(act).getOrElse(true)
+          case (ct: ClassBType, _: ArrayBType) =>
+            isUnrelatedToArrays(ct)
+          case (_: ArrayBType, ct: ClassBType) =>
+            isUnrelatedToArrays(ct)
           case (_: PrimitiveBType, _: RefBType) | (_: RefBType, _: PrimitiveBType) =>
             true
           case (_: PrimitiveBType, _: PrimitiveBType) =>
