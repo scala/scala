@@ -152,6 +152,11 @@ abstract class ClosureOptimizer {
       }
     }
 
+    // A rewrite can make later rewritten invocations unreachable, but the inliner needs a frame for
+    // every callsite in the call graph. DCE removes them; it must run after all rewrites in a method.
+    for (closureInit <- toRewrite.keysIterator)
+      localOpt.minimalRemoveUnreachableCode(closureInit.ownerMethod, closureInit.ownerClass.internalName)
+
     changedMethods
   }
 
@@ -381,8 +386,9 @@ abstract class ClosureOptimizer {
           else getScalaBox(bodyReturnType)
         ownerMethod.instructions.insertBefore(invocation, op)
       } else {
-        // see comment of that method
-        fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, bTypes)
+        // see comment of that method. Unreachable code is removed in `rewriteClosureApplyInvocations`.
+        if (fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, bTypes))
+          BackendUtils.clearDceDone(ownerMethod)
       }
     }
 
@@ -428,10 +434,6 @@ abstract class ClosureOptimizer {
     // Explanation: If the lambda body method is non-static, the receiver is a captured
     // value. It can only be captured within some instance method, so we know it's non-null.
     callGraph.addCallsite(bodyMethodCallsite)
-
-    // Rewriting a closure invocation may render code unreachable. For example, the body method of
-    // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
-    BackendUtils.clearDceDone(ownerMethod)
   }
 
   /**

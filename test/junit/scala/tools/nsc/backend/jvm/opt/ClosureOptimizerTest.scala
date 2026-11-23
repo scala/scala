@@ -77,4 +77,22 @@ class ClosureOptimizerTest extends BytecodeTesting {
     val c = compileClass(code)
     assertSameSummary(getMethod(c, "t"), List(NEW, DUP, LDC, "<init>", ATHROW))
   }
+
+  @Test
+  def closureRewriteMakesLaterInvocationUnreachable(): Unit = {
+    // Rewriting `f(1)` to the `Nothing$`-returning body method adds an ATHROW, so `f(2)` becomes
+    // unreachable. Its rewritten callsite used to stay in the call graph, and the inliner crashed
+    // on its null frame in the next round.
+    val code =
+      """class C {
+        |  def t(): Unit = {
+        |    val f: Int => Nothing = _ => throw new Error("")
+        |    f(1)
+        |    f(2)
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "t"), List(NEW, DUP, LDC, "<init>", ATHROW))
+  }
 }

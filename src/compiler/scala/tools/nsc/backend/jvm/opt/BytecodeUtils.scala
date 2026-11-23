@@ -398,13 +398,19 @@ object BytecodeUtils {
    *
    * During bytecode generation this is handled by BCodeBodyBuilder.adapt. See the comment in that
    * method which explains the issue with such phantom values.
+   *
+   * Returns `true` if an `ATHROW` was added, making the code that follows unreachable.
    */
-  def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Unit = {
+  def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Boolean = {
     if (loadedType == bTypes.coreBTypes.srNothingRef.toASMType) {
       methodNode.instructions.insert(loadInstr, new InsnNode(ATHROW))
-    } else if (loadedType == bTypes.coreBTypes.srNullRef.toASMType) {
-      methodNode.instructions.insert(loadInstr, new InsnNode(ACONST_NULL))
-      methodNode.instructions.insert(loadInstr, new InsnNode(POP))
+      true
+    } else {
+      if (loadedType == bTypes.coreBTypes.srNullRef.toASMType) {
+        methodNode.instructions.insert(loadInstr, new InsnNode(ACONST_NULL))
+        methodNode.instructions.insert(loadInstr, new InsnNode(POP))
+      }
+      false
     }
   }
 
