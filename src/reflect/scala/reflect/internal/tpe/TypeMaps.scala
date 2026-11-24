@@ -406,7 +406,7 @@ private[internal] trait TypeMaps {
   def isPossiblePrefix(clazz: Symbol) = clazz.isClass && !clazz.isPackageClass
 
   protected[internal] def skipPrefixOf(pre: Type, clazz: Symbol) = (
-    (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
+    pre.isNoType || pre.isNoPrefix || !isPossiblePrefix(clazz)
     )
 
   @deprecated("use new AsSeenFromMap instead", "2.12.0")
@@ -809,12 +809,12 @@ private[internal] trait TypeMaps {
 
     override def apply(tpe: Type): Type =
       if (from.isEmpty) tpe else tpe match {
-        case TypeRef(pre, sym, args) if pre ne NoPrefix =>
+        case TypeRef(pre, sym, args) if !pre.isNoPrefix =>
           val newSym = substFor(sym)
           // mapOver takes care of substituting in args
           (if (sym eq newSym) tpe else copyTypeRef(tpe, pre, newSym, args)).mapOver(this)
         // assert(newSym.typeParams.length == sym.typeParams.length, "typeParams mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
-        case SingleType(pre, sym) if pre ne NoPrefix =>
+        case SingleType(pre, sym) if !pre.isNoPrefix =>
           val newSym = substFor(sym)
           (if (sym eq newSym) tpe else singleType(pre, newSym)).mapOver(this)
         case tp: RefinedType =>
@@ -1173,7 +1173,7 @@ private[internal] trait TypeMaps {
   object adaptToNewRunMap extends TypeMap {
 
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (phase.flatClasses || sym.isRootSymbol || (pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass)
+      if (phase.flatClasses || sym.isRootSymbol || pre.isNoPrefix || pre.isNoType || sym.isPackageClass)
         sym
       else if (sym.isModuleClass) {
         val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)

@@ -177,7 +177,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     )
 
   implicit class ReplTypeOps(tp: Type) {
-    def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
+    def andAlso(fn: Type => Type): Type = if (tp.isNoType) tp else fn(tp)
   }
 
   // TODO: If we try to make naming a lazy val, we run into big time

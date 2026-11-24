@@ -433,7 +433,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                 }
               }
 
-              if ((expectedPrefix eq NoPrefix)
+              if (expectedPrefix.isNoPrefix
                 || expectedTp.typeSymbol.isJava
                 || definedInStaticLocation(expectedTp)
                 || testedBinder.info <:< expectedTp
