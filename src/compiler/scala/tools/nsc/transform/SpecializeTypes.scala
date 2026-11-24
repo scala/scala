@@ -1303,8 +1303,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           tpe
         } else {
           val tparams = tpe.typeParams
-          if (tparams.isEmpty)
-            exitingSpecialize(parents map (_.typeSymbol.info))
+          // Complete the parents' specialized infos, which creates their specialized subclasses
+          // (e.g. `P$mcI$sp`) for `specializedType` to find. Done irrespective of whether `clazz`
+          // is generic to avoid the parents depending on whether a parent was completed first.
+          exitingSpecialize(parents.foreach(_.typeSymbol.info))
 
           val parents1 = parents mapConserve specializedType
           if (parents ne parents1) {
