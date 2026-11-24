@@ -1236,16 +1236,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * `owner` behaves like `safeOwner`, but logs NoSymbol.owner calls under -Xdev.
      * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
-    // OPT: final, with the overrides it replaces (ClassSymbol, ModuleSymbol, NoSymbol, RootSymbol) folded in, so that
-    //      call sites bind statically. The fast path stays under C2's MaxInlineSize (35 bytes), so that it inlines
-    //      even at call sites C2 doesn't consider hot; the rest is in `ownerSlow`.
+    // OPT: final, so that call sites bind statically. The fast path stays under C2's MaxInlineSize (35 bytes), so
+    //      that it inlines even at call sites C2 doesn't consider hot.
     final def owner: Symbol = {
       val o = rawowner
       if ((o eq this) || phase.flatClasses) ownerSlow(o) else o
     }
 
-    /** Classes and modules are owned by their enclosing package after flatten (`needsFlatClasses` includes `!isMethod`,
-     *  which ModuleSymbol tested). NoSymbol is its own raw owner.
+    /** Classes and non-method modules are owned by their enclosing package after flatten. NoSymbol is its own raw
+     *  owner.
      */
     private def ownerSlow(o: Symbol): Symbol = this match {
       case _: ClassSymbol | _: ModuleSymbol if needsFlatClasses => o.owner
@@ -1576,9 +1575,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
      */
-    // OPT: `info` and `rawInfo` are final so that call sites bind statically. The variants that used to override them
-    //      are handled here: runtime reflection takes the GIL in `synchronizedInfo` (a constant per universe selects it),
-    //      a stub fails on the incomplete path (a stub's info is never complete), and NoSymbol's info is valid forever.
+    // OPT: `info` and `rawInfo` are final so that call sites bind statically.
     final def info: Type = if (hasSynchronizedSymbols) synchronizedInfo else unsynchronizedInfo
 
     /** Overridden in runtime reflection to call `unsynchronizedInfo` under the GIL. */
@@ -3801,6 +3798,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
     override def reset(completer: Type): this.type = this
+    override def updateInfo(info: Type): this.type = this
     override def existentialBound: Type = NoType
     override def accessBoundary(base: Symbol): Symbol = enclosingRootClass
     def cloneSymbolImpl(owner: Symbol, newFlags: Long) = abort("NoSymbol.clone()")

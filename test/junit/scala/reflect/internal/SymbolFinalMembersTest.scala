@@ -22,9 +22,13 @@ class SymbolFinalMembersTest {
   @Test def runtimeReflectionSymbolsLockAlsoInReflectGlobal(): Unit = {
     assertFalse(hasSynchronizedSymbols)
     assertTrue(scala.reflect.runtime.universe.asInstanceOf[scala.reflect.runtime.JavaUniverse].hasSynchronizedSymbols)
-    val rg = new scala.tools.reflect.ReflectGlobal(settings, new StoreReporter(settings), getClass.getClassLoader)
-    assertTrue(rg.isCompilerUniverse)
-    assertTrue(rg.hasSynchronizedSymbols)
+    val rgSettings = new scala.tools.nsc.Settings
+    rgSettings.usejavacp.value = true
+    val rg = new scala.tools.reflect.ReflectGlobal(rgSettings, new StoreReporter(rgSettings), getClass.getClassLoader)
+    try {
+      assertTrue(rg.isCompilerUniverse)
+      assertTrue(rg.hasSynchronizedSymbols)
+    } finally rg.close()
   }
 
   @Test def kindPredicates(): Unit = {
@@ -50,6 +54,8 @@ class SymbolFinalMembersTest {
     assertSame(NoSymbol, NoSymbol.owner)
     assertSame(NoType, NoSymbol.info)
     assertSame(NoType, NoSymbol.rawInfo)
+    NoSymbol.updateInfo(ErrorType)
+    assertSame(NoType, NoSymbol.info)
   }
 
   @Test def stubReportsMissingSymbolEvenAfterSetInfo(): Unit = {
