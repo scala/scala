@@ -222,13 +222,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     * @param getOld if `true`, then the previous value for `key` will be returned, otherwise `false`
     */
   private[this] def put0(key: K, value: V, hash: Int, getOld: Boolean): Some[V] = {
-    if(contentSize + 1 >= threshold) growTable(table.length * 2)
     val idx = index(hash)
     put0(key, value, getOld, hash, idx)
   }
 
   private[this] def put0(key: K, value: V, getOld: Boolean): Some[V] = {
-    if(contentSize + 1 >= threshold) growTable(table.length * 2)
     val hash = computeHash(key)
     val idx = index(hash)
     put0(key, value, getOld, hash, idx)
@@ -255,6 +253,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         else prev.next = new Node(key, hash, value, prev.next)
     }
     contentSize += 1
+    // Grow only when a node was added: replacing the value of an existing key must not change the table,
+    // so that it can be done while iterating.
+    if(contentSize >= threshold) growTable(table.length * 2)
     null
   }
 

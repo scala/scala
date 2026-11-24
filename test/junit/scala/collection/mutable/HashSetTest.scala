@@ -101,4 +101,13 @@ class HashSetTest {
     hs.addAll(new OnceOnly)
     assertEquals(1, hs.size)
   }
+
+  @Test
+  def addExistingElementDuringIterationVisitsEveryElement(): Unit = {
+    // 11 elements in a table of 16 with threshold 12: adding an element that is present must not resize the table
+    val s = HashSet.from((1 to 11).map(_ * 17))
+    var visited = 0
+    for (x <- s) { s += x; visited += 1 }
+    assertEquals(11, visited)
+  }
 }

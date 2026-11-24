@@ -86,7 +86,6 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   }
 
   override def add(elem: A) : Boolean = {
-    if(contentSize + 1 >= threshold) growTable(table.length * 2)
     addElem(elem, computeHash(elem))
   }
 
@@ -169,6 +168,8 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
           prev.next = new Node(elem, hash, prev.next)
     }
     contentSize += 1
+    // Grow only when a node was added, so that adding an element that is already present leaves the table as it is.
+    if(contentSize >= threshold) growTable(table.length * 2)
     true
   }
 
