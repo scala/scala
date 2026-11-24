@@ -58,6 +58,10 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.LazyList"), // superclass change from AbstractSeq to LazyListBase
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyListBase*"), // private[immutable]
 
+    // VectorMap becomes serializable (DefaultSerializable); only breaks forward compatibility
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorMap"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap.writeReplace"),
+
     // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubTermSymbol"),
