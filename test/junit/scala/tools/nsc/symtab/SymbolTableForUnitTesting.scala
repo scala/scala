@@ -28,7 +28,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class StrictTreeCopierForUnitTesting extends super.StrictTreeCopier with TreeCopier
   class LazyTreeCopierForUnitTesting extends super.LazyTreeCopier with TreeCopier
 
-  override def isCompilerUniverse: Boolean = true
+  override protected def computeIsCompilerUniverse: Boolean = true
 
   def classPath: ClassPath = platform.classPath
 

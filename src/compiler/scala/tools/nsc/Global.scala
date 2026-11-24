@@ -55,7 +55,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   // the mirror --------------------------------------------------
 
-  override def isCompilerUniverse = true
+  override protected def computeIsCompilerUniverse = true
   override val useOffsetPositions = !currentSettings.Yrangepos.value
 
   type RuntimeClass = java.lang.Class[_]
