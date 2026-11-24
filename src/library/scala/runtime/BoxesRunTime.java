@@ -192,6 +192,9 @@ public final class BoxesRunTime
         case DOUBLE:
             return xn.doubleValue() == ch;
         default:
+            if (xn == null)
+                return false;
+
             return xn.equals(yc);
         }
     }
