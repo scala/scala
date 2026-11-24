@@ -327,15 +327,19 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 Apply(transform(fun), transformTrees(args))
               case tree =>
                 val dupl = {
-                  val original = tree match {
-                    case tree @ Literal(_) =>
+                  tree match {
+                    case tree @ Literal(value) =>
+                      // The constant may have been converted to the expected type, e.g. `1` or `final val K = 1`
+                      // adapted to `Long`. The ascription keeps that conversion when the original is retyped.
                       tree.attachments.get[OriginalTreeAttachment] match {
-                        case Some(OriginalTreeAttachment(original)) => original
-                        case _ => tree
+                        case Some(OriginalTreeAttachment(Literal(_))) =>
+                          tree.duplicate.removeAttachment[OriginalTreeAttachment]
+                        case Some(OriginalTreeAttachment(original)) =>
+                          atPos(tree.pos)(Typed(original.duplicate, TypeTree(value.tpe)))
+                        case _ => tree.duplicate
                       }
-                    case tree => tree
+                    case tree => tree.duplicate
                   }
-                  original.duplicate
                 }
                 // Typically the resetAttrs transformer cleans both symbols and types.
                 // However there are exceptions when we cannot erase symbols due to idiosyncrasies of the typer.
