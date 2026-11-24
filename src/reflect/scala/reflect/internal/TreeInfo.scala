@@ -163,8 +163,24 @@ abstract class TreeInfo {
    */
   def isStableIdentifierPattern(tree: Tree): Boolean = isStableIdentifier(tree, allowVolatile = true)
 
-  // TODO scala/bug#5304 tighten this up so we don't elide side effect in module loads
+  // TODO scala/bug#5304 tighten this up to `isExprSafeToElide`, so we don't elide side effect in module loads
   def isQualifierSafeToElide(tree: Tree): Boolean = isExprSafeToInline(tree)
+
+  /** Does evaluating `tree` have no effect, so that it can be skipped? Unlike `isExprSafeToInline`, this rejects
+   *  stable paths: they can initialize an object or a lazy val, read an uninitialized field, or throw an NPE.
+   *  It accepts a local `var`, so a tree that is moved rather than skipped must be safe to inline as well.
+   */
+  @tailrec
+  final def isExprSafeToElide(tree: Tree): Boolean = tree match {
+    case EmptyTree | Literal(_) | This(_) => true
+    case Ident(_) =>
+      val sym = tree.symbol
+      // the parameter of a pattern matcher label has no owner
+      sym != null && sym != NoSymbol && (sym.isLocalToBlock || !sym.owner.exists) &&
+        !sym.isMethod && !sym.isLazy && !sym.isModule && !sym.isByNameParam
+    case Typed(expr, _) => isExprSafeToElide(expr)
+    case _ => false
+  }
 
   /** Is tree an expression which can be inlined without affecting program semantics?
    *

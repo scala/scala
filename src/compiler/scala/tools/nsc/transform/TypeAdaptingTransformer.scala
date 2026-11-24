@@ -46,6 +46,9 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
 
     import CODE._
 
+    private def preservingSideEffects(side: Tree, value: Tree): Tree =
+      if (treeInfo.isExprSafeToElide(side)) value else BLOCK(side, value)
+
     /** Box `tree` of unboxed type */
     final def box(tree: Tree): Tree = tree match {
       case LabelDef(_, _, _) =>
@@ -63,8 +66,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
           case ErasedValueType(clazz, _) => New(clazz, cast(tree, underlyingOfValueClass(clazz)))
           case _ => tree.tpe.typeSymbol match {
             case UnitClass =>
-              if (treeInfo isExprSafeToInline tree) REF(BoxedUnit_UNIT)
-              else BLOCK(tree, REF(BoxedUnit_UNIT))
+              preservingSideEffects(tree, REF(BoxedUnit_UNIT))
             case x =>
               assert(x != ArrayClass, "array")
               tree match {
@@ -89,9 +91,6 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
         val ldef = deriveLabelDef(tree)(unbox(_, pt))
         ldef setType ldef.rhs.tpe
       case _ =>
-        def preservingSideEffects(side: Tree, value: Tree): Tree =
-          if (treeInfo isExprSafeToInline side) value
-          else BLOCK(side, value)
         val tree1 = pt match {
           case ErasedValueType(_, BoxedUnitTpe) => cast(preservingSideEffects(tree, REF(BoxedUnit_UNIT)), pt)
           case ErasedValueType(clazz, underlying) => cast(unboxValueClass(tree, clazz, underlying), pt)
