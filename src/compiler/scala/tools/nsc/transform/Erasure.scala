@@ -1096,7 +1096,11 @@ abstract class Erasure extends InfoTransform
                     // level of robustness (in addition to the short term fix.)
                     val parentTests = parents filterNot (qual.tpe <:< _)
 
-                    if (parentTests.isEmpty) Literal(Constant(true))
+                    if (parentTests.isEmpty) atPos(tree.pos) {
+                      // Only null can fail the test when the static type already conforms
+                      if (qual.tpe <:< AnyValTpe) Literal(Constant(true))
+                      else Apply(Select(q(), Object_ne), List(Literal(Constant(null)) setType NullTpe))
+                    }
                     else atPos(tree.pos) {
                       parentTests map mkIsInstanceOf(q) reduceRight gen.mkAnd
                     }
