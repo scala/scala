@@ -86,12 +86,12 @@ stringinterpolation_macro-neg.scala:40: error: # not allowed for d conversion
 stringinterpolation_macro-neg.scala:41: error: ',' only allowed for d conversion of integral types
   f"$d%,x"
        ^
+stringinterpolation_macro-neg.scala:42: error: Illegal combination of flags '+' and ' '
+  f"$d%+ (x"
+        ^
 stringinterpolation_macro-neg.scala:42: error: only use '+' for BigInt conversions to o, x, X
   f"$d%+ (x"
        ^
-stringinterpolation_macro-neg.scala:42: error: only use ' ' for BigInt conversions to o, x, X
-  f"$d%+ (x"
-        ^
 stringinterpolation_macro-neg.scala:42: error: only use '(' for BigInt conversions to o, x, X
   f"$d%+ (x"
          ^
@@ -157,6 +157,95 @@ stringinterpolation_macro-neg.scala:77: error: Missing conversion operator in '%
 stringinterpolation_macro-neg.scala:80: error: conversions must follow a splice; use %% for literal %, %n for newline
   f"${d}random-leading-junk%d"
                            ^
+stringinterpolation_macro-neg.scala:83: error: Missing conversion operator in '%1$'; use %% for literal %, %n for newline
+  f"$d%1$$"
+      ^
+stringinterpolation_macro-neg.scala:84: error: Width out of range
+  f"$d%2147483648d"
+       ^
+stringinterpolation_macro-neg.scala:85: error: Width out of range
+  f"$d%99999999999999999999d"
+       ^
+stringinterpolation_macro-neg.scala:86: error: Precision out of range
+  f"$f%.2147483648f"
+        ^
+stringinterpolation_macro-neg.scala:87: error: Argument index out of range
+  f"$d%2147483648$$d"
+       ^
+stringinterpolation_macro-neg.scala:88: error: invalid unicode escape at index 1 of \u
+  f"$d\u"
+       ^
+stringinterpolation_macro-neg.scala:89: error: invalid unicode escape at index 4 of \u00
+  f"$d\u00"
+          ^
+stringinterpolation_macro-neg.scala:90: error: invalid unicode escape at index 5 of a\u00zz
+  f"a\u00zz"
+         ^
+stringinterpolation_macro-neg.scala:91: error: Argument index out of range
+  f"$d%d%2147483648$$n"
+         ^
+stringinterpolation_macro-neg.scala:92: error: Argument index out of range
+  f"$d%d%2147483648$$<d"
+         ^
+stringinterpolation_macro-neg.scala:93: error: Argument index out of range
+  f"$d%d%0$$n"
+         ^
+stringinterpolation_macro-neg.scala:94: error: Argument index out of range
+  f"$d%d%0$$<d"
+         ^
+stringinterpolation_macro-neg.scala:95: error: precision not allowed
+  f"$d%.2147483648d"
+       ^
+stringinterpolation_macro-neg.scala:98: error: Flag '-' requires a width
+  f"$d%-d"
+       ^
+stringinterpolation_macro-neg.scala:99: error: Flag '0' requires a width
+  f"$d%0d"
+       ^
+stringinterpolation_macro-neg.scala:100: error: Illegal combination of flags '-' and '0'
+  f"$d%-0 5d"
+        ^
+stringinterpolation_macro-neg.scala:101: error: Illegal combination of flags '+' and ' '
+  f"$d%+ d"
+        ^
+stringinterpolation_macro-neg.scala:102: error: Illegal combination of flags '-' and '0'
+  f"$f%-015f"
+        ^
+stringinterpolation_macro-neg.scala:103: error: Flag '0' requires a width
+  f"$f%0f"
+       ^
+stringinterpolation_macro-neg.scala:104: error: Flag '-' requires a width
+  f"$s%-s"
+       ^
+stringinterpolation_macro-neg.scala:105: error: Flag '-' requires a width
+  f"$c%-c"
+       ^
+stringinterpolation_macro-neg.scala:106: error: Flag '-' requires a width
+  f"$t%-tT"
+       ^
+stringinterpolation_macro-neg.scala:107: error: Flag '-' requires a width
+  f"$d%d%1$$-d"
+           ^
+stringinterpolation_macro-neg.scala:108: error: Flag '-' requires a width
+  f"$d%d%-%"
+         ^
+stringinterpolation_macro-neg.scala:109: error: ',' not allowed for e, E
+  f"$f%,e"
+       ^
+stringinterpolation_macro-neg.scala:110: error: ',' not allowed for e, E
+  f"$f%,E"
+       ^
+stringinterpolation_macro-neg.scala:111: error: '#' not allowed for g, G
+  f"$f%#g"
+       ^
+stringinterpolation_macro-neg.scala:112: error: '#' not allowed for g, G
+  f"$f%#G"
+       ^
+stringinterpolation_macro-neg.scala:115: error: type mismatch;
+ found   : scala.math.BigDecimal
+ required: Double, Float
+  f"${BigDecimal(1)}%a"
+                ^
 stringinterpolation_macro-neg.scala:19: warning: Boolean format is null test for non-Boolean
   f"$s%b"
        ^
@@ -170,4 +259,4 @@ stringinterpolation_macro-neg.scala:65: warning: Index is not this arg
   f"$s%s $s%1$$s"
             ^
 4 warnings
-45 errors
+74 errors
