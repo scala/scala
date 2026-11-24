@@ -41,15 +41,10 @@ trait TypeComparers {
     val m = knownFalseSubTypes
     if (!m.isEmpty) m.clear()
     // A successful check keeps the constraints it registered on type variables in the undo log.
-    // In the compiler, `Infer` and `Implicits` hold a mark in the log across several outermost
-    // checks and roll back to it, so clearing here would break that (scala/bug#3281, scala/bug#3866);
-    // the typer clears the log after each unit, and every run clears it. Runtime reflection has no
-    // runs and nothing holds a mark outside a check, so clear it here, or each check that solves an
-    // existential leaks its type variables and constraints for the life of the thread.
-    if (!isCompilerUniverse) {
-      val log = undoLog
-      if (!log.log.isEmpty) log.clear()
-    }
+    // Runtime reflection never clears the log otherwise, so each check that solves an existential
+    // would leak its type variables for the life of the thread. Callers that roll back across
+    // several checks hold a mark (scala/bug#3281, scala/bug#3866).
+    undoLog.clearUnlessMarked()
   }
 
   final case class SubTypePair(tp1: Type, tp2: Type) {

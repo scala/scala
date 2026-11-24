@@ -1279,23 +1279,24 @@ trait Implicits extends splain.SplainData {
               }
             )
 
-          val mark = undoLog.log
-          val savedInfos = undetParams.map(_.info)
-          val typedFirstPending = {
-            try {
-              if (isView || wildPtNotInstantiable || matchesPtInst(firstPending)) {
-                val res = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
-                if (res.isFailure) res
-                else
-                  new SearchResult(res.tree, res.subst, res.undetparams, res.inPackagePrefix, implicitInfo = firstPending)
+          val typedFirstPending = undoLog.withMark { mark =>
+            val savedInfos = undetParams.map(_.info)
+            val typed =
+              try {
+                if (isView || wildPtNotInstantiable || matchesPtInst(firstPending)) {
+                  val res = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+                  if (res.isFailure) res
+                  else
+                    new SearchResult(res.tree, res.subst, res.undetparams, res.inPackagePrefix, implicitInfo = firstPending)
+                }
+                else SearchFailure
+              } finally {
+                foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
               }
-              else SearchFailure
-            } finally {
-              foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
-            }
+            if (typed.isFailure)
+              undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
+            typed
           }
-          if (typedFirstPending.isFailure)
-            undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
           // the first `DivergentImplicitTypeError` that is being propagated

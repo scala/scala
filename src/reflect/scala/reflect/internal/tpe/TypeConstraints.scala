@@ -67,9 +67,23 @@ private[internal] trait TypeConstraints {
       log = Nil
     }
 
+    private[this] var marksHeld = 0
+
+    /** Runs `body` with a mark in the log that it may roll back to with `undoTo`, possibly after
+     *  several outermost subtype checks. The log isn't cleared while a mark is held.
+     */
+    def withMark[T](body: UndoPairs => T): T = {
+      marksHeld += 1
+      try body(log)
+      finally marksHeld -= 1
+    }
+
+    /** Clears the log unless a mark is held, since nothing else can roll back to its entries. */
+    def clearUnlessMarked(): Unit =
+      if (marksHeld == 0 && log.nonEmpty) log = Nil
+
     // `block` should not affect constraints on typevars
-    def undo[T](block: => T): T = {
-      val before = log
+    def undo[T](block: => T): T = withMark { before =>
       try block
       finally undoTo(before)
     }
