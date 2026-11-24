@@ -1,0 +1,172 @@
+tailrec-shapes.scala:10: error: could not optimize @tailrec annotated method tryBody: it contains a recursive call not in tail position
+  @tailrec final def tryBody(n: Int): Int = try { if (n == 0) 0 else tryBody(n - 1) } catch { case _: Exception => 1 }
+                                                                            ^
+tailrec-shapes.scala:11: error: could not optimize @tailrec annotated method tryMatch: it contains a recursive call not in tail position
+  @tailrec final def tryMatch(n: Int): Int = try { n match { case 0 => 0; case _ => tryMatch(n - 1) } } catch { case _: Exception => 1 }
+                                                                                            ^
+tailrec-shapes.scala:12: error: could not optimize @tailrec annotated method tryMatchP: it contains a recursive call not in tail position
+  @tailrec final def tryMatchP(n: Int): Int = try { Option(n) match { case Some(0) => 0; case _ => tryMatchP(n - 1) } } catch { case _: Exception => 1 }
+                                                                                                            ^
+tailrec-shapes.scala:13: error: could not optimize @tailrec annotated method tryReturn: it contains a recursive call not in tail position
+  @tailrec final def tryReturn(n: Int): Int = try { if (n > 0) return tryReturn(n - 1); 0 } catch { case _: Exception => 1 }
+                                                                               ^
+tailrec-shapes.scala:14: error: could not optimize @tailrec annotated method tryReturnPat: it contains a recursive call not in tail position
+  @tailrec final def tryReturnPat(n: Int): Int = try { return Option(n) match { case Some(0) => 0; case _ => tryReturnPat(n - 1) } } catch { case _: Exception => 1 }
+                                                                                                                         ^
+tailrec-shapes.scala:15: error: could not optimize @tailrec annotated method tryFinReturn: it contains a recursive call not in tail position
+  @tailrec final def tryFinReturn(n: Int): Int = { try { if (n > 0) return tryFinReturn(n - 1) } finally log += 1; 0 }
+                                                                                       ^
+tailrec-shapes.scala:18: error: could not optimize @tailrec annotated method fin: it contains a recursive call not in tail position
+  @tailrec final def fin(n: Int): Unit = try log += 1 finally fin(n - 1)
+                                                                 ^
+tailrec-shapes.scala:19: error: could not optimize @tailrec annotated method finMatch: it contains a recursive call not in tail position
+  @tailrec final def finMatch(n: Int): Unit = try log += 1 finally { n match { case 0 => ; case _ => finMatch(n - 1) } }
+                                                                                                             ^
+tailrec-shapes.scala:20: error: could not optimize @tailrec annotated method finMatchP: it contains a recursive call not in tail position
+  @tailrec final def finMatchP(n: Int): Unit = try log += 1 finally { Option(n) match { case Some(0) => ; case _ => finMatchP(n - 1) } }
+                                                                                                                             ^
+tailrec-shapes.scala:21: error: could not optimize @tailrec annotated method catchFinMatch: it contains a recursive call not in tail position
+  @tailrec final def catchFinMatch(n: Int): Int = try 1 catch { case _: Exception => n match { case 0 => 0; case _ => catchFinMatch(n - 1) } } finally log += 1
+                                                                                                                                   ^
+tailrec-shapes.scala:22: error: could not optimize @tailrec annotated method catchFinMatchP: it contains a recursive call not in tail position
+  @tailrec final def catchFinMatchP(n: Int): Int = try 1 catch { case _: Exception => Option(n) match { case Some(0) => 0; case _ => catchFinMatchP(n - 1) } } finally log += 1
+                                                                                                                                                   ^
+tailrec-shapes.scala:25: error: could not optimize @tailrec annotated method andLhs: it contains a recursive call not in tail position
+  @tailrec final def andLhs(n: Int): Boolean = andLhs(n - 1) && n > 0
+                                                     ^
+tailrec-shapes.scala:26: error: could not optimize @tailrec annotated method orLhs: it contains a recursive call not in tail position
+  @tailrec final def orLhs(n: Int): Boolean = orLhs(n - 1) || n > 0
+                                                   ^
+tailrec-shapes.scala:27: error: could not optimize @tailrec annotated method not: it contains a recursive call not in tail position
+  @tailrec final def not(n: Int): Boolean = !not(n - 1)
+                                                ^
+tailrec-shapes.scala:28: error: could not optimize @tailrec annotated method lhsMatch: it contains a recursive call not in tail position
+  @tailrec final def lhsMatch(n: Int): Boolean = (n match { case 0 => true; case _ => lhsMatch(n - 1) }) && n > 0
+                                                                                              ^
+tailrec-shapes.scala:29: error: could not optimize @tailrec annotated method lhsMatchP: it contains a recursive call not in tail position
+  @tailrec final def lhsMatchP(n: Int): Boolean = (Option(n) match { case Some(0) => true; case _ => lhsMatchP(n - 1) }) && n > 0
+                                                                                                              ^
+tailrec-shapes.scala:32: error: could not optimize @tailrec annotated method qual: it contains a recursive call not in tail position
+  @tailrec final def qual(n: Int): String = qual(n - 1).trim
+                                                ^
+tailrec-shapes.scala:33: error: could not optimize @tailrec annotated method field: it contains a recursive call not in tail position
+  @tailrec final def field(n: Int): C = field(n - 1).next
+                                             ^
+tailrec-shapes.scala:34: error: could not optimize @tailrec annotated method isInst: it contains a recursive call targeting a supertype
+  @tailrec final def isInst(n: Int): Any = isInst(n - 1).isInstanceOf[String]
+                                                         ^
+tailrec-shapes.scala:35: error: could not optimize @tailrec annotated method asInst: it contains a recursive call targeting a supertype
+  @tailrec final def asInst(n: Int): String = asAny(asInst(n - 1)).asInstanceOf[String]
+                                                                   ^
+tailrec-shapes.scala:36: error: could not optimize @tailrec annotated method cast: it contains a recursive call targeting a supertype
+  @tailrec final def cast(n: Int): AnyRef = cast(n - 1).asInstanceOf[String]
+                                                        ^
+tailrec-shapes.scala:37: error: could not optimize @tailrec annotated method recv: it contains a recursive call not in tail position
+  @tailrec final def recv(n: Int): C = recv(n - 1).recv(n - 2)
+                                           ^
+tailrec-shapes.scala:38: error: could not optimize @tailrec annotated method qualMatch: it contains a recursive call not in tail position
+  @tailrec final def qualMatch(n: Int): String = (n match { case 0 => ""; case _ => qualMatch(n - 1) }).trim
+                                                                                             ^
+tailrec-shapes.scala:39: error: could not optimize @tailrec annotated method qualMatchP: it contains a recursive call not in tail position
+  @tailrec final def qualMatchP(n: Int): String = (Option(n) match { case Some(0) => ""; case _ => qualMatchP(n - 1) }).trim
+                                                                                                             ^
+tailrec-shapes.scala:40: error: could not optimize @tailrec annotated method unbox: it contains a recursive call not in tail position
+  @tailrec final def unbox(n: Int): Any = { val a: Int = unbox(n - 1).asInstanceOf[Int]; a }
+                                                              ^
+tailrec-shapes.scala:43: error: could not optimize @tailrec annotated method arrayLit: it contains a recursive call not in tail position
+  @tailrec final def arrayLit(n: Int): Array[Any] = Array[Any](arrayLit(n - 1))
+                                                                       ^
+tailrec-shapes.scala:44: error: could not optimize @tailrec annotated method newArg: it contains a recursive call not in tail position
+  @tailrec final def newArg(n: Int): AnyRef = new Some(newArg(n - 1))
+                                                             ^
+tailrec-shapes.scala:45: error: could not optimize @tailrec annotated method ctorArg: it contains a recursive call not in tail position
+  @tailrec final def ctorArg(n: Int): C = new C(ctorArg(n - 1))
+                                                       ^
+tailrec-shapes.scala:46: error: could not optimize @tailrec annotated method argMatch: it contains a recursive call not in tail position
+  @tailrec final def argMatch(n: Int): Int = math.abs(n match { case 0 => 0; case _ => argMatch(n - 1) })
+                                                                                               ^
+tailrec-shapes.scala:47: error: could not optimize @tailrec annotated method argMatchP: it contains a recursive call not in tail position
+  @tailrec final def argMatchP(n: Int): Int = math.abs(Option(n) match { case Some(0) => 0; case _ => argMatchP(n - 1) })
+                                                                                                               ^
+tailrec-shapes.scala:48: error: could not optimize @tailrec annotated method interp: it contains a recursive call not in tail position
+  @tailrec final def interp(n: Int): String = s"${interp(n - 1)}"
+                                                        ^
+tailrec-shapes.scala:49: error: could not optimize @tailrec annotated method concat: it contains a recursive call not in tail position
+  @tailrec final def concat(n: Int): String = "" + concat(n - 1)
+                                                         ^
+tailrec-shapes.scala:50: error: could not optimize @tailrec annotated method widen: it contains a recursive call not in tail position
+  @tailrec final def widen(n: Int): Any = { def w(i: Int): Long = i; if (n == 0) 0 else w(widen(n - 1).hashCode) }
+                                                                                               ^
+tailrec-shapes.scala:53: error: could not optimize @tailrec annotated method cond: it contains a recursive call not in tail position
+  @tailrec final def cond(n: Int): Boolean = if (cond(n - 1)) true else false
+                                                     ^
+tailrec-shapes.scala:54: error: could not optimize @tailrec annotated method condMatch: it contains a recursive call not in tail position
+  @tailrec final def condMatch(n: Int): Int = if (n match { case 0 => true; case _ => condMatch(n - 1) == 0 }) 1 else 2
+                                                                                               ^
+tailrec-shapes.scala:55: error: could not optimize @tailrec annotated method condMatchP: it contains a recursive call not in tail position
+  @tailrec final def condMatchP(n: Int): Int = if (Option(n) match { case Some(0) => true; case _ => condMatchP(n - 1) == 0 }) 1 else 2
+                                                                                                               ^
+tailrec-shapes.scala:56: error: could not optimize @tailrec annotated method scrut: it contains a recursive call not in tail position
+  @tailrec final def scrut(n: Int): Option[Int] = scrut(n - 1) match { case Some(x) if x > 0 => None; case o => o }
+                                                       ^
+tailrec-shapes.scala:57: error: could not optimize @tailrec annotated method scrutSwitch: it contains a recursive call not in tail position
+  @tailrec final def scrutSwitch(n: Int): Int = scrutSwitch(n - 1) match { case 1 => 2; case 2 => 3; case 3 => 4; case _ => 0 }
+                                                           ^
+tailrec-shapes.scala:58: error: could not optimize @tailrec annotated method scrutMatch: it contains a recursive call not in tail position
+  @tailrec final def scrutMatch(n: Int): Int = (n match { case 0 => 0; case _ => scrutMatch(n - 1) }) match { case 1 => 2; case 2 => 3; case 3 => 4; case _ => 0 }
+                                                                                           ^
+tailrec-shapes.scala:59: error: could not optimize @tailrec annotated method scrutMatchP: it contains a recursive call not in tail position
+  @tailrec final def scrutMatchP(n: Int): Int = (Option(n) match { case Some(0) => 0; case _ => scrutMatchP(n - 1) }) match { case 1 => 2; case 2 => 3; case 3 => 4; case _ => 0 }
+                                                                                                           ^
+tailrec-shapes.scala:60: error: could not optimize @tailrec annotated method guard: it contains a recursive call not in tail position
+  @tailrec final def guard(n: Int): Int = n match { case _ if guard(n - 1) == 0 => 1; case _ => 2 }
+                                                                   ^
+tailrec-shapes.scala:63: error: could not optimize @tailrec annotated method valMatch: it contains a recursive call not in tail position
+  @tailrec final def valMatch(n: Int): Int = { val x = n match { case 0 => 0; case _ => valMatch(n - 1) }; x }
+                                                                                                ^
+tailrec-shapes.scala:64: error: could not optimize @tailrec annotated method valMatchP: it contains a recursive call not in tail position
+  @tailrec final def valMatchP(n: Int): Int = { val x = Option(n) match { case Some(0) => 0; case _ => valMatchP(n - 1) }; x }
+                                                                                                                ^
+tailrec-shapes.scala:65: error: could not optimize @tailrec annotated method stmtMatch: it contains a recursive call not in tail position
+  @tailrec final def stmtMatch(n: Int): Unit = { n match { case 0 => ; case _ => stmtMatch(n - 1) }; () }
+                                                                                          ^
+tailrec-shapes.scala:66: error: could not optimize @tailrec annotated method stmtMatchP: it contains a recursive call not in tail position
+  @tailrec final def stmtMatchP(n: Int): Unit = { Option(n) match { case Some(0) => ; case _ => stmtMatchP(n - 1) }; () }
+                                                                                                          ^
+tailrec-shapes.scala:67: error: could not optimize @tailrec annotated method unitVal: it contains a recursive call not in tail position
+  @tailrec final def unitVal(n: Int): Int = { unitVal(n - 1); 0 }
+                                                     ^
+tailrec-shapes.scala:68: error: could not optimize @tailrec annotated method unitDiscard: it contains a recursive call not in tail position
+  @tailrec final def unitDiscard(n: Int): Unit = { val u: Unit = unitDiscard(n - 1); u }
+                                                                            ^
+tailrec-shapes.scala:69: error: could not optimize @tailrec annotated method lzy: it contains a recursive call not in tail position
+  @tailrec final def lzy(n: Int): Int = { lazy val x = lzy(n - 1); x }
+                                                          ^
+tailrec-shapes.scala:72: error: could not optimize @tailrec annotated method whileCond: it contains a recursive call not in tail position
+  @tailrec final def whileCond(n: Int): Boolean = { while (whileCond(n - 1)) (); false }
+                                                                    ^
+tailrec-shapes.scala:73: error: could not optimize @tailrec annotated method whileBody: it contains a recursive call not in tail position
+  @tailrec final def whileBody(n: Int): Unit = while (n > 0) whileBody(n - 1)
+                                                                      ^
+tailrec-shapes.scala:74: error: could not optimize @tailrec annotated method doBody: it contains a recursive call not in tail position
+  @tailrec final def doBody(n: Int): Unit = do doBody(n - 1) while (n > 0)
+                                                     ^
+tailrec-shapes.scala:75: error: could not optimize @tailrec annotated method doCond: it contains a recursive call not in tail position
+  @tailrec final def doCond(n: Int): Boolean = { do () while (doCond(n - 1)); true }
+                                                                    ^
+tailrec-shapes.scala:76: error: could not optimize @tailrec annotated method whileMatch: it contains a recursive call not in tail position
+  @tailrec final def whileMatch(n: Int): Unit = while (n > 0) n match { case 0 => ; case _ => whileMatch(n - 1) }
+                                                                                                        ^
+tailrec-shapes.scala:77: error: could not optimize @tailrec annotated method whileMatchP: it contains a recursive call not in tail position
+  @tailrec final def whileMatchP(n: Int): Unit = while (n > 0) Option(n) match { case Some(0) => ; case _ => whileMatchP(n - 1) }
+                                                                                                                        ^
+tailrec-shapes.scala:80: error: could not optimize @tailrec annotated method closure: it contains a recursive call not in tail position
+  @tailrec final def closure(n: Int): () => Int = () => closure(n - 1)()
+                                                               ^
+tailrec-shapes.scala:81: error: could not optimize @tailrec annotated method byName: it contains a recursive call not in tail position
+  @tailrec final def byName(n: Int): Int = Option(n).getOrElse(byName(n - 1))
+                                                                     ^
+tailrec-shapes.scala:82: error: could not optimize @tailrec annotated method local: it contains a recursive call not in tail position
+  @tailrec final def local(n: Int): Int = { class L { def m = local(n - 1) }; new L().m }
+                                                                   ^
+57 errors
