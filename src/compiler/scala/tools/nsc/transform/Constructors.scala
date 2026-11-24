@@ -100,6 +100,14 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
   } // ConstructorTransformer
 
+  /** Does `tree`, a statement of a constructor, refer to the outer parameter? Callers may pass `null` for the
+   *  outer argument (`OuterArgCanBeElided`) of a class without an outer field only if no statement of its primary
+   *  constructor does: the parameter is also the source of the outer argument of the super constructor call if
+   *  the parent is a local class, a Java inner class or a member class of another instance. Delambdafy relies on
+   *  this as well when it removes an outer field.
+   */
+  def refersToOuterParam(tree: Tree): Boolean = tree.exists { case i: Ident => i.symbol.isOuterParam case _ => false }
+
   /*
    * Summary
    * -------
@@ -799,7 +807,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       if ((exitingPickler(clazz.isAnonymousClass) || clazz.originalOwner.isTerm)
         && omittableAccessor.exists(_.isOuterField)
-        && !constructorStats.exists(_.exists { case i: Ident if i.symbol.isOuterParam => true case _ => false })
+        && !constructorStats.exists(refersToOuterParam)
       )
         primaryConstructor.symbol.updateAttachment(OuterArgCanBeElided)
 

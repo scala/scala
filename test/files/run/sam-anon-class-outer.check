@@ -1,0 +1,24 @@
+bridged: 42, captures outer: false, serialized: 42
+withVal: 42, captures outer: false, serialized: 42
+fun: 2, captures outer: false, serialized: 2
+local: 2, captures outer: false, serialized: 2
+nested: 2, captures outer: false, serialized: 2
+localDef: 42, captures outer: false, serialized: 42
+inner: 43, captures outer: false, serialized: 43
+trait: 44, captures outer: false, serialized: 44
+usesField: 10, captures outer: true, serialized: java.io.NotSerializableException: Holder
+usesMember: 20, captures outer: true, serialized: java.io.NotSerializableException: Holder
+nestedUsesThis: 11, captures outer: true, serialized: java.io.NotSerializableException: Holder
+localDefUsesThis: 20, captures outer: true, serialized: java.io.NotSerializableException: Holder
+pf: 2, captures outer: false, serialized: 2
+pfUsesThis: 11, captures outer: true, serialized: java.io.NotSerializableException: Holder
+selfReaching: 5, captures outer: true, serialized: java.io.NotSerializableException: Holder
+member: 6
+localClass: 7
+javaInner: 8
+otherJava: 9
+otherScala: 11
+inLocalClass: 11
+localToLambda: 12
+nestedJavaInner: 13
+stablePrefix: 15
