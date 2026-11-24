@@ -109,6 +109,18 @@ class RangeTest {
   }
 
   @Test
+  def iteratorDropLarge(): Unit = {
+    for (r <- List(-5 to 5 by 4, 2 until 9 by 2, 0 to 10 by 2, 5 to -5 by -4, Int.MinValue to Int.MaxValue by (1 << 30))) {
+      val xs = r.toList
+      for (n <- List(2, 3, 1 << 29, 1 << 30, Int.MaxValue)) {
+        assertEquals(s"$r.iterator.drop($n)", xs.drop(n), r.iterator.drop(n).take(xs.length + 1).toList)
+        assertEquals(s"$r.indexWhere(_ => true, $n)", xs.indexWhere(_ => true, n), r.indexWhere(_ => true, n))
+        assertEquals(s"$r.segmentLength(_ => true, $n)", xs.segmentLength(_ => true, n), r.segmentLength(_ => true, n))
+      }
+    }
+  }
+
+  @Test
   def `startsWith should not throw an exception when out of range`(): Unit = {
     assertTrue((1 to 5).startsWith(Nil, 7))
     assertFalse((1 to 5).startsWith(1 to 1, 8))
