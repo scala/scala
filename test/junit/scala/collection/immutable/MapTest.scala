@@ -155,4 +155,23 @@ class MapTest {
     assertTrue(t.toMap[Any, Any].get("hi").isEmpty)
     assertTrue(TreeMap((1, 2)).toMap[Any, Any].get("hi").isEmpty) // was: CCE
   }
+
+  @Test def smallMapIteratorDrop(): Unit = {
+    for (size <- 1 to 4) {
+      val m = Map.from((1 to size).map(i => i -> i.toString))
+      val its = List[(String, () => Iterator[Any], List[Any])](
+        ("iterator", () => m.iterator, m.toList),
+        ("keysIterator", () => m.keysIterator, m.keys.toList),
+        ("valuesIterator", () => m.valuesIterator, m.values.toList))
+      for ((name, mk, elems) <- its) {
+        for (n <- List(Int.MinValue, -1, 0, 1, size - 1, size, size + 1, Int.MaxValue))
+          assertEquals(s"<$size>.$name.drop($n)", elems.drop(n), mk().drop(n).toList)
+        for (n <- List(-1, Int.MinValue))
+          assertEquals(s"<$size>.$name.drop($n).drop(1)", elems.drop(1), mk().drop(n).drop(1).toList)
+        val it = mk()
+        it.next()
+        assertEquals(s"<$size>.$name.next(); drop(Int.MaxValue)", Nil, it.drop(Int.MaxValue).toList)
+      }
+    }
+  }
 }
