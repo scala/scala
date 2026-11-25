@@ -86,12 +86,11 @@ trait Contexts { self: Analyzer with ImportTracking =>
       candidates.result()
     })
 
-  /** Is `sym` the qualifier of a top-level import in `unit`, which masks the root import of that module in the
-   *  whole unit? The candidates are completed first, so that the answer does not depend on what has been typed so
-   *  far. While one of them is being completed, the lookups for its own qualifier see no mask from it.
+  /** Does a top-level import of root import module `sym` mask it in the whole `unit`, regardless of typing order?
+   *  Lookups made while that import is being completed see no mask from it.
    */
   private def isMaskedRootImport(unit: CompilationUnit, sym: Symbol): Boolean =
-    maskingImportCandidates(unit).exists { imp =>
+    !sym.hasPackageFlag && maskingImportCandidates(unit).exists { imp =>
       val impSym = imp.symbol
       if (impSym != NoSymbol && !impSym.hasFlag(LOCKED)) impSym.initialize
       imp.expr.symbol eq sym

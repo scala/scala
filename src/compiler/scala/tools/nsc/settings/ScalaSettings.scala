@@ -302,10 +302,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
        |cannot induce ambiguities in user code, where definitions and imports
        |always have a higher precedence. Root imports are imports of last resort.
        |
-       |By convention, an explicit import from a root import object such as
-       |Predef disables that root import for the current source file. The import
-       |is disabled when the import expression is compiled, so, also by convention,
-       |the import should be placed early in source code order. The textual name
+       |An explicit top-level import from a root import object such as Predef
+       |disables that root import in the whole source file. The textual name
        |in the import does not need to match the value of `-Yimports`; the import
        |works in the usual way, subject to renames and name binding precedence.
        |
