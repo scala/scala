@@ -1188,16 +1188,7 @@ abstract class Inliner {
       }
     }
 
-    // B0 is about memberRefClass. Requiring memberDeclClass to be accessible as well is stricter than the JVMS.
-    val classesAccessible = for {
-      refClassAccessible  <- classIsAccessible(memberRefClass, from)
-      declClassAccessible <- if (refClassAccessible) classIsAccessible(memberDeclClass, from) else Right(false)
-    } yield declClassAccessible
-
-    classesAccessible match {
-      case Right(true) => memberIsAccessibleImpl
-      case r => r
-    }
+    tryEither(Right(classIsAccessible(memberRefClass, from).orThrow && memberIsAccessibleImpl.orThrow)) // B0
   }
 
   /**
