@@ -325,7 +325,7 @@ abstract class FormatInterpolator {
             bad.isEmpty or bad.foreach(f => badFlag(f, s"'$f' not allowed for $cs"))
           }
           goodies && (cc match {
-            case 'a' | 'A' => noPrecision & without(",(", "a, A") // report both
+            case 'a' | 'A' => goodPrecision & without(",(", "a, A") // report both
             case 'e' | 'E' => goodPrecision && without(",", "e, E")
             case 'g' | 'G' => goodPrecision && without("#", "g, G")
             case _         => goodPrecision

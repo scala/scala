@@ -119,9 +119,9 @@ stringinterpolation_macro-neg.scala:50: error: precision not allowed
 stringinterpolation_macro-neg.scala:51: error: precision not allowed
   f"%.2n"
      ^
-stringinterpolation_macro-neg.scala:52: error: precision not allowed
-  f"$f%.2a"
-       ^
+stringinterpolation_macro-neg.scala:52: error: Precision out of range
+  f"$f%.2147483648a"
+        ^
 stringinterpolation_macro-neg.scala:53: error: precision not allowed
   f"$t%.2tT"
        ^

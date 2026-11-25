@@ -225,6 +225,8 @@ object Test extends App {
       f"${new java.math.BigDecimal(3.4)}%e" -> locally"3.400000e+00",
 
       f"${3}%e"  -> locally"3.000000e+00",
+      f"${1.5}%.2a" -> "0x1.80p0",
+      f"${1.5f}%.1A" -> "0X1.8P0",
       f"${3L}%e" -> locally"3.000000e+00",
 
       // 't' | 'T' (category: date/time)

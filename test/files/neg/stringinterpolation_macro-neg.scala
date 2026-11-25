@@ -49,7 +49,7 @@ object Test extends App {
   f"$d%.2d"
   f"%.2%"
   f"%.2n"
-  f"$f%.2a"
+  f"$f%.2147483648a"
   f"$t%.2tT"
 
   // 5) bad indexes
