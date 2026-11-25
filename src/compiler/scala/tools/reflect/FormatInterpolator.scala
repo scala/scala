@@ -245,29 +245,36 @@ abstract class FormatInterpolator {
    *  In the source, `$$` and `$"` are one char, and so is an escape if `text` has escapes processed.
    */
   def sourcePosAt(pos: Position, text: String, escapes: Boolean): Int => Position = {
-    val src = pos.source.content
-    val start = pos.point
-    val offsets = new Array[Int](text.length + 1)
-    var i = start
-    var k = 0
-    var consistent = pos.isDefined
-    while (consistent && k < text.length) {
-      offsets(k) = i - start
-      def next(n: Int) = i + n < src.length && src(i + n) == text(k)
-      if (i >= src.length) consistent = false
-      else if (src(i) == '$' && next(1)) i += 2
-      else if (escapes && src(i) == '\\' && i + 1 < src.length) {
-        if (src(i + 1) == 'u') { i += 1; while (i < src.length && src(i) == 'u') i += 1; i += 4 }
-        else i += 2
+    // the offset in the source of each char of `text`, if the source matches
+    lazy val sourceOffsets: Option[Array[Int]] = {
+      val src = pos.source.content
+      val start = pos.point
+      val offsets = new Array[Int](text.length + 1)
+      var i = start
+      var k = 0
+      var consistent = true
+      while (consistent && k < text.length) {
+        offsets(k) = i - start
+        def next(n: Int) = i + n < src.length && src(i + n) == text(k)
+        if (i >= src.length) consistent = false
+        else if (src(i) == '$' && next(1)) i += 2
+        else if (escapes && src(i) == '\\' && i + 1 < src.length) {
+          if (src(i + 1) == 'u') { i += 1; while (i < src.length && src(i) == 'u') i += 1; i += 4 }
+          else i += 2
+        }
+        else if (src(i) == text(k)) i += 1
+        else consistent = false
+        k += 1
       }
-      else if (src(i) == text(k)) i += 1
-      else consistent = false
-      k += 1
+      offsets(text.length) = i - start
+      if (consistent) Some(offsets) else None
     }
-    offsets(text.length) = i - start
     offset =>
-      if (!consistent || offset < 0) pos.withPoint(pos.point + offset)
-      else pos.withPoint(pos.point + offsets(offset min text.length) + (offset - text.length max 0))
+      if (!pos.isDefined) pos // a tree built by a toolbox, for example
+      else sourceOffsets match {
+        case Some(offsets) if offset >= 0 => pos.withPoint(pos.point + offsets(offset min text.length) + (offset - text.length max 0))
+        case _                            => pos.withPoint(pos.point + offset)
+      }
   }
 
   def mismatchMessage(tpe: Type, types: Seq[Type]): String = "type mismatch" + {
