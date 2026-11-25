@@ -44,7 +44,9 @@ object FormatInterpolatorTesting {
       |}""".stripMargin
 
   private val compilers = mutable.Map.empty[String, scala.tools.testkit.Compiler]
-  private def compiler(options: String) = compilers.getOrElseUpdate(options, BytecodeTesting.newCompiler(extraArgs = options))
+  // report all messages, there may be many
+  private def compiler(options: String) =
+    compilers.getOrElseUpdate(options, BytecodeTesting.newCompiler(extraArgs = s"-Xmaxerrs 1000000 -Xmaxwarns 1000000 $options"))
 
   private val Prefix = "  def m"
 
