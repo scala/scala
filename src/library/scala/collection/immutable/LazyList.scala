@@ -1404,6 +1404,8 @@ object LazyList extends SeqFactory[LazyList] {
 
     override def result(): LazyList[A] = {
       next init Empty
+      // The states are written to plain fields; make them visible to a thread that receives the list through a data race
+      Statics.releaseFence()
       list
     }
 
