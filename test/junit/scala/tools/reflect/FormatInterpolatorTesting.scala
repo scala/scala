@@ -35,6 +35,10 @@ object FormatInterpolatorTesting {
       |val t = new java.util.Date(0L)
       |val i = 42
       |val any: Any = 7
+      |val anyVal: AnyVal = 7
+      |val number: Number = Integer.valueOf(7)
+      |val date = java.time.LocalDate.of(2012, 5, 26)
+      |val temporal: java.time.temporal.TemporalAccessor = date
       |val x = new java.util.Formattable {
       |  def formatTo(ff: java.util.Formatter, g: Int, w: Int, p: Int): Unit = ff.format("xxx")
       |}""".stripMargin
@@ -62,7 +66,8 @@ object FormatInterpolatorTesting {
     (code, lines.toMap)
   }
 
-  def run(exprs: Seq[String], decls: String = Decls, options: String = ""): Seq[Outcome] = {
+  /** Compile `exprs`, under `compileLocale` as the default locale if given, and run those that compile. */
+  def run(exprs: Seq[String], decls: String = Decls, options: String = "", compileLocale: Option[java.util.Locale] = None): Seq[Outcome] = {
     val comp = compiler(options)
     import comp.global
     val indexed = exprs.zipWithIndex
@@ -71,7 +76,10 @@ object FormatInterpolatorTesting {
     def compile(cases: Seq[(String, Int)]): (Map[Int, List[Message]], List[(String, Array[Byte])]) = {
       val (code, lines) = source(cases, decls)
       val run = comp.newRun()
-      run.compileSources(List(BytecodeTesting.makeSourceFile(code, "FTest.scala")))
+      val locale = java.util.Locale.getDefault
+      compileLocale.foreach(java.util.Locale.setDefault)
+      try run.compileSources(List(BytecodeTesting.makeSourceFile(code, "FTest.scala")))
+      finally java.util.Locale.setDefault(locale)
       val reporter = global.reporter.asInstanceOf[StoreReporter]
       val byLine = mutable.Map.empty[Int, List[Message]].withDefaultValue(Nil)
       for (info <- reporter.infos.toList if info.severity == ERROR || info.severity == WARNING) {
