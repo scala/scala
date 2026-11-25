@@ -1,0 +1,10 @@
+b.scala:4: error: not found: type Map
+class B { def m: Map[Int, Int] = null }
+                 ^
+c.scala:5: error: not found: type Map
+class C { def m: Map[Int, Int] = null }
+                 ^
+d.scala:2: error: not found: type Map
+class D { def m: Map[Int, Int] = null }
+                 ^
+3 errors

@@ -1,0 +1,7 @@
+a.scala:5: error: illegal cyclic reference involving object p
+import p.Predef.{wait => _}
+       ^
+b.scala:5: error: illegal cyclic reference involving object Conv
+import Conv.x._
+       ^
+2 errors
