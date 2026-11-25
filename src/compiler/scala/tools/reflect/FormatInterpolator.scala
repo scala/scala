@@ -170,7 +170,7 @@ abstract class FormatInterpolator {
           else if (!matches.hasNext) insertStringConversion()
           else {
             val cv = Conversion(matches.next(), posAt, argc)
-            if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.flags.nonEmpty)
+            if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.precision.nonEmpty || cv.flags.nonEmpty)
               formatting = true
             if (cv.isLiteral) insertStringConversion()
             else if (cv.isError) () // already reported, and there is no arg type to check
@@ -185,6 +185,7 @@ abstract class FormatInterpolator {
                 else if (!cv.hasFlag('<')) c.warning(cv.groupPosAt(Index, 0), "Index is not this arg")
                 insertStringConversion()
                 refer(cv)
+                formatting = true // only the formatter understands the reference
               }
             }
             else accept(cv)

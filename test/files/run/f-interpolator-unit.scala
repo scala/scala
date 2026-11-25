@@ -290,6 +290,28 @@ object Test extends App {
     for (((f, s), i) <- ss.zipWithIndex) assertEquals(s, f, i)
   }
 
+  // an index or a precision on %s must reach the formatter even if no other conversion requires formatting
+  @annotation.nowarn("msg=Index is not this arg")
+  def indexedOrPreciseOnly(): Unit = {
+    val a = "x"
+    val b = "y"
+    val ss = List[(String, String)](
+      f"$a%2$$s $b"    -> "xy y",
+      f"$a $b%1$$s"    -> "x yx",
+      f"$a $b %1$$s"   -> "x y x",
+      f"$a%1$$s $b"    -> "x y",
+      f"$a%1$$s $b%s"  -> "x y",
+      f"$a%1$$3s $b"   -> "  x y",
+      f"$a%1$$3s $b%s" -> "  x y",
+      f"$a%1$$s$b%2$$s $b%<s" -> "xy yy",
+      f"$a%2$$s $b%5s" -> "xy     y",
+      f"$a%.0s$b"      -> "y",
+      f"$a$b%.0s"      -> "x",
+      f"$a%1$$.0s$b"   -> "y",
+    )
+    for (((f, s), i) <- ss.zipWithIndex) assertEquals(s, f, i)
+  }
+
   noEscape()
   tabbed()
   quoted()
@@ -301,6 +323,7 @@ object Test extends App {
   fHeteroArgs()
   `f interpolator baseline`()
   referenced()
+  indexedOrPreciseOnly()
 
   assertEquals("hell", f"$tester%.4s")
 }
