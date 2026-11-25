@@ -1,0 +1,25 @@
+binary-literal-float-suffix.scala:2: error: invalid literal number
+  def f = 0b101f
+          ^
+binary-literal-float-suffix.scala:3: error: invalid literal number
+  def F = 0b101F
+          ^
+binary-literal-float-suffix.scala:4: error: invalid literal number
+  def d = 0b10d
+          ^
+binary-literal-float-suffix.scala:5: error: invalid literal number
+  def D = 0b10D
+          ^
+binary-literal-float-suffix.scala:6: error: invalid literal number
+  def e = 0b11e2
+          ^
+binary-literal-float-suffix.scala:7: error: invalid literal number
+  def E = 0b11E2
+          ^
+binary-literal-float-suffix.scala:8: error: invalid literal number
+  def negExp = 0b1e-1
+               ^
+binary-literal-float-suffix.scala:9: error: invalid literal number
+  def digit = 0b2
+              ^
+8 errors
