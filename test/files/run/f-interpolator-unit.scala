@@ -249,6 +249,10 @@ object Test extends App {
       f"${5: Any}"      -> "5",
       f"${5}%s%<d"      -> "55",
       f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
+      f"${"a"}%1$$<s"   -> "aa",
+      f"${7}%1$$<d"     -> "77",
+      f"${Integer.valueOf(7)}%s %1$$x" -> "7 7",
+      f"${java.math.BigInteger.ONE}%s %<+d" -> "1 +1",
 
       f"${"hello"}%-10s" -> "hello     ",
       (f"$tester%-10s$number%3s": "hello      42") -> "hello      42",

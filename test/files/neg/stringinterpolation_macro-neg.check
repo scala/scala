@@ -145,6 +145,16 @@ stringinterpolation_macro-neg.scala:68: error: type mismatch;
  required: java.util.Formattable
   f"$s%#s"
      ^
+stringinterpolation_macro-neg.scala:69: error: type mismatch;
+ found   : Double
+ required: Int, Long, Byte, Short, BigInt
+  f"$f%f %<d"
+           ^
+stringinterpolation_macro-neg.scala:70: error: type mismatch;
+ found   : Double
+ required: Int, Long, Byte, Short, BigInt
+  f"%1$$d $f%f"
+       ^
 stringinterpolation_macro-neg.scala:75: error: 'G' doesn't seem to be a date or time conversion
   f"$t%tG"
         ^
@@ -246,6 +256,29 @@ stringinterpolation_macro-neg.scala:115: error: type mismatch;
  required: Double, Float
   f"${BigDecimal(1)}%a"
                 ^
+stringinterpolation_macro-neg.scala:118: error: type mismatch;
+ found   : String("a")
+ required: Int, Long, Byte, Short, BigInt
+  f"${"a"}%<d"
+            ^
+stringinterpolation_macro-neg.scala:119: error: type mismatch;
+ found   : String("a")
+ required: Int, Long, Byte, Short, BigInt
+  f"${"a"}%s %1$$d"
+                ^
+stringinterpolation_macro-neg.scala:120: error: only use '+' for BigInt conversions to o, x, X
+  f"$d%<+x"
+        ^
+stringinterpolation_macro-neg.scala:121: error: type mismatch;
+ found   : scala.math.BigDecimal
+ required: Double, Float
+  f"${BigDecimal(1)}%<a"
+                      ^
+stringinterpolation_macro-neg.scala:122: error: type mismatch;
+ found   : scala.math.BigDecimal
+ required: Double, Float
+  f"${BigDecimal(1)}%e %1$$A"
+                          ^
 stringinterpolation_macro-neg.scala:19: warning: Boolean format is null test for non-Boolean
   f"$s%b"
        ^
@@ -258,5 +291,14 @@ stringinterpolation_macro-neg.scala:64: warning: Argument index ignored if '<' f
 stringinterpolation_macro-neg.scala:65: warning: Index is not this arg
   f"$s%s $s%1$$s"
             ^
-4 warnings
-74 errors
+stringinterpolation_macro-neg.scala:118: warning: Index is not this arg
+  f"${"a"}%<d"
+           ^
+stringinterpolation_macro-neg.scala:120: warning: Index is not this arg
+  f"$d%<+x"
+       ^
+stringinterpolation_macro-neg.scala:121: warning: Index is not this arg
+  f"${BigDecimal(1)}%<a"
+                     ^
+7 warnings
+81 errors

@@ -90,6 +90,9 @@ abstract class FormatInterpolator {
     val amended = ListBuffer.empty[String]
     val actuals = ListBuffer.empty[Tree]
     val convert = ListBuffer.empty[Conversion]
+    // the actual for each arg that type checked, and the conversions that refer to an arg by index or '<'
+    val actualFor = new Array[Tree](argc)
+    val references = ListBuffer.empty[(Conversion, Int)]
 
     // whether this format does more than concatenate strings
     var formatting = false
@@ -100,20 +103,14 @@ abstract class FormatInterpolator {
         .orElse(types.find(t => t != AnyTpe && argConvertsTo(argi, tpe, t)))
         .orElse(types.find(t => t == AnyTpe && argConformsTo(argi, tpe, t)))
         .getOrElse {
-          val msg = "type mismatch" + {
-            val req = raw"required: (.*)".r.unanchored
-            val all = types.map(req => global.analyzer.foundReqMsg(tpe, req))
-            if (all.isEmpty) ""
-            else if (all.length == 1) all.head
-            else all.head + all.tail.map { case req(what) => what case _ => "?" }.mkString(", ", ", ", "")
-          }
-          c.error(args(argi).pos, msg)
+          c.error(args(argi).pos, mismatchMessage(tpe, types))
           reported = true
           actuals += args(argi)
           types.head
         }
     }
-    def argConformsTo(argi: Int, arg: Type, target: Type): Boolean = (arg <:< target).tap(if (_) actuals += args(argi))
+    def argConformsTo(argi: Int, arg: Type, target: Type): Boolean =
+      (arg <:< target).tap(if (_) { actuals += args(argi); actualFor(argi) = args(argi) })
     def argConvertsTo(argi: Int, arg: Type, target: Type): Boolean =
       c.inferImplicitView(args(argi), arg, target) match {
         case EmptyTree  => false
@@ -123,8 +120,19 @@ abstract class FormatInterpolator {
           val value = args(argi)
           val ValDef(_, _, _, rhs) = c.typecheck(ValDef(Modifiers(), freshName, TypeTree(target).setPos(value.pos.focus), value).setPos(value.pos)): @unchecked
           actuals += rhs
+          actualFor(argi) = rhs
           true
       }
+
+    // the arg of the previous conversion, which is the one that a '<' flag refers to
+    var last = 0
+    def refer(cv: Conversion): Unit = {
+      val argi = if (cv.hasFlag('<')) last else cv.index.getOrElse(0)
+      if (argi >= 1 && argi <= argc) {
+        references += ((cv, argi))
+        last = argi
+      }
+    }
 
     // Append the nth part to the string builder, possibly prepending an omitted %s first.
     // Check the % fields in this part.
@@ -153,6 +161,7 @@ abstract class FormatInterpolator {
             op.lintToString(argTypes(n-1))
           }
 
+          if (n > 0) last = n // the conversion of this arg comes first, given or inserted
           if (n == 0) amended += part
           else if (!matches.hasNext) insertStringConversion()
           else {
@@ -162,11 +171,15 @@ abstract class FormatInterpolator {
             if (cv.isLiteral) insertStringConversion()
             else if (cv.isError) () // already reported, and there is no arg type to check
             else if (cv.isIndexed) {
-              if (cv.index.getOrElse(-1) == n) accept(cv)
+              // with the '<' flag, the index is ignored and the conversion refers to the previous arg
+              if (!cv.hasFlag('<') && cv.index.contains(n)) accept(cv)
               else {
                 // "$x$y%1" where "%1" follows a splice but does not apply to it
-                c.warning(cv.groupPosAt(Index, 0), "Index is not this arg")
+                // verify already warned that the index is ignored if there is one with '<'
+                if (cv.index.isEmpty) c.warning(cv.groupPosAt(Flags, cv.flags.indexOf('<')), "Index is not this arg")
+                else if (!cv.hasFlag('<')) c.warning(cv.groupPosAt(Index, 0), "Index is not this arg")
                 insertStringConversion()
+                refer(cv)
               }
             }
             else accept(cv)
@@ -176,12 +189,17 @@ abstract class FormatInterpolator {
             val cv = Conversion(matches.next(), part0.pos, argc)
             if (n == 0 && cv.hasFlag('<')) cv.badFlag('<', "No last arg")
             else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
+            else if (!cv.isLiteral && !cv.isError) refer(cv)
             formatting = true
           }
           loop(remaining, n = n + 1)
         case Nil =>
       }
     loop(parts, n = 0)
+
+    // a conversion that refers to an arg by index or '<' formats that arg's actual as it is
+    for ((cv, argi) <- references; actual = actualFor(argi - 1) if actual != null)
+      cv.acceptsReferenced(actual.tpe)
 
     def constantly(s: String) = {
       val k = Constant(s)
@@ -211,10 +229,20 @@ abstract class FormatInterpolator {
   }
 
   val BigDecimalTpe = typeTag[BigDecimal].tpe
+  val JavaBigDecimalTpe = typeTag[java.math.BigDecimal].tpe
+  val JavaBigIntegerTpe = typeTag[java.math.BigInteger].tpe
   val BigIntTpe = typeTag[BigInt].tpe
   val CalendarTpe = typeTag[java.util.Calendar].tpe
   val DateTpe = typeTag[java.util.Date].tpe
   val FormattableTpe = typeTag[Formattable].tpe
+
+  def mismatchMessage(tpe: Type, types: Seq[Type]): String = "type mismatch" + {
+    val req = raw"required: (.*)".r.unanchored
+    val all = types.map(req => global.analyzer.foundReqMsg(tpe, req))
+    if (all.isEmpty) ""
+    else if (all.length == 1) all.head
+    else all.head + all.tail.map { case req(what) => what case _ => "?" }.mkString(", ", ", ", "")
+  }
 
   object Kind extends Enumeration { val StringXn, HashXn, BooleanXn, CharacterXn, IntegralXn, FloatingPointXn, DateTimeXn, LiteralXn, ErrorXn = Value }
   import Kind.{Value => KindOf, _}
@@ -329,6 +357,20 @@ abstract class FormatInterpolator {
           }
         case _ => true
       }
+    // is the specifier OK with an actual that it refers to by index or '<'? The actual is not converted
+    // again, but the formatter takes boxed values and Java's BigInteger and BigDecimal.
+    def acceptsReferenced(arg: Type): Unit =
+      acceptableVariants match {
+        case Nil => ()
+        case variants =>
+          def runtimeTypes(t: Type) = t :: boxedClass.get(t.typeSymbol).map(_.tpe).toList ::: (
+            if (t =:= BigIntTpe) JavaBigIntegerTpe :: Nil else if (t =:= BigDecimalTpe) JavaBigDecimalTpe :: Nil else Nil)
+          variants.find(v => runtimeTypes(v).exists(arg <:< _)) match {
+            case Some(v) => accepts(v); lintToString(arg)
+            case None    => errorAt(CC)(mismatchMessage(arg, variants))
+          }
+      }
+
     def lintToString(arg: Type): Unit =
       if (linting && kind == StringXn && !(arg =:= StringTpe))
         if (arg.typeSymbol eq UnitClass)

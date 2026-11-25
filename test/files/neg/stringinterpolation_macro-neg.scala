@@ -113,4 +113,11 @@ object Test extends App {
 
   // 11) an arg the formatter rejects
   f"${BigDecimal(1)}%a"
+
+  // 12) conversions that refer to an arg by index or '<' get its type checked
+  f"${"a"}%<d"
+  f"${"a"}%s %1$$d"
+  f"$d%<+x"
+  f"${BigDecimal(1)}%<a"
+  f"${BigDecimal(1)}%e %1$$A"
 }
