@@ -1,0 +1,26 @@
+hk-subtype-static-class.scala:32: error: type mismatch;
+ found   : K[B]
+ required: K[A]
+    val a1: K[A] = kb                // error
+                   ^
+hk-subtype-static-class.scala:33: error: type mismatch;
+ found   : K[Wrap]
+ required: K[A]
+    val a3: K[A] = kw                // error
+                   ^
+hk-subtype-static-class.scala:37: error: type mismatch;
+ found   : K2[Swap]
+ required: K2[A2]
+    val b1: K2[A2] = (??? : K2[Swap])   // error
+                          ^
+hk-subtype-static-class.scala:39: error: type mismatch;
+ found   : K3[Bounded]
+ required: K3[A]
+    val c1: K3[A] = (??? : K3[Bounded]) // error: the bound of Bounded's parameter is tighter than that of A's
+                         ^
+hk-subtype-static-class.scala:40: error: type mismatch;
+ found   : Rows.type
+ required: scala.collection.IterableFactory[scala.collection.immutable.Iterable]
+    firstOf(Rows)                    // error
+            ^
+5 errors
