@@ -266,6 +266,30 @@ object Test extends App {
     for (((f, s), i) <- ss.zipWithIndex) assertEquals(s, f, i)
   }
 
+  // a conversion that refers to an arg accepts a type that the formatter may accept
+  def referenced(): Unit = {
+    val any: Any = 7
+    val anyVal: AnyVal = 7
+    val number: Number = Integer.valueOf(7)
+    val date = java.time.LocalDate.of(2012, 5, 26)
+    val temporal: java.time.temporal.TemporalAccessor = date
+    def generic[A](a: A) = f"$a%s %<d"
+    def bounded[A <: Int](a: A) = f"$a%s %<d"
+    val ss = List[(String, String)](
+      f"$any%s %<d"          -> "7 7",
+      f"${BigInt(7): Any}%s %<+x" -> "7 +7",
+      f"$any%s %1$$x"        -> "7 7",
+      f"$anyVal%s %<d"       -> "7 7",
+      f"$number%s %<d"       -> "7 7",
+      f"${generic(7)}"       -> "7 7",
+      f"${bounded(7)}"       -> "7 7",
+      f"$date%s %<tY"        -> "2012-05-26 2012",
+      f"$date%s %1$$tF"      -> "2012-05-26 2012-05-26",
+      f"$temporal%s %<tY"    -> "2012-05-26 2012",
+    )
+    for (((f, s), i) <- ss.zipWithIndex) assertEquals(s, f, i)
+  }
+
   noEscape()
   tabbed()
   quoted()
@@ -276,6 +300,7 @@ object Test extends App {
   fIfNot()
   fHeteroArgs()
   `f interpolator baseline`()
+  referenced()
 
   assertEquals("hell", f"$tester%.4s")
 }

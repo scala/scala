@@ -239,6 +239,7 @@ abstract class FormatInterpolator {
   val BigIntTpe = typeTag[BigInt].tpe
   val CalendarTpe = typeTag[java.util.Calendar].tpe
   val DateTpe = typeTag[java.util.Date].tpe
+  lazy val TemporalAccessorTpe = rootMirror.requiredClass[java.time.temporal.TemporalAccessor].tpe
   val FormattableTpe = typeTag[Formattable].tpe
 
   /** The position of the char at an offset in `text`, the value of a part whose source starts at `pos`.
@@ -399,18 +400,25 @@ abstract class FormatInterpolator {
         case _ => true
       }
     // is the specifier OK with an actual that it refers to by index or '<'? The actual is not converted
-    // again, but the formatter takes boxed values and Java's BigInteger and BigDecimal.
-    def acceptsReferenced(arg: Type): Unit =
+    // again, but the formatter takes boxed values, Java's BigInteger and BigDecimal, and java.time's dates.
+    // A less specific type, such as Any, may have a value that the formatter takes.
+    def acceptsReferenced(arg: Type): Unit = {
+      def runtimeTypes(t: Type) = t :: boxedClass.get(t.typeSymbol).map(_.tpe).toList ::: (
+        if (t =:= BigIntTpe) JavaBigIntegerTpe :: Nil
+        else if (t =:= BigDecimalTpe) JavaBigDecimalTpe :: Nil
+        else if (t =:= DateTpe) TemporalAccessorTpe :: Nil
+        else Nil)
+      val tpe = arg.dealiasWiden.upperBound
       acceptableVariants match {
         case Nil => ()
         case variants =>
-          def runtimeTypes(t: Type) = t :: boxedClass.get(t.typeSymbol).map(_.tpe).toList ::: (
-            if (t =:= BigIntTpe) JavaBigIntegerTpe :: Nil else if (t =:= BigDecimalTpe) JavaBigDecimalTpe :: Nil else Nil)
-          variants.find(v => runtimeTypes(v).exists(arg <:< _)) match {
+          variants.find(v => runtimeTypes(v).exists(tpe <:< _)) match {
             case Some(v) => accepts(v); lintToString(arg)
-            case None    => errorAt(CC)(mismatchMessage(arg, variants))
+            case None    =>
+              if (!variants.exists(v => runtimeTypes(v).exists(_ <:< tpe))) errorAt(CC)(mismatchMessage(arg, variants))
           }
       }
+    }
 
     def lintToString(arg: Type): Unit =
       if (linting && kind == StringXn && !(arg =:= StringTpe))
