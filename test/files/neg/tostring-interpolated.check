@@ -36,6 +36,6 @@ Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the mes
 tostring-interpolated.scala:32: error: interpolated Unit value
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=Mitigations.funitized
   def funitized = f"unfortunately $shown" // warn accidental unit value
-                                       ^
+                                   ^
 1 warning
 9 errors
