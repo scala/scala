@@ -154,10 +154,10 @@ abstract class FormatInterpolator {
             cv.lintToString(argTypes(n-1))
           }
           def errorLeading(op: Conversion) = op.errorAt(Spec)(s"conversions must follow a splice; ${Conversion.literalHelp}")
-          def accept(op: Conversion): Unit = {
+          def accept(op: Conversion, amendedPart: String = part): Unit = {
             if (!op.isLeading) errorLeading(op)
             op.accepts(argType(n-1, op.acceptableVariants: _*))
-            amended += part
+            amended += amendedPart
             op.lintToString(argTypes(n-1))
           }
 
@@ -172,7 +172,8 @@ abstract class FormatInterpolator {
             else if (cv.isError) () // already reported, and there is no arg type to check
             else if (cv.isIndexed) {
               // with the '<' flag, the index is ignored and the conversion refers to the previous arg
-              if (!cv.hasFlag('<') && cv.index.contains(n)) accept(cv)
+              // drop the index: an indexed conversion does not advance the formatter to the next arg
+              if (!cv.hasFlag('<') && cv.index.contains(n)) accept(cv, "%" + part.substring(cv.descriptor.end(Index.ordinal) + 1))
               else {
                 // "$x$y%1" where "%1" follows a splice but does not apply to it
                 // verify already warned that the index is ignored if there is one with '<'
