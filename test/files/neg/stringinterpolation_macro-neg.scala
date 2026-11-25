@@ -123,4 +123,21 @@ object Test extends App {
 
   // 13) the position of an error after escapes in the part
   f"$d%d\t\u0041$"%-%"
+
+  // 14) the checks of 9) to 11) for more conversions, and specifiers that crashed the macro
+  f"$s%.2147483648s"
+  f"$s%-b"
+  f"$s%.2147483648b"
+  f"$s%-h"
+  f"$s%.2147483648h"
+  f"$f%.2147483648e"
+  f"$f%.2147483648g"
+  f"${BigDecimal(1)}%A"
+  f"$f%,(.2147483648a"
+  f"$d%1$$q"
+  f"$d%99999999999"
+  f"$d$d%2$$"
+  f"${d}x%1$$"
+  f"""a
+  \u00zz"""
 }

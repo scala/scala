@@ -282,6 +282,57 @@ stringinterpolation_macro-neg.scala:122: error: type mismatch;
 stringinterpolation_macro-neg.scala:125: error: Flag '-' requires a width
   f"$d%d\t\u0041$"%-%"
                    ^
+stringinterpolation_macro-neg.scala:128: error: Precision out of range
+  f"$s%.2147483648s"
+        ^
+stringinterpolation_macro-neg.scala:129: error: Flag '-' requires a width
+  f"$s%-b"
+       ^
+stringinterpolation_macro-neg.scala:130: error: Precision out of range
+  f"$s%.2147483648b"
+        ^
+stringinterpolation_macro-neg.scala:131: error: Flag '-' requires a width
+  f"$s%-h"
+       ^
+stringinterpolation_macro-neg.scala:132: error: Precision out of range
+  f"$s%.2147483648h"
+        ^
+stringinterpolation_macro-neg.scala:133: error: Precision out of range
+  f"$f%.2147483648e"
+        ^
+stringinterpolation_macro-neg.scala:134: error: Precision out of range
+  f"$f%.2147483648g"
+        ^
+stringinterpolation_macro-neg.scala:135: error: type mismatch;
+ found   : scala.math.BigDecimal
+ required: Double, Float
+  f"${BigDecimal(1)}%A"
+                ^
+stringinterpolation_macro-neg.scala:136: error: Precision out of range
+  f"$f%,(.2147483648a"
+          ^
+stringinterpolation_macro-neg.scala:136: error: ',' not allowed for a, A
+  f"$f%,(.2147483648a"
+       ^
+stringinterpolation_macro-neg.scala:136: error: '(' not allowed for a, A
+  f"$f%,(.2147483648a"
+        ^
+stringinterpolation_macro-neg.scala:137: error: illegal conversion character 'q'
+  f"$d%1$$q"
+          ^
+stringinterpolation_macro-neg.scala:138: error: Missing conversion operator in '%99999999999'; use %% for literal %, %n for newline
+  f"$d%99999999999"
+      ^
+stringinterpolation_macro-neg.scala:139: error: Missing conversion operator in '%2$'; use %% for literal %, %n for newline
+  f"$d$d%2$$"
+        ^
+stringinterpolation_macro-neg.scala:140: error: Missing conversion operator in '%1$'; use %% for literal %, %n for newline
+  f"${d}x%1$$"
+         ^
+stringinterpolation_macro-neg.scala:142: error: invalid unicode escape at index 8 of a
+  \u00zz
+  \u00zz"""
+      ^
 stringinterpolation_macro-neg.scala:19: warning: Boolean format is null test for non-Boolean
   f"$s%b"
        ^
@@ -303,5 +354,11 @@ stringinterpolation_macro-neg.scala:120: warning: Index is not this arg
 stringinterpolation_macro-neg.scala:121: warning: Index is not this arg
   f"${BigDecimal(1)}%<a"
                      ^
-7 warnings
-82 errors
+stringinterpolation_macro-neg.scala:129: warning: Boolean format is null test for non-Boolean
+  f"$s%-b"
+        ^
+stringinterpolation_macro-neg.scala:130: warning: Boolean format is null test for non-Boolean
+  f"$s%.2147483648b"
+                  ^
+9 warnings
+98 errors
