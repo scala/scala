@@ -340,8 +340,8 @@ abstract class TailCalls extends Transform {
             transform(expr)
           )
 
-        // a translated casedef
-        case LabelDef(_, _, _) if hasSynthCaseSymbol(tree) =>
+        // a translated casedef, or the label of a while or do-while loop
+        case LabelDef(_, _, _) =>
           deriveLabelDef(tree)(transform)
 
         case Block(stats, expr) =>
@@ -412,10 +412,21 @@ abstract class TailCalls extends Transform {
           tree
         case Select(qual, name) =>
           treeCopy.Select(tree, noTailTransform(qual), name)
+        case Typed(expr, tpt) =>
+          treeCopy.Typed(tree, transform(expr), tpt)
+        case Return(expr) =>
+          treeCopy.Return(tree, transform(expr))
         case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
           tree
         case _ =>
-          tree.transform(this)
+          // The remaining trees do not preserve tail position: the operand of a `Throw`, the right-hand
+          // side of an `Assign` or a `ValDef`, the arguments of an `ArrayValue`, and the statements of
+          // definitions that are not transformed themselves (class bodies, constructors, accessors).
+          // This is conservative for a `Return` nested in one of them, as it is for one in a statement.
+          val saved = ctx
+          ctx = ctx.noTailContext()
+          try tree.transform(this)
+          finally ctx = saved
       }
     }
 
@@ -462,8 +473,8 @@ abstract class TailCalls extends Transform {
       case Apply(fun, args) if (fun.symbol == Boolean_or || fun.symbol == Boolean_and) =>
         traverseTrees(args)
 
-      // a translated casedef
-      case LabelDef(_, _, body) if hasSynthCaseSymbol(tree) =>
+      // a translated casedef, or the label of a while or do-while loop
+      case LabelDef(_, _, body) =>
         traverse(body)
 
       // a translated match
@@ -497,8 +508,19 @@ abstract class TailCalls extends Transform {
         traverseTreesNoTail(catches)
         traverseNoTail(finalizer)
 
+      case Typed(expr, _) =>
+        traverse(expr)
+
+      case Return(expr) =>
+        traverse(expr)
+
       case Apply(_, _) | EmptyTree | Super(_, _) | This(_) | Select(_, _) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
-      case _ => super.traverse(tree)
+      case _ =>
+        // see the default case of `TailCallElimination.transform`
+        val saved = maybeTail
+        maybeTail = false
+        try super.traverse(tree)
+        finally maybeTail = saved
     }
   }
 }

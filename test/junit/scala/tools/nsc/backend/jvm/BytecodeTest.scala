@@ -1111,4 +1111,36 @@ class BytecodeTest extends BytecodeTesting {
     check("nilModuleViaScalaPackageAlias", n = false)
     check("moduleViaScalaPackageAlias", n = true)
   }
+
+  @Test def tailCallsThrowAssign(): Unit = {
+    val code =
+      """class C {
+        |  final def mixed(n: Int): Exception =
+        |    if (n == 0) new Exception
+        |    else if (n % 2 == 0) mixed(n - 1)
+        |    else throw mixed(n - 1)
+        |
+        |  final def assign(n: Int): Unit = {
+        |    var x: Any = null
+        |    if (n > 0) x = assign(n - 1)
+        |  }
+        |}
+        |""".stripMargin
+    val c = compileClass(code)
+    def check(name: String, jumps: Int, calls: Int) = {
+      val instructions = getInstructions(c, name)
+      val backJumps = instructions.zipWithIndex.count {
+        case (Jump(GOTO, label), i) => instructions.indexOf(label) < i
+        case _                      => false
+      }
+      val selfCalls = instructions.count {
+        case i: Invoke => i.name == name
+        case _         => false
+      }
+      assertEquals(name, (jumps, calls), (backJumps, selfCalls))
+    }
+    // only the call that is not the operand of `throw` becomes a jump
+    check("mixed", jumps = 1, calls = 1)
+    check("assign", jumps = 0, calls = 1)
+  }
 }
