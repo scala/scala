@@ -143,12 +143,16 @@ abstract class FormatInterpolator {
             case Literal(Constant(x: String)) => x
             case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
           }
-          val part = try StringContext.processEscapes(part1) catch escapeHatch(c)(part1, part0.pos)
+          var escaped = true
+          val part =
+            try StringContext.processEscapes(part1)
+            catch escapeHatch(c)(part1, sourcePosAt(part0.pos, part1, escapes = false)).andThen(_.tap(_ => escaped = false))
+          val posAt = sourcePosAt(part0.pos, part, escapes = escaped)
           val matches = formatPattern.findAllMatchIn(part)
 
           def insertStringConversion(): Unit = {
             amended += "%s" + part
-            val cv = Conversion(part0.pos, argc)
+            val cv = Conversion(posAt, argc)
             cv.accepts(argType(n-1, AnyTpe))
             convert += cv
             cv.lintToString(argTypes(n-1))
@@ -165,7 +169,7 @@ abstract class FormatInterpolator {
           if (n == 0) amended += part
           else if (!matches.hasNext) insertStringConversion()
           else {
-            val cv = Conversion(matches.next(), part0.pos, argc)
+            val cv = Conversion(matches.next(), posAt, argc)
             if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.flags.nonEmpty)
               formatting = true
             if (cv.isLiteral) insertStringConversion()
@@ -187,7 +191,7 @@ abstract class FormatInterpolator {
           }
           // any remaining conversions in this part must be either literals or indexed
           while (matches.hasNext) {
-            val cv = Conversion(matches.next(), part0.pos, argc)
+            val cv = Conversion(matches.next(), posAt, argc)
             if (n == 0 && cv.hasFlag('<')) cv.badFlag('<', "No last arg")
             else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
             else if (!cv.isLiteral && !cv.isError) refer(cv)
@@ -237,6 +241,35 @@ abstract class FormatInterpolator {
   val DateTpe = typeTag[java.util.Date].tpe
   val FormattableTpe = typeTag[Formattable].tpe
 
+  /** The position of the char at an offset in `text`, the value of a part whose source starts at `pos`.
+   *  In the source, `$$` and `$"` are one char, and so is an escape if `text` has escapes processed.
+   */
+  def sourcePosAt(pos: Position, text: String, escapes: Boolean): Int => Position = {
+    val src = pos.source.content
+    val start = pos.point
+    val offsets = new Array[Int](text.length + 1)
+    var i = start
+    var k = 0
+    var consistent = pos.isDefined
+    while (consistent && k < text.length) {
+      offsets(k) = i - start
+      def next(n: Int) = i + n < src.length && src(i + n) == text(k)
+      if (i >= src.length) consistent = false
+      else if (src(i) == '$' && next(1)) i += 2
+      else if (escapes && src(i) == '\\' && i + 1 < src.length) {
+        if (src(i + 1) == 'u') { i += 1; while (i < src.length && src(i) == 'u') i += 1; i += 4 }
+        else i += 2
+      }
+      else if (src(i) == text(k)) i += 1
+      else consistent = false
+      k += 1
+    }
+    offsets(text.length) = i - start
+    offset =>
+      if (!consistent || offset < 0) pos.withPoint(pos.point + offset)
+      else pos.withPoint(pos.point + offsets(offset min text.length) + (offset - text.length max 0))
+  }
+
   def mismatchMessage(tpe: Type, types: Seq[Type]): String = "type mismatch" + {
     val req = raw"required: (.*)".r.unanchored
     val all = types.map(req => global.analyzer.foundReqMsg(tpe, req))
@@ -250,7 +283,7 @@ abstract class FormatInterpolator {
 
   /** A conversion specifier matched in the argi'th string part, with `argc` arguments to interpolate.
    */
-  final class Conversion(val descriptor: Match, pos: Position, val kind: KindOf, argc: Int) {
+  final class Conversion(val descriptor: Match, posAt: Int => Position, val kind: KindOf, argc: Int) {
     // the descriptor fields
     val index: Option[Int]     = descriptor.intOf(Index)
     val flags: String          = descriptor.stringOf(Flags)
@@ -413,13 +446,13 @@ abstract class FormatInterpolator {
       errorAt(Flags, i)(msg)
     }
 
-    def groupPosAt(g: SpecGroup, i: Int) = pos.withPoint(pos.point + descriptor.offset(g, i))
+    def groupPosAt(g: SpecGroup, i: Int) = posAt(descriptor.offset(g, i))
     def errorAt(g: SpecGroup, i: Int = 0)(msg: String)   = c.error(groupPosAt(g, i), msg).tap(_ => reported = true)
     def warningAt(g: SpecGroup, i: Int = 0)(msg: String, cat: WarningCategory = WarningCategory.Other) = c.callsiteTyper.context.warning(groupPosAt(g, i), msg, cat, Nil)
   }
 
   object Conversion {
-    def apply(m: Match, p: Position, argc: Int): Conversion = {
+    def apply(m: Match, p: Int => Position, argc: Int): Conversion = {
       def kindOf(cc: Char) = cc match {
         case 's' | 'S' => StringXn
         case 'h' | 'H' => HashXn
@@ -441,7 +474,7 @@ abstract class FormatInterpolator {
       }
     }
     // construct a default %s conversion
-    def apply(p: Position, argc: Int): Conversion =
+    def apply(p: Int => Position, argc: Int): Conversion =
       new Conversion(formatPattern.findAllMatchIn("%").next(), p, StringXn, argc)
     val literalHelp = "use %% for literal %, %n for newline"
   }
@@ -473,10 +506,10 @@ object FormatInterpolator {
     def stringOf(g: SpecGroup): String        = group(g).getOrElse("")
     def intOf(g: SpecGroup, skip: Int = 0): Option[Int] = group(g).map(_.drop(skip).toIntOption.getOrElse(OutOfRange))
   }
-  private def escapeHatch(c: Context)(s0: String, pos: c.universe.Position): PartialFunction[Throwable, String] = {
+  private def escapeHatch(c: Context)(s0: String, posAt: Int => c.universe.Position): PartialFunction[Throwable, String] = {
     // trailing backslash, octal escape, or other
     case e: StringContext.InvalidEscapeException =>
-      def errPoint = pos.withPoint(pos.point + e.index)
+      def errPoint = posAt(e.index)
       def octalOf(c: Char) = Character.digit(c, 8)
       def alt = {
         def altOf(i: Int) = i match {
@@ -513,7 +546,7 @@ object FormatInterpolator {
       }
       s0
     case e: StringContext.InvalidUnicodeEscapeException =>
-      c.error(pos.withPoint(pos.point + e.index), e.getMessage)
+      c.error(posAt(e.index), e.getMessage)
       s0
   }
 }

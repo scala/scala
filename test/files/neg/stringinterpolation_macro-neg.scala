@@ -120,4 +120,7 @@ object Test extends App {
   f"$d%<+x"
   f"${BigDecimal(1)}%<a"
   f"${BigDecimal(1)}%e %1$$A"
+
+  // 13) the position of an error after escapes in the part
+  f"$d%d\t\u0041$"%-%"
 }
