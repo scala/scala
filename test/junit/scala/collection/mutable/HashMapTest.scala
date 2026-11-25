@@ -262,4 +262,16 @@ class HashMapTest {
       .mapValuesInPlace((_, _) => -1)
     assertTrue(m.toString, m.forall(_._2 == -1))
   }
+
+  @Test
+  def updateExistingKeyDuringIterationVisitsEveryEntry(): Unit = {
+    // 11 entries in a table of 16 with threshold 12: replacing a value must not resize the table
+    val m = mutable.HashMap.from((1 to 11).map(i => i * 17 -> 1))
+    for (k <- m.keys) m(k) = m(k) + 1
+    assertEquals(List.fill(11)(2), m.values.toList)
+    for (k <- m.keys) m.put(k, m(k) + 1)
+    assertEquals(List.fill(11)(3), m.values.toList)
+    for ((k, v) <- m) m.addOne(k -> (v + 1))
+    assertEquals(List.fill(11)(4), m.values.toList)
+  }
 }
