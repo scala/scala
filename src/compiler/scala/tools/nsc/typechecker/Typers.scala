@@ -951,6 +951,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val t = atPos(tree.pos)(Select(qual setPos tree.pos.makeTransparent, nme.apply))
         wrapErrors(t, _.typed(t, mode, pt))
       }
+      // A Java field is selected directly, not through a getter, so the deconst of (2) does not apply to it.
+      def isJavaFieldSelect(tree: Tree): Boolean = tree match {
+        case Select(_, _) => tree.symbol != null && tree.symbol.isJavaDefined && !tree.symbol.isMethod
+        case _            => false
+      }
       def adaptConstant(value: Constant): Tree = {
         val sym = tree.symbol
         if (sym != null && !context.unit.isJava && sym.isDeprecated)
@@ -1218,6 +1223,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else tree.tpe match {
         case AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
+        case ct @ FoldableConstantType(_) if isBeforeErasure && isJavaFieldSelect(tree) && !treeInfo.isExprSafeToInline(tree) => // (0) for `K.make().inst`, see (2)
+          adapt(tree setType ct.deconst, mode, pt, original)
         case ct @ FoldableConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
           adaptConstant(value)
         case OverloadedType(_, _) if !mode.inFunMode => // (1)
