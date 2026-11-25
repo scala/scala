@@ -2269,7 +2269,6 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
   }
 
   private[this] def advanceSlice(): Unit = {
-    if(!hasNext) Iterator.empty.next()
     sliceIdx += 1
     var slice: Array[_ <: AnyRef] = v.vectorSlice(sliceIdx)
     while(slice.length == 0) {
@@ -2292,6 +2291,7 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
   }
 
   private[this] def advance(): Unit = {
+    if(!hasNext) Iterator.empty.next()
     val pos = i1-len1+totalLength
     if(pos == sliceEnd) advanceSlice()
     if(sliceDim > 1) {

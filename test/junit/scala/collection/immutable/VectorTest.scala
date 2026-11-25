@@ -435,6 +435,21 @@ class VectorTest {
   }
 
   @Test
+  def vectorIteratorDropToEndThrows(): Unit = {
+    for (size <- List(1, 32, 33, 40, 1024, 1100, 40000)) {
+      val v = Vector.tabulate(size)(_ + 100)
+      for (n <- List(size, size + 1, Int.MaxValue)) {
+        val it = v.iterator.drop(n)
+        assertFalse(s"<$size>.iterator.drop($n).hasNext", it.hasNext)
+        intercept[NoSuchElementException](it.next())
+      }
+      val it = v.iterator.slice(size, size + 5)
+      assertFalse(s"<$size>.iterator.slice($size, ${size + 5}).hasNext", it.hasNext)
+      intercept[NoSuchElementException](it.next())
+    }
+  }
+
+  @Test
   def t11600(): Unit = {
     locally {
       abstract class Base
