@@ -674,6 +674,17 @@ class VectorTest {
     assertEquals(1000000, v2(v2.length-1)) // ArrayIndexOutOfBoundsException
     assertEquals(1024, v2(1023))
   }
+
+  @Test def `iterator drop near Int.MaxValue after next does not overflow`: Unit = {
+    for (size <- List(5, 100, 2000); n <- List(Int.MaxValue, Int.MaxValue - 1, Int.MaxValue - size + 1)) {
+      def it() = { val it = Vector.range(0, size).iterator; it.next(); it }
+      val d = it().drop(n)
+      assertEquals(s"size=$size n=$n", 0, d.knownSize)
+      assertFalse(s"size=$size n=$n", d.hasNext)
+      assertEquals(s"size=$size n=$n", Vector.empty, it().drop(n).toVector)
+      assertEquals(s"size=$size n=$n", Nil, it().slice(n, Int.MaxValue).toList)
+    }
+  }
 }
 
 object VectorUtils {
