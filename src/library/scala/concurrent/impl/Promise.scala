@@ -336,7 +336,8 @@ private[concurrent] object Promise {
       if (state eq t) {
         if (!compareAndSet(state, Noop)) unregisterCallback(t)
       } else if (state.isInstanceOf[ManyCallbacks[_]]) {
-        if (!compareAndSet(state, removeCallback(state.asInstanceOf[ManyCallbacks[T]], t))) unregisterCallback(t)
+        val removed = removeCallback(state.asInstanceOf[ManyCallbacks[T]], t)
+        if ((removed ne null) && !compareAndSet(state, removed)) unregisterCallback(t)
       } else if (state.isInstanceOf[Link[_]]) {
         // Misses `t` if `linkRootOf` is concurrently moving it to the root. It then stays there until the root completes,
         // which is rare and bounded: a promise is linked only once.
@@ -352,6 +353,7 @@ private[concurrent] object Promise {
         concatCallbacks(m.rest, new ManyCallbacks(m.first, right))
       }
 
+    // Returns null if `t` is not in `cs`
     @tailrec private[this] final def removeCallback(cs: Callbacks[T], t: Transformation[_, _], result: Callbacks[T] = null): AnyRef =
       if (cs eq t) {
         if (result == null) Noop
@@ -364,7 +366,7 @@ private[concurrent] object Promise {
           else concatCallbacks(m.rest, result)
         }
         else removeCallback(m.rest, t, if (result == null) m.first else new ManyCallbacks(m.first, result))
-      } else cs
+      } else null
 
     // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
     @tailrec
