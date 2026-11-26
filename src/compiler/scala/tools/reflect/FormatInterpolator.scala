@@ -240,17 +240,18 @@ abstract class FormatInterpolator {
 
     // `%s` formats a Formattable with `formatTo`, and any other value as concatenating it does. The value's
     // class decides, so check it at run time unless the type tells: a value of a final class that is not a
-    // Formattable cannot be one, but one of any other type can, such as a subclass of a case class.
+    // Formattable cannot be one, nor can an Option, but a subclass of a case class can. The test is of an
+    // Any, as testing a sealed type compiled in this run would later warn that it is fruitless.
     private def asString(actual: Tree): Tree = {
       val tpe = actual.tpe.dealiasWiden
       def formatted(t: Tree) = q"new _root_.scala.collection.immutable.StringOps(${"%s"}).format($t)"
       if (tpe <:< FormattableTpe) c.typecheck(atPos(actual.pos)(formatted(actual)))
-      else if (isPrimitiveValueType(tpe) || tpe <:< NullTpe || tpe.typeSymbol.isFinal) actual
+      else if (isPrimitiveValueType(tpe) || tpe <:< NullTpe || global.analyzer.neverMatches(tpe, FormattableTpe)) actual
       else {
         val x = TermName(c.freshName("arg$"))
         c.typecheck(atPos(actual.pos)(q"""{
           val $x = $actual
-          if ($x.isInstanceOf[_root_.java.util.Formattable]) ${formatted(q"$x")} else $x
+          if (($x: _root_.scala.Any).isInstanceOf[_root_.java.util.Formattable]) ${formatted(q"$x")} else $x
         }"""))
       }
     }

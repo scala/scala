@@ -188,6 +188,10 @@ class FormatInterpolatorTest {
     ok("{ def g[A](a: A) = f\"<$a>\"; g(x) }", "<xxx>"),
     ok("{ class B { override def toString = \"b\" }; class F extends B with java.util.Formattable { def formatTo(ff: java.util.Formatter, g: Int, w: Int, p: Int): Unit = ff.format(\"f\") }; val v: B = new F; f\"$v ${new B}\" }", "f b"),
     ok("f\"$anyVal $any $s ${null}\"", "7 7 Scala null"),
+    // a sealed type that cannot hold one is not tested, which would warn
+    ok("{ val o: Option[Int] = Some(1); val e: Either[Int, String] = Left(2); val l = List(3); f\"$o $e $l\" }", "Some(1) Left(2) List(3)"),
+    ok("{ sealed trait T; case object O extends T; final case class C(i: Int) extends T; val t: T = O; val c: T = C(1); f\"$t $c\" }", "O C(1)"),
+    ok("{ sealed trait T; class B extends T { override def toString = \"b\" }; class F extends B with java.util.Formattable { def formatTo(ff: java.util.Formatter, g: Int, w: Int, p: Int): Unit = ff.format(\"f\") }; val t: T = new F; f\"$t\" }", "f"),
   )
 
   @Test def nonLiteralParts(): Unit = check(

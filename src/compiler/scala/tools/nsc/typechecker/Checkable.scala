@@ -137,6 +137,9 @@ trait Checkable {
     scrut <:< pattTpWild
   }
 
+  /** Whether no value of type `X` is a `P`, as the final and sealed classes already compiled tell. */
+  def neverMatches(X: Type, P: Type): Boolean = new CheckabilityChecker(X, P).neverMatches
+
   private class CheckabilityChecker(val X: Type, val P: Type, isRecheck: Boolean = false) {
     import Checkability._
     /** Whether the result may change once the classes compiled in this run are complete, see `isKnown`. */
