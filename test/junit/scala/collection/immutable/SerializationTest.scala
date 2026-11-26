@@ -57,6 +57,17 @@ class SerializationTest {
   }
 
   @Test
+  def sortedMapKeySet(): Unit = {
+    val m = SortedMap(1 -> "one", 2 -> "two", 3 -> "three")(Ordering.Int.reverse).withDefaultValue("none")
+    for (ks <- List(m.keySet, m.keySet.rangeFrom(2))) {
+      val after = serializeDeserialize(ks)
+      assertEquals(ks, after)
+      assertEquals(ks.toList, after.toList)
+      assertEquals(ks.ordering, after.ordering)
+    }
+  }
+
+  @Test
   def treeMap(): Unit = {
     assertEqualsAfterDeserialization(TreeMap.empty[Int, String], classOf[TreeMap[_, _]])
     assertEqualsAfterDeserialization(TreeMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[TreeMap[_, _]])
@@ -107,6 +118,20 @@ class SerializationTest {
   def listMap(): Unit = {
     assertEqualsAfterDeserialization(ListMap.empty[Int, String], classOf[ListMap[_, _]])
     assertEqualsAfterDeserialization(ListMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[ListMap[_, _]])
+  }
+
+  @Test
+  def treeSeqMap(): Unit = {
+    import TreeSeqMap.OrderBy
+    for (orderBy <- List(OrderBy.Insertion, OrderBy.Modification)) {
+      val m = TreeSeqMap.empty[Int, String](orderBy) + (1 -> "one") + (2 -> "two") + (3 -> "three") + (1 -> "uno")
+      val after = serializeDeserialize(m)
+      assertEquals(m, after)
+      assertEquals(m.toList, after.toList)
+      assertEquals(orderBy, after.orderedBy)
+      assertEquals((m + (2 -> "dos")).toList, (after + (2 -> "dos")).toList)
+    }
+    assertEqualsAfterDeserialization(TreeSeqMap.empty[Int, String], classOf[TreeSeqMap[_, _]])
   }
 
   @Test

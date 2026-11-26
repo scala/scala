@@ -298,4 +298,42 @@ class LazyZipOpsTest {
     assertFalse(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 1).isEmpty)
     assertTrue(v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 3).isEmpty)
   }
+
+  @Test
+  def lazyZipFlatMapIsEmpty(): Unit = {
+    val v = List(1, 2, 3).view
+    assertFalse(v.lazyZip(v).flatMap((a, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).flatMap((_, _) => Nil).isEmpty)
+    assertFalse(v.lazyZip(v).lazyZip(v).flatMap((a, _, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).flatMap((_, _, _) => Nil).isEmpty)
+    assertFalse(v.lazyZip(v).lazyZip(v).lazyZip(v).flatMap((a, _, _, _) => if (a > 1) List(a) else Nil).isEmpty)
+    assertTrue(v.lazyZip(v).lazyZip(v).lazyZip(v).flatMap((_, _, _, _) => Nil).isEmpty)
+  }
+
+  @Test
+  def serializable(): Unit = {
+    import java.io._
+    def roundTrip(it: View[Any]): List[Any] = {
+      val bos = new ByteArrayOutputStream
+      new ObjectOutputStream(bos).writeObject(it)
+      new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray)).readObject().asInstanceOf[View[Any]].toList
+    }
+    // On a view, map, flatMap and filter return the lazily zipped view itself
+    val v = List(1, 2, 3).view
+    val zips: List[View[Any]] = List(
+      v.lazyZip(v).map(_ + _),
+      v.lazyZip(v).flatMap((a, b) => List(a, b)),
+      v.lazyZip(v).filter((a, _) => a > 1),
+      v.lazyZip(v): View[(Int, Int)],
+      v.lazyZip(v).lazyZip(v).map(_ + _ + _),
+      v.lazyZip(v).lazyZip(v).flatMap((a, _, c) => List(a, c)),
+      v.lazyZip(v).lazyZip(v).filter((a, _, _) => a > 1),
+      v.lazyZip(v).lazyZip(v): View[(Int, Int, Int)],
+      v.lazyZip(v).lazyZip(v).lazyZip(v).map(_ + _ + _ + _),
+      v.lazyZip(v).lazyZip(v).lazyZip(v).flatMap((a, _, _, d) => List(a, d)),
+      v.lazyZip(v).lazyZip(v).lazyZip(v).filter((a, _, _, _) => a > 1),
+      v.lazyZip(v).lazyZip(v).lazyZip(v): View[(Int, Int, Int, Int)],
+    )
+    for (z <- zips) assertEquals(z.toList, roundTrip(z))
+  }
 }

@@ -361,6 +361,8 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 }
 
 // TODO: use `CheckedIndexedSeqView.Id` once we can change the return type of `ArrayBuffer#view`
+// The ID the JVM computed in 2.13.10 to 2.13.18, so data serialized by those releases stays readable
+@SerialVersionUID(-8658689786588056217L)
 final class ArrayBufferView[A] private[mutable](underlying: ArrayBuffer[A], mutationCount: () => Int)
   extends AbstractIndexedSeqView[A] {
   @deprecated("never intended to be public; call ArrayBuffer#view instead", since = "2.13.7")

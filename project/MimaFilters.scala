@@ -58,9 +58,16 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.LazyList"), // superclass change from AbstractSeq to LazyListBase
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyListBase*"), // private[immutable]
 
-    // VectorMap becomes serializable (DefaultSerializable); only breaks forward compatibility
+    // Collections become serializable; only breaks forward compatibility
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorMap"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap.writeReplace"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.mutable.CollisionProofHashMap"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.SortedMapOps$KeySortedSet"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SortedMapOps#KeySortedSet.writeReplace"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SortedMapOps$ImmutableKeySortedSet"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.SortedMapOps#ImmutableKeySortedSet.writeReplace"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.TreeSeqMap"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeSeqMap.writeReplace"),
 
     // scala/bug#13183: new private classes in the private[reflect] trait SynchronizedSymbols
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.SynchronizedSymbols$SynchronizedStubClassSymbol"),
