@@ -24,6 +24,17 @@ class RangeTest {
   }
 
   @Test
+  def iteratorDropWhenExhausted(): Unit = {
+    for (r <- List(Int.MinValue until Int.MinValue, 4 until Int.MaxValue by -1, Int.MaxValue until Int.MaxValue by -1, (Int.MinValue to 10).take(0))) {
+      assertFalse(s"$r.iterator.drop(1)", r.iterator.drop(1).hasNext)
+      assertEquals(s"$r.indexWhere(_ => true, 1)", -1, r.indexWhere(_ => true, 1))
+    }
+    val it = (Int.MaxValue - 2 to Int.MaxValue).iterator
+    it.foreach(_ => ())
+    assertFalse(it.drop(1).hasNext)
+  }
+
+  @Test
   def test_SI10060_numeric_range_min_max(): Unit = {
     assertEquals(Range.Long.inclusive(1, 9, 1).min, 1)
     assertEquals(Range.Long.inclusive(1, 9, 1).max, 9)

@@ -711,7 +711,8 @@ private class RangeIterator(
     value
   }
 
-  override def drop(n: Int): Iterator[Int] = {
+  // lastElement is not an element of an empty range, and _next may have wrapped past it
+  override def drop(n: Int): Iterator[Int] = if (!_hasNext) this else {
     if (n > 0) {
       val longPos = _next.toLong + step * n
       if (step > 0) {
