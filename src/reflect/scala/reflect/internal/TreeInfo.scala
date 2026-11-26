@@ -168,7 +168,8 @@ abstract class TreeInfo {
 
   /** Does evaluating `tree` have no effect, so that it can be skipped? Unlike `isExprSafeToInline`, this rejects
    *  stable paths: they can initialize an object or a lazy val, read an uninitialized field, or throw an NPE.
-   *  It accepts a local `var`, so a tree that is moved rather than skipped must be safe to inline as well.
+   *  It does not imply `isExprSafeToInline`: a reference to a local `var` can be skipped, but not inlined,
+   *  as the value of the `var` may change.
    */
   @tailrec
   final def isExprSafeToElide(tree: Tree): Boolean = tree match {
