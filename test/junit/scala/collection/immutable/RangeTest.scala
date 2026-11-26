@@ -65,6 +65,23 @@ class RangeTest {
   }
 
   @Test
+  def iteratorKnownSizeWideRange(): Unit = {
+    for (r <- List(Int.MinValue to Int.MaxValue by Int.MaxValue, Int.MinValue to Int.MaxValue by (1 << 30), -1073741826 until Int.MaxValue by 715827883, Int.MaxValue to Int.MinValue by -Int.MaxValue)) {
+      val xs = r.toList
+      val it = r.iterator
+      for (i <- xs.indices) {
+        assertEquals(s"$r after $i", xs.length - i, it.knownSize)
+        it.next()
+      }
+      assertEquals(0, it.knownSize)
+      assertEquals(xs, r.iterator.toList)
+      assertEquals(xs, r.iterator.toVector.toList)
+    }
+    assertEquals(-1, (Int.MinValue to Int.MaxValue).iterator.knownSize)
+    assertEquals(-1, (Int.MinValue until Int.MaxValue).iterator.knownSize)
+  }
+
+  @Test
   def dropToEnd(): Unit = {
     val it = 10.to(11).iterator
     assertEquals(11, it.drop(1).next())
