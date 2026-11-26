@@ -1,0 +1,7 @@
+gadt-bounds-base-types.scala:9: error: value size is not a member of Any
+    case I  => val l = if (x > 0) x else Nil; l.size
+                                                ^
+gadt-bounds-base-types.scala:15: error: value size is not a member of Any
+    l.size
+      ^
+2 errors
