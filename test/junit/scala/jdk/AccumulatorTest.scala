@@ -17,6 +17,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testkit.AssertUtil.assertThrows
+
 @RunWith(classOf[JUnit4])
 class AccumulatorTest {
   @Test
@@ -34,5 +36,24 @@ class AccumulatorTest {
     assertEquals(List(1,33), ia)
     sa(0) = "ua"
     assertEquals(List("ua", "b"), sa)
+  }
+
+  @Test
+  def indexBounds(): Unit = {
+    def check[A](acc: collection.mutable.Seq[A], elem: A): Unit = {
+      val n = acc.length
+      for (ix <- List(-1, n, n + 1)) {
+        assertThrows[IndexOutOfBoundsException](acc(ix))
+        assertThrows[IndexOutOfBoundsException](acc(ix) = elem)
+      }
+      assertEquals(n, acc.length)
+    }
+    // a single chunk with spare capacity, and several chunks
+    for (n <- List(0, 3, 100)) {
+      check(IntAccumulator.fromSpecific(1 to n), 7)
+      check(LongAccumulator.fromSpecific((1 to n).map(_.toLong)), 7L)
+      check(DoubleAccumulator.fromSpecific((1 to n).map(_.toDouble)), 7.0)
+      check(AnyAccumulator.from((1 to n).map(_.toString)), "7")
+    }
   }
 }
