@@ -228,13 +228,7 @@ abstract class FormatInterpolator {
         }
       }
       else {
-        val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
-        val newStringOps = Select(
-          New(Select(Select(Select(scalaPackage,
-            TermName("collection")), TermName("immutable")), TypeName("StringOps"))),
-          termNames.CONSTRUCTOR
-        )
-        val expr = Apply(Select(Apply(newStringOps, List(Literal(Constant(program.format)))), TermName("format")), actuals)
+        val expr = formatCall(program.format, actuals)
         expr.setPos(c.macroApplication.pos.makeTransparent)
       }
 
@@ -244,18 +238,25 @@ abstract class FormatInterpolator {
     // Any, as testing a sealed type compiled in this run would later warn that it is fruitless.
     private def asString(actual: Tree): Tree = {
       val tpe = actual.tpe.dealiasWiden
-      def formatted(t: Tree) = q"new _root_.scala.collection.immutable.StringOps(${"%s"}).format($t)"
+      def formatted(t: Tree) = formatCall("%s", t :: Nil)
       if (tpe <:< FormattableTpe) c.typecheck(atPos(actual.pos)(formatted(actual)))
       else if (isPrimitiveValueType(tpe) || tpe <:< NullTpe || global.analyzer.neverMatches(tpe, FormattableTpe)) actual
       else {
         val x = TermName(c.freshName("arg$"))
         c.typecheck(atPos(actual.pos)(q"""{
           val $x = $actual
-          if (($x: _root_.scala.Any).isInstanceOf[_root_.java.util.Formattable]) ${formatted(q"$x")} else $x
+          if (${gen.mkIsInstanceOf(Typed(Ident(x), TypeTree(AnyTpe)), FormattableTpe, wrapInApply = false)}) ${formatted(Ident(x))} else $x
         }"""))
       }
     }
   }
+
+  private lazy val StringOpsClass  = rootMirror.requiredClass[scala.collection.StringOps]
+  private lazy val StringOps_format = getMemberMethod(StringOpsClass, TermName("format"))
+
+  // `new StringOps(format).format(args)`
+  private def formatCall(format: String, args: List[Tree]): Tree =
+    gen.mkMethodCall(New(StringOpsClass, Literal(Constant(format))), StringOps_format, Nil, args)
 
   // The types of arg that conversions take
 
