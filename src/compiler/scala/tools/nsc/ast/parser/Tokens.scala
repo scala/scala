@@ -28,6 +28,7 @@ object Tokens extends CommonTokens {
   /** modifiers */
   final val IMPLICIT = 40
   final val OVERRIDE = 41
+  final val SEALED = 45
   final val LAZY = 55
   final val MACRO = 57
 
