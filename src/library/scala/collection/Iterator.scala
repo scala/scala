@@ -1083,7 +1083,7 @@ object Iterator extends IterableFactory[Iterator] {
     private[this] var hasOverflowed = false
     override def knownSize: Int = {
       val size = math.ceil((end.toLong - i.toLong) / step.toDouble)
-      if (size < 0) 0
+      if (hasOverflowed || size < 0) 0
       else if (size > Int.MaxValue) -1
       else size.toInt
     }
