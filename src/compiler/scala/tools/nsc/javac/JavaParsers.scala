@@ -149,9 +149,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makePackaging(pkg: RefTree, stats: List[Tree]): PackageDef =
       atPos(pkg.pos) {  PackageDef(pkg, stats) }
 
-    def makeTemplate(parents: List[Tree], stats: List[Tree]) =
+    /** @param defaultCtorMods the modifiers of the default constructor, which is added if `stats` declare none */
+    def makeTemplate(parents: List[Tree], stats: List[Tree], defaultCtorMods: Modifiers = Modifiers(Flags.JAVA)) =
       Template(parents, noSelfType, if (treeInfo.firstConstructor(stats) == EmptyTree)
-        makeConstructor(Nil) :: stats else stats)
+        makeConstructor(Nil, defaultCtorMods) :: stats else stats)
 
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
@@ -160,9 +161,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makeParam(name: TermName, tpt: Tree): ValDef =
       ValDef(Modifiers(Flags.JAVA | Flags.PARAM), name, tpt, EmptyTree)
 
-    def makeConstructor(formals: List[Tree]) = {
+    def makeConstructor(formals: List[Tree], mods: Modifiers = Modifiers(Flags.JAVA)) = {
       val vparams = mapWithIndex(formals)((p, i) => makeSyntheticParam(i + 1, p))
-      DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
+      DefDef(mods, nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
     }
 
     /** A hook for joining the comment associated with a definition.
@@ -998,8 +999,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val interfaces = interfacesOpt()
       val permits = permitsOpt()
       val (statics, body) = inClassTypeParamScope(tparams)(typeBody(CLASS))
+      // JLS 8.8.9: the default constructor has the access of its class
+      val defaultCtorMods = Modifiers(Flags.JAVA | (mods.flags & Flags.AccessFlags), mods.privateWithin)
       addCompanionObject(statics, atPos(pos) {
-        ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body))
+        ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body, defaultCtorMods))
           .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
       })
     }

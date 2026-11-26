@@ -1,0 +1,13 @@
+Test.scala:2: error: constructor S in class S cannot be accessed in object W from object W
+ Access to protected constructor S not permitted because
+ enclosing object W is not a subclass of
+ class S in class A where target is defined
+  def s: Any = new a.A.S
+               ^
+Test.scala:3: error: constructor I in class I cannot be accessed in object W from object W
+ Access to protected constructor I not permitted because
+ enclosing object W is not a subclass of
+ class I in class A where target is defined
+  def i: Any = new I
+               ^
+2 errors
