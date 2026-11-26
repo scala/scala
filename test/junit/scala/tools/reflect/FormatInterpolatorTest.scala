@@ -3,6 +3,7 @@ package scala.tools.reflect
 import org.junit.Assert.{assertEquals, fail}
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import scala.util.chaining._
 import scala.tools.reflect.FormatInterpolatorTesting.{Outcome, run}
@@ -11,6 +12,7 @@ import scala.tools.reflect.FormatInterpolatorTesting.{Outcome, run}
  *  compiling the expression must report, as (column in the expression, message), and what running it
  *  must give if it compiles. The expressions can refer to the values in `FormatInterpolatorTesting.Decls`.
  */
+@nowarn("msg=possible missing interpolator") // the expressions are in string literals
 class FormatInterpolatorTest {
   import FormatInterpolatorTest._
 
@@ -207,7 +209,7 @@ class FormatInterpolatorTest {
 
   // the result must not depend on the compiler's default locale
   @Test def localeOfCompiler(): Unit = {
-    val outcomes = FormatInterpolatorTesting.run(Seq("f\"${\"i\"}%S\"", "f\"${1234}%,d\""), compileLocale = Some(new java.util.Locale("tr", "TR")))
+    val outcomes = FormatInterpolatorTesting.run(Seq("f\"${\"i\"}%S\"", "f\"${1234}%,d\""), compileLocale = Some(java.util.Locale.forLanguageTag("tr-TR")))
     assertEquals(Some(Right("i".toUpperCase(java.util.Locale.getDefault))), outcomes(0).result)
     assertEquals(Some(Right(String.format("%,d", Int.box(1234)))), outcomes(1).result)
   }
