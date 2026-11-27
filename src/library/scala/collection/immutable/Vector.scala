@@ -2356,7 +2356,7 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
   override def drop(n: Int): Iterator[A] = {
     if(n > 0) {
       val oldpos = i1-len1+totalLength
-      val newpos = mmin(oldpos + n, totalLength)
+      val newpos = if(n >= totalLength - oldpos) totalLength else oldpos + n
       if(newpos == totalLength) {
         i1 = 0
         len1 = 0

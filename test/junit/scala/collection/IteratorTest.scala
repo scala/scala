@@ -323,6 +323,18 @@ class IteratorTest {
     assertEquals(Int.MinValue + 10, createIterator.min)
     assertEquals(Int.MinValue + 10 + (numExpectedSamples - 1) * step, createIterator.max)
   }
+  @Test def rangeKnownSizeAfterOverflow(): Unit = {
+    val cases = List(
+      (Int.MaxValue - 1, Int.MaxValue, 5),
+      (Int.MaxValue - 3, Int.MaxValue, 2),
+      (Int.MinValue + 1, Int.MinValue, -5),
+      (Int.MinValue + 3, Int.MinValue, -2))
+    for ((start, end, step) <- cases) {
+      val it = Iterator.range(start, end, step)
+      while (it.hasNext) it.next()
+      assertEquals(s"range($start, $end, $step)", 0, it.knownSize)
+    }
+  }
   @Test def rangeUnderflow(): Unit = {
     val step = -100000000
     val numExpectedSamples = 22

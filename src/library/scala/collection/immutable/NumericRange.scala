@@ -528,7 +528,17 @@ object NumericRange {
     private[this] var _hasNext = !self.isEmpty
     private[this] var _next: T = self.start
     private[this] val lastElement: T = if (_hasNext) self.last else self.start
-    override def knownSize: Int = if (_hasNext) num.toInt((lastElement - _next) / self.step) + 1 else 0
+    override def knownSize: Int =
+      if (_hasNext) {
+        // For a fixed-width type, `lastElement - _next` wraps to the wrong sign when it does not fit.
+        val diff = lastElement - _next
+        if (!num.equiv(diff, num.zero) && num.lt(diff, num.zero) != num.lt(self.step, num.zero)) -1
+        else {
+          val steps = diff / self.step
+          val stepsInt = num.toInt(steps)
+          if (stepsInt < Int.MaxValue && num.equiv(num.fromInt(stepsInt), steps)) stepsInt + 1 else -1
+        }
+      } else 0
     def hasNext: Boolean = _hasNext
     def next(): T = {
       if (!_hasNext) Iterator.empty.next()

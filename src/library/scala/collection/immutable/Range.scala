@@ -700,7 +700,12 @@ private class RangeIterator(
 ) extends AbstractIterator[Int] with Serializable {
   private[this] var _hasNext: Boolean = !initiallyEmpty
   private[this] var _next: Int = start
-  override def knownSize: Int = if (_hasNext) (lastElement - _next) / step + 1 else 0
+  override def knownSize: Int =
+    if (_hasNext) {
+      // a range wider than Int.MaxValue may have more than Int.MaxValue elements left
+      val remaining = (lastElement.toLong - _next) / step + 1
+      if (remaining <= Int.MaxValue) remaining.toInt else -1
+    } else 0
   def hasNext: Boolean = _hasNext
   @throws[NoSuchElementException]
   def next(): Int = {
@@ -711,9 +716,10 @@ private class RangeIterator(
     value
   }
 
-  override def drop(n: Int): Iterator[Int] = {
+  // lastElement is not an element of an empty range, and _next may have wrapped past it
+  override def drop(n: Int): Iterator[Int] = if (!_hasNext) this else {
     if (n > 0) {
-      val longPos = _next.toLong + step * n
+      val longPos = _next.toLong + step.toLong * n
       if (step > 0) {
         _next = Math.min(lastElement, longPos).toInt
         _hasNext = longPos <= lastElement

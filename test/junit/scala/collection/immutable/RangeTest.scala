@@ -24,6 +24,17 @@ class RangeTest {
   }
 
   @Test
+  def iteratorDropWhenExhausted(): Unit = {
+    for (r <- List(Int.MinValue until Int.MinValue, 4 until Int.MaxValue by -1, Int.MaxValue until Int.MaxValue by -1, (Int.MinValue to 10).take(0))) {
+      assertFalse(s"$r.iterator.drop(1)", r.iterator.drop(1).hasNext)
+      assertEquals(s"$r.indexWhere(_ => true, 1)", -1, r.indexWhere(_ => true, 1))
+    }
+    val it = (Int.MaxValue - 2 to Int.MaxValue).iterator
+    it.foreach(_ => ())
+    assertFalse(it.drop(1).hasNext)
+  }
+
+  @Test
   def test_SI10060_numeric_range_min_max(): Unit = {
     assertEquals(Range.Long.inclusive(1, 9, 1).min, 1)
     assertEquals(Range.Long.inclusive(1, 9, 1).max, 9)
@@ -51,6 +62,23 @@ class RangeTest {
     assertThrows[java.util.NoSuchElementException](Range.inclusive(1, 9, -1).max)
     assertThrows[java.util.NoSuchElementException](Range.inclusive(9, 1, 1).min)
     assertThrows[java.util.NoSuchElementException](Range.inclusive(9, 1, 1).max)
+  }
+
+  @Test
+  def iteratorKnownSizeWideRange(): Unit = {
+    for (r <- List(Int.MinValue to Int.MaxValue by Int.MaxValue, Int.MinValue to Int.MaxValue by (1 << 30), -1073741826 until Int.MaxValue by 715827883, Int.MaxValue to Int.MinValue by -Int.MaxValue)) {
+      val xs = r.toList
+      val it = r.iterator
+      for (i <- xs.indices) {
+        assertEquals(s"$r after $i", xs.length - i, it.knownSize)
+        it.next()
+      }
+      assertEquals(0, it.knownSize)
+      assertEquals(xs, r.iterator.toList)
+      assertEquals(xs, r.iterator.toVector.toList)
+    }
+    assertEquals(-1, (Int.MinValue to Int.MaxValue).iterator.knownSize)
+    assertEquals(-1, (Int.MinValue until Int.MaxValue).iterator.knownSize)
   }
 
   @Test
@@ -95,6 +123,18 @@ class RangeTest {
   def testRangeDrop(): Unit = {
     assertTrue((0 until 0).iterator.drop(-4).toList.isEmpty)
     assertEquals(4, (1 to 4).iterator.drop(-4).toList.size)
+  }
+
+  @Test
+  def iteratorDropLarge(): Unit = {
+    for (r <- List(-5 to 5 by 4, 2 until 9 by 2, 0 to 10 by 2, 5 to -5 by -4, Int.MinValue to Int.MaxValue by (1 << 30))) {
+      val xs = r.toList
+      for (n <- List(2, 3, 1 << 29, 1 << 30, Int.MaxValue)) {
+        assertEquals(s"$r.iterator.drop($n)", xs.drop(n), r.iterator.drop(n).take(xs.length + 1).toList)
+        assertEquals(s"$r.indexWhere(_ => true, $n)", xs.indexWhere(_ => true, n), r.indexWhere(_ => true, n))
+        assertEquals(s"$r.segmentLength(_ => true, $n)", xs.segmentLength(_ => true, n), r.segmentLength(_ => true, n))
+      }
+    }
   }
 
   @Test

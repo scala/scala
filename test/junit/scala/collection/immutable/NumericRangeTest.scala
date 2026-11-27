@@ -328,6 +328,30 @@ class NumericRangeTest {
   }
 
   @Test
+  def iteratorKnownSizeWideRange(): Unit = {
+    def check[T](r: NumericRange[T]): Unit = {
+      val xs = r.toList
+      val it = r.iterator
+      for (i <- xs.indices) {
+        val ks = it.knownSize
+        assertTrue(s"$r after $i: $ks", ks == -1 || ks == xs.length - i)
+        it.next()
+      }
+      assertEquals(0, it.knownSize)
+      assertEquals(xs, r.iterator.toList)
+      assertEquals(xs, r.iterator.toVector.toList)
+    }
+    check(NumericRange.inclusive[Byte](-128, 57, 5))
+    check(NumericRange.inclusive[Byte](-128, 126, 127))
+    check(NumericRange[Short](29199, -32768, -6025))
+    check(NumericRange.inclusive(Int.MinValue, Int.MaxValue, Int.MaxValue))
+    check(NumericRange.inclusive(Long.MinValue, Long.MaxValue, Long.MaxValue))
+    check(NumericRange.inclusive(Long.MinValue, Long.MaxValue, 1L << 62))
+    check(NumericRange.inclusive(Long.MaxValue, Long.MinValue, -(1L << 62)))
+    assertEquals(Int.MaxValue, NumericRange(0L, Int.MaxValue.toLong, 1L).iterator.knownSize)
+  }
+
+  @Test
   def indexOfAndLastIndexOfShouldBeCorrect(): Unit = {
 
     // For a range, because every value exists at most once, without the optional from/end param,

@@ -345,7 +345,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
-      override def drop(n: Int): Iterator[A] = { i += n; this }
+      override def drop(n: Int): Iterator[A] = { if (n > 0) i = if (n < 2 - i) i + n else 2; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
@@ -449,7 +449,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
-      override def drop(n: Int): Iterator[A] = { i += n; this }
+      override def drop(n: Int): Iterator[A] = { if (n > 0) i = if (n < 3 - i) i + n else 3; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
@@ -570,7 +570,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
-      override def drop(n: Int): Iterator[A] = { i += n; this }
+      override def drop(n: Int): Iterator[A] = { if (n > 0) i = if (n < 4 - i) i + n else 4; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
