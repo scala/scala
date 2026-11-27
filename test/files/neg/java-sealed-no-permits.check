@@ -1,0 +1,15 @@
+Test.scala:4: warning: match may not be exhaustive.
+It would fail on the following input: C()
+  def missingC(s: S): Int = s match {
+                            ^
+Test.scala:9: warning: match may not be exhaustive.
+It would fail on the following input: B()
+  def missingB(s: S): Int = s match {
+                            ^
+Test.scala:14: warning: match may not be exhaustive.
+It would fail on the following inputs: B(), T()
+  def sealedClass(t: T): Int = t match {
+                               ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

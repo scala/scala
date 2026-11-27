@@ -984,7 +984,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       else Nil
 
     def classDecl(mods: Modifiers): List[Tree] = {
-      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
+      if (mods.hasFlag(Flags.SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(CLASS)
       val pos = in.currentPos
       val name = identForType()
@@ -1048,7 +1048,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def interfaceDecl(mods: Modifiers): List[Tree] = {
-      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
+      if (mods.hasFlag(Flags.SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
