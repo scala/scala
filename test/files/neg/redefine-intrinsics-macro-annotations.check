@@ -1,0 +1,7 @@
+redefine-intrinsics-macro-annotations.scala:3: error: scala.Any is compiler-defined and cannot be redefined
+abstract class Any
+               ^
+redefine-intrinsics-macro-annotations.scala:4: error: scala.Any is compiler-defined and cannot have a companion object
+object Any
+       ^
+2 errors

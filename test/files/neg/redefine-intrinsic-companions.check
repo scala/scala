@@ -1,0 +1,16 @@
+redefine-intrinsic-companions.scala:2: error: scala.Any is compiler-defined and cannot have a companion object
+object Any { implicit val leak: Int = 42 }
+       ^
+redefine-intrinsic-companions.scala:3: error: scala.AnyRef is compiler-defined and cannot have a companion object
+object AnyRef
+       ^
+redefine-intrinsic-companions.scala:4: error: scala.Nothing is compiler-defined and cannot have a companion object
+object Nothing
+       ^
+redefine-intrinsic-companions.scala:5: error: scala.Null is compiler-defined and cannot have a companion object
+object Null
+       ^
+redefine-intrinsic-companions.scala:6: error: scala.Singleton is compiler-defined and cannot have a companion object
+object Singleton
+       ^
+5 errors
