@@ -737,10 +737,14 @@ object Future {
     else {
       val p = Promise[T]()
       val firstCompleteHandler = new AtomicReference(List.empty[() => Unit]) with (Try[T] => Unit) {
+        // Unregistering can miss the handler (see `DefaultPromise.unregisterCallback`), it must not retain the result then
+        private[this] var result = p
         final def apply(res: Try[T]): Unit =  {
           val deregs = getAndSet(null)
           if (deregs != null) {
-            p.tryComplete(res) // tryComplete is likely to be cheaper than complete
+            val r = result
+            result = null
+            r.tryComplete(res) // tryComplete is likely to be cheaper than complete
             deregs.foreach(_.apply())
           }
         }
