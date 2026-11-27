@@ -141,8 +141,12 @@ final class IntAccumulator
     history = IntAccumulator.emptyIntArrayArray
   }
 
+  private def checkIndex(ix: Long): Unit =
+    if (ix < 0 || ix >= totalSize) throw new IndexOutOfBoundsException(s"$ix is out of bounds (min 0, max ${totalSize - 1})")
+
   /** Retrieves the `ix`th element. */
   def apply(ix: Long): Int = {
+    checkIndex(ix)
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt)
     else {
       val w = seekSlot(ix)
@@ -154,6 +158,7 @@ final class IntAccumulator
   def apply(i: Int): Int = apply(i.toLong)
 
   def update(idx: Long, elem: Int): Unit = {
+    checkIndex(idx)
     if (totalSize - idx <= index || hIndex == 0) current((idx - (totalSize - index)).toInt) = elem
     else {
       val w = seekSlot(idx)
