@@ -338,6 +338,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                     in.next()
                   } else {
                     syntaxError("unclosed string literal")
+                    cbuf.clear()
                   }
                 } else {
                   in.next()
@@ -360,6 +361,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                   setName()
                 } else {
                   syntaxError("unclosed character literal")
+                  cbuf.clear()
                 }
                 return
 
