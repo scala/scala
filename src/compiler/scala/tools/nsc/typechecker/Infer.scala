@@ -1223,6 +1223,7 @@ trait Infer extends Checkable {
           enclCase pushTypeBounds tparam
           val tb = genPolyType(tparams, appliedType(TypeBounds(lo1, hi1), targs))
           tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
+          typeBoundsNarrowed(tparam)
         }
       }
       else log(s"inconsistent bounds: discarding TypeBounds($lo1, $hi1)")
@@ -1290,7 +1291,6 @@ trait Infer extends Checkable {
           }
         }
         tvars foreach instantiateTypeVar
-        invalidateTreeTpeCaches(tree0, tvars.map(_.origin.typeSymbol).toSet)
       }
       /* If the scrutinee has free type parameters but the pattern does not,
        * we have to flip the arguments so the expected type is treated as more

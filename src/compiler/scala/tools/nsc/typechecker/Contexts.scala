@@ -1021,6 +1021,7 @@ trait Contexts { self: AbstractAnalyzer with ImportTracking =>
         for ((sym, savedInfo) <- savedTypeBounds)
           sym setInfo debuglogResult(s"Discarding inferred $sym=${sym.info}, restoring saved info")(savedInfo)
 
+        typeBoundsRestored(savedTypeBounds.map(_._1))
         savedTypeBounds = Nil
       }
     }
