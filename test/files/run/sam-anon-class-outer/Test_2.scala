@@ -4,9 +4,9 @@
 
 import java.io._
 
-trait Get[A] { def get(): A }
-// since scala/scala#11205: `get()I` cannot be bridged to `get()Object` by LMF
-trait GetInt extends Get[Int] with Serializable { def get(): Int }
+trait Get[A] { def get(a: A): Int }
+// since scala/scala#11205: LMF cannot bridge `get(Object)I` to `get(I)I`, its unboxing of null would throw
+trait GetInt extends Get[Int] with Serializable { def get(a: Int): Int }
 // never eligible for LMF
 trait WithVal extends Serializable { val v = 1; def get(): Int }
 trait Fun extends (Int => Int) with Serializable
@@ -15,17 +15,17 @@ class Holder { // not Serializable
   val field = 10
   def member = 20
 
-  def bridged: GetInt = () => 42
+  def bridged: GetInt = _ => 42
   def withVal: WithVal = () => 42
   def fun: Fun = x => x + 1
-  def local(i: Int): GetInt = () => i + 1
-  def nested: GetInt = () => { val g: GetInt = () => 1; g.get() + 1 }
-  def localDef: GetInt = { def loc(i: Int) = i * 2; () => loc(21) }
+  def local(i: Int): GetInt = _ => i + 1
+  def nested: GetInt = _ => { val g: GetInt = _ => 1; g.get(0) + 1 }
+  def localDef: GetInt = { def loc(i: Int) = i * 2; _ => loc(21) }
 
-  def usesField: GetInt = () => field
+  def usesField: GetInt = _ => field
   def usesMember: WithVal = () => member
-  def nestedUsesThis: GetInt = () => { val g: GetInt = () => field; g.get() + 1 }
-  def localDefUsesThis: GetInt = { def loc(i: Int) = i * field; () => loc(2) }
+  def nestedUsesThis: GetInt = _ => { val g: GetInt = _ => field; g.get(0) + 1 }
+  def localDefUsesThis: GetInt = { def loc(i: Int) = i * field; _ => loc(2) }
 
   // the class of a PartialFunction literal is in the same position if it calls a local method
   def pf: PartialFunction[Any, Int] = { def loc(i: Int) = i + 1; { case i: Int if loc(i) > 0 => loc(i) } }
@@ -35,10 +35,10 @@ class Holder { // not Serializable
   // does not see that: the lifted body refers to `this` through the constructor call in `mk`.
   def selfReaching: WithVal = { def mk(n: Int): WithVal = () => if (n > 0) mk(n - 1).get() + 1 else 0; mk(5) }
 
-  class Inner { def bridged: GetInt = () => 43 }
+  class Inner { def bridged: GetInt = _ => 43 }
 }
 
-trait HolderTrait { def bridged: GetInt = () => 44 }
+trait HolderTrait { def bridged: GetInt = _ => 44 }
 
 class Other { val y = 6; abstract class Sam { def get(): Int; def outerY = y } }
 
@@ -79,19 +79,23 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     val h = new Holder
-    check("bridged", h.bridged, captures = false)(_.asInstanceOf[GetInt].get())
+    check("bridged", h.bridged, captures = false)(_.asInstanceOf[GetInt].get(0))
     check("withVal", h.withVal, captures = false)(_.asInstanceOf[WithVal].get())
     check("fun", h.fun, captures = false)(_.asInstanceOf[Fun](1))
-    check("local", h.local(1), captures = false)(_.asInstanceOf[GetInt].get())
-    check("nested", h.nested, captures = false)(_.asInstanceOf[GetInt].get())
-    check("localDef", h.localDef, captures = false)(_.asInstanceOf[GetInt].get())
-    check("inner", (new h.Inner).bridged, captures = false)(_.asInstanceOf[GetInt].get())
-    check("trait", (new HolderTrait {}).bridged, captures = false)(_.asInstanceOf[GetInt].get())
+    check("local", h.local(1), captures = false)(_.asInstanceOf[GetInt].get(0))
+    check("nested", h.nested, captures = false)(_.asInstanceOf[GetInt].get(0))
+    check("localDef", h.localDef, captures = false)(_.asInstanceOf[GetInt].get(0))
+    check("inner", (new h.Inner).bridged, captures = false)(_.asInstanceOf[GetInt].get(0))
+    check("trait", (new HolderTrait {}).bridged, captures = false)(_.asInstanceOf[GetInt].get(0))
 
-    check("usesField", h.usesField, captures = true)(_.asInstanceOf[GetInt].get())
+    check("usesField", h.usesField, captures = true)(_.asInstanceOf[GetInt].get(0))
     check("usesMember", h.usesMember, captures = true)(_.asInstanceOf[WithVal].get())
-    check("nestedUsesThis", h.nestedUsesThis, captures = true)(_.asInstanceOf[GetInt].get())
-    check("localDefUsesThis", h.localDefUsesThis, captures = true)(_.asInstanceOf[GetInt].get())
+    check("nestedUsesThis", h.nestedUsesThis, captures = true)(_.asInstanceOf[GetInt].get(0))
+    check("localDefUsesThis", h.localDefUsesThis, captures = true)(_.asInstanceOf[GetInt].get(0))
+
+    // the GetInt lambdas must stay anonymous classes, or the checks above don't test this path
+    for (f <- List(h.bridged, h.local(1), h.nested, h.localDef, h.usesField, h.nestedUsesThis, h.localDefUsesThis))
+      assert(!f.getClass.isSynthetic, f.getClass)
 
     check("pf", h.pf, captures = false)(_.asInstanceOf[PartialFunction[Any, Int]](1))
     check("pfUsesThis", h.pfUsesThis, captures = true)(_.asInstanceOf[PartialFunction[Any, Int]](1))

@@ -1467,7 +1467,10 @@ abstract class Erasure extends InfoTransform
       val overriddenParamTypes = exitingErasure(overridden.info.paramTypes)
       val overriddenResult = exitingErasure(overridden.info.resultType)
       val (paramsOk, resultOk) = lmfAdaptationOk(samParamTypes, samResult, overriddenParamTypes, overriddenResult)
-      paramsOk && resultOk
+      // LMF boxes a primitive result with `valueOf` in the bridge, as Scala does; `void` it cannot bridge (scala/bug#13142)
+      val samResultSym = samResult.typeSymbol
+      def boxedResultOk = samResultSym != UnitClass && isPrimitiveValueClass(samResultSym) && boxedClass(samResultSym).tpe <:< overriddenResult
+      paramsOk && (resultOk || boxedResultOk)
     }
   }
 

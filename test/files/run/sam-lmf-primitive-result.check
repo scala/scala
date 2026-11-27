@@ -1,0 +1,7 @@
+int: 42, LMF: true
+char: c, LMF: true
+boolean: true, LMF: true
+double: 1.5, LMF: true
+unit: (), LMF: false
+v: V@7, LMF: false
+int serialized: 42
