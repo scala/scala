@@ -1227,12 +1227,12 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val l = in.token match {
         case TRUE      => !negate
         case FALSE     => negate
-        case CHARLIT   => in.name.charAt(0)
+        case CHARLIT   => in.strVal.charAt(0)
         case INTLIT    => in.intVal(negate).toInt
         case LONGLIT   => in.intVal(negate)
         case FLOATLIT  => in.floatVal(negate).toFloat
         case DOUBLELIT => in.floatVal(negate)
-        case STRINGLIT => in.name.toString
+        case STRINGLIT => in.strVal
         case _         => null
       }
       if (l == null) None

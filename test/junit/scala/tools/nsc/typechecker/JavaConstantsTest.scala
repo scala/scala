@@ -95,6 +95,21 @@ class JavaConstantsTest {
     val actual = fieldTypes(newGlobal(""), List(new BatchSourceFile("J.java", J)), List("J", "I", "K"))
     assertEquals(expected.mkString("\n"), actual.mkString("\n"))
   }
+
+  @Test def literalsAreNotEnteredInNameTable(): Unit = {
+    val g = newGlobal("")
+    def compile(c: Char): Unit = {
+      val s = c.toString * 10000
+      val source = s"""class L { static final String S = "$s"; String m() { return "$s" + '$c' + 1.5d + 42L; } }"""
+      val actual = fieldTypes(g, List(new BatchSourceFile("L.java", source)), List("L"))
+      assertEquals(List(s"""L.S: String("$s")"""), actual)
+    }
+    compile('a')
+    compile('a') // the second run enters some names of its own
+    val before = g.nameTableSize
+    compile('b') // the same identifiers, different literals
+    assertEquals(0, g.nameTableSize - before)
+  }
 }
 
 object JavaConstantsTest {

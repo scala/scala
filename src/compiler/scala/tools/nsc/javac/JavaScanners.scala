@@ -51,6 +51,9 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** the name of an identifier or token */
     var name: TermName = null
 
+    /** the text of a literal, which is not entered in the name table */
+    var strVal: String = null
+
     /** the base of a number */
     var base: Int = 0
 
@@ -59,6 +62,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       this.pos = td.pos
       this.lastPos = td.lastPos
       this.name = td.name
+      this.strVal = td.strVal
       this.base = td.base
       this
     }
@@ -248,6 +252,12 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       cbuf.setLength(0)
     }
 
+    /** Clear buffer and set the text of a literal */
+    private def setStrVal(): Unit = {
+      strVal = cbuf.toString()
+      cbuf.setLength(0)
+    }
+
     private class JavaTokenData0 extends JavaTokenData
 
     /** we need one token lookahead
@@ -334,7 +344,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                   }
                   if (in.ch == '\"') {
                     token = STRINGLIT
-                    setName()
+                    setStrVal()
                     in.next()
                   } else {
                     syntaxError("unclosed string literal")
@@ -343,7 +353,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                   in.next()
                   if (in.ch != '\"') { // "" empty string literal
                     token = STRINGLIT
-                    setName()
+                    setStrVal()
                   } else {
                     in.next()
                     getTextBlock()
@@ -357,7 +367,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                 if (in.ch == '\'') {
                   in.next()
                   token = CHARLIT
-                  setName()
+                  setStrVal()
                 } else {
                   syntaxError("unclosed character literal")
                 }
@@ -842,7 +852,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
 
       token = STRINGLIT
-      setName()
+      setStrVal()
 
       // Trailing """
       in.next()
@@ -907,23 +917,23 @@ trait JavaScanners extends ast.parser.ScannersCommon {
         in.next()
         token = FLOATLIT
       }
-      setName()
+      setStrVal()
     }
 
-    /** convert name to long value
+    /** convert the literal text to a long value
      */
     def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
-        if (name.length > 0) name.charAt(0).toLong else 0
+        if (strVal.length > 0) strVal.charAt(0).toLong else 0
       } else {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2
         val limit: Long =
           if (token == LONGLIT) Long.MaxValue else Int.MaxValue
         var i = 0
-        val len = name.length
+        val len = strVal.length
         while (i < len) {
-          val d = digit2int(name.charAt(i), base)
+          val d = digit2int(strVal.charAt(i), base)
           if (d < 0) {
             syntaxError("malformed integer number")
             return 0
@@ -943,13 +953,13 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     }
 
 
-    /** convert name, base to double value
+    /** convert the literal text and base to a double value
     */
     def floatVal(negated: Boolean): Double = {
       val limit: Double =
         if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
       try {
-        val literal = if (base == 16) "0x" + name else name.toString
+        val literal = if (base == 16) "0x" + strVal else strVal
         // a float literal is rounded to float directly, not via double (JLS 3.10.2)
         val value: Double =
           if (token == FLOATLIT) java.lang.Float.parseFloat(literal).toDouble
@@ -970,7 +980,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
         in.next()
       }
 
-    /** read a number into name and set base
+    /** read a number into the literal text and set base
     */
     protected def getNumber(): Unit = {
       getDigits(if (base < 10) 10 else base)
@@ -1000,7 +1010,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
            in.ch == 'd' || in.ch == 'D')) {
         return getFraction()
       }
-      setName()
+      setStrVal()
       if (in.ch == 'l' || in.ch == 'L') {
         in.next()
         token = LONGLIT
@@ -1040,7 +1050,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       case DOUBLELIT =>
         "double(" + floatVal + ")"
       case STRINGLIT =>
-        "string(" + name + ")"
+        "string(" + strVal + ")"
       case SEMI =>
         ";"
       case COMMA =>
