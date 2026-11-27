@@ -182,7 +182,9 @@ object View extends IterableFactory[View] {
       def next() =
         if (hasNext) {
           hdDefined = false
-          hd
+          val res = hd
+          hd = null.asInstanceOf[A1]
+          res
         } else Iterator.empty.next()
     }
   }
@@ -207,7 +209,9 @@ object View extends IterableFactory[View] {
         def next() =
           if (hasNext) {
             hdDefined = false
-            hd
+            val res = hd
+            hd = null.asInstanceOf[A2]
+            res
           } else Iterator.empty.next()
       }
   }
