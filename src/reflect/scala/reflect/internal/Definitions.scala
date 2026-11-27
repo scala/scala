@@ -927,6 +927,14 @@ trait Definitions extends api.StandardDefinitions {
       case NullaryMethodType(restpe) => finalResultType(restpe)
       case _                         => tp
     }
+    /** Is `tp` the type of a method: monomorphic, parameterless or polymorphic?
+     *  A `PolyType` whose type parameters aren't owned by a method is not one.
+     */
+    final def isMethodType(tp: Type): Boolean = tp match {
+      case _: MethodType | _: NullaryMethodType => true
+      case PolyType(tparams, _)                 => tparams.head.owner.isMethod
+      case _                                    => false
+    }
     /** Similarly, putting all the isStable logic in one place.
      *  This makes it like 1000x easier to see the overall logic
      *  of the method.
