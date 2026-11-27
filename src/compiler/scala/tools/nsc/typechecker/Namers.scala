@@ -801,7 +801,7 @@ trait Namers extends MethodSynthesis {
      *  These classes have no source file, so `isCoDefinedWith` would accept a user-defined
      *  `object scala.Any` as the companion of `Any`, putting its implicits in the implicit scope of every type.
      */
-    private def intrinsicClassFor(tree: ImplDef): Symbol =
+    protected final def intrinsicClassFor(tree: ImplDef): Symbol =
       if (this.owner ne ScalaPackageClass) NoSymbol
       else {
         val name = tree.name.toTypeName

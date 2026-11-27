@@ -36,6 +36,9 @@ trait MacroAnnotationNamers { self: AbstractAnalyzer =>
             createAssignAndEnterSymbol(tree)
             finishSymbol(tree)
             returnContext = context.makeImportContext(tree)
+          case impl: ImplDef if intrinsicClassFor(impl) != NoSymbol =>
+            // Let the ordinary namer report the error before macro symbol entry.
+            super.standardEnterSym(impl)
           case tree: MemberDef =>
             createAssignAndEnterSymbol(tree)
             finishSymbol(tree)
