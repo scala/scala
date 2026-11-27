@@ -1,0 +1,21 @@
+structural-poly-method-any-nothing.scala:5: error: type mismatch;
+ found   : C
+ required: AnyRef{def f: Any}
+  val s1: { def f: Any } = new C                // error: a polymorphic method is not a parameterless one
+                           ^
+structural-poly-method-any-nothing.scala:6: error: type mismatch;
+ found   : D
+ required: AnyRef{def g[X](x: X): X}
+  val s2: { def g[X](x: X): X } = new D         // error: nor the other way around
+                                  ^
+structural-poly-method-any-nothing.scala:7: error: type mismatch;
+ found   : C
+ required: AnyRef{def h[X]: Any}
+  val s3: { def h[X]: Any } = new C             // error
+                              ^
+structural-poly-method-any-nothing.scala:8: error: type mismatch;
+ found   : D
+ required: AnyRef{def k(x: Int): Int}
+  val s4: { def k(x: Int): Int } = new D        // error
+                                   ^
+4 errors

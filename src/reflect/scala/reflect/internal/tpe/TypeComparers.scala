@@ -452,8 +452,10 @@ trait TypeComparers {
         false
     }
 
-    (    (tp1.typeSymbol eq NothingClass)       // @M Nothing is subtype of every well-kinded type
-      || (tp2.typeSymbol eq AnyClass)           // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
+    // `typeSymbol` of a method type is that of its result type, but a method returning `Nothing` or `Any`
+    // is not one of the kind-polymorphic types `Nothing` and `Any`.
+    (    ((tp1.typeSymbol eq NothingClass) && !isMethodType(tp1)) // @M Nothing is subtype of every well-kinded type
+      || ((tp2.typeSymbol eq AnyClass) && !isMethodType(tp2))     // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
       || (if (isNoArgStaticClassTypeRef(tp1) && isNoArgStaticClassTypeRef(tp2))
             tp1.typeSymbolDirect.isNonBottomSubClass(tp2.typeSymbolDirect) // OPT faster than comparing eta-expanded types
           else
