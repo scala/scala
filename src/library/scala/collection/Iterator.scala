@@ -141,7 +141,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() =
       if (hdDefined) {
         hdDefined = false
-        hd
+        val res = hd
+        hd = null.asInstanceOf[A]
+        res
       } else self.next()
   }
 
@@ -381,34 +383,20 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     new GroupedIterator[B](self, size, step)
 
   def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
-    // We use an intermediate iterator that iterates through the first element `z`
-    // and then that will be modified to iterate through the collection
-    private[this] var current: Iterator[B] =
-      new AbstractIterator[B] {
-        override def knownSize = {
-          val thisSize = self.knownSize
-
-          if (thisSize < 0) -1
-          else thisSize + 1
-        }
-        def hasNext: Boolean = true
-        def next(): B = {
-          // Here we change our self-reference to a new iterator that iterates through `self`
-          current = new AbstractIterator[B] {
-            private[this] var acc = z
-            def next(): B = {
-              acc = op(acc, self.next())
-              acc
-            }
-            def hasNext: Boolean = self.hasNext
-            override def knownSize = self.knownSize
-          }
-          z
-        }
-      }
-    override def knownSize = current.knownSize
-    def next(): B = current.next()
-    def hasNext: Boolean = current.hasNext
+    // `z` is only read here, in the constructor, so the iterator does not retain it after the first step.
+    private[this] var acc: B = z
+    private[this] var started = false
+    override def knownSize = {
+      val thisSize = self.knownSize
+      if (started || thisSize < 0) thisSize
+      else thisSize + 1
+    }
+    def hasNext: Boolean = !started || self.hasNext
+    def next(): B = {
+      if (started) acc = op(acc, self.next())
+      else started = true
+      acc
+    }
   }
 
   @deprecated("Call scanRight on an Iterable instead.", "2.13.0")
@@ -484,20 +472,23 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private[this] var hdDefined: Boolean = false
 
     def hasNext: Boolean = hdDefined || {
-      if (!self.hasNext) return false
-      hd = self.next()
-      while (p(hd) == isFlipped) {
-        if (!self.hasNext) return false
-        hd = self.next()
-      } 
-      hdDefined = true
-      true 
+      while (self.hasNext) {
+        val x = self.next()
+        if (p(x) != isFlipped) {
+          hd = x
+          hdDefined = true
+          return true
+        }
+      }
+      false
     }
 
     def next() =
       if (hasNext) {
         hdDefined = false
-        hd
+        val res = hd
+        hd = null.asInstanceOf[A]
+        res
       }
       else Iterator.empty.next()
   }
@@ -542,7 +533,14 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       }
       status == 1/*Found*/
     }
-    def next() = if (hasNext) { status = 0/*Seek*/; hd } else Iterator.empty.next()
+    def next() =
+      if (hasNext) {
+        status = 0/*Seek*/
+        val res = hd
+        hd = null.asInstanceOf[B]
+        res
+      }
+      else Iterator.empty.next()
   }
 
   /**
@@ -582,7 +580,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next(): A =
       if (hasNext) {
         nextElementDefined = false
-        nextElement
+        val res = nextElement
+        nextElement = null.asInstanceOf[A]
+        res
       } else {
         Iterator.empty.next()
       }
@@ -644,12 +644,22 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private[this] var tail: Iterator[A] = self
 
     def hasNext = hdDefined || tail.hasNext && {
-      hd = tail.next()
-      if (p(hd)) hdDefined = true
+      val x = tail.next()
+      if (p(x)) {
+        hd = x
+        hdDefined = true
+      }
       else tail = Iterator.empty
       hdDefined
     }
-    def next() = if (hasNext) { hdDefined = false; hd } else Iterator.empty.next()
+    def next() =
+      if (hasNext) {
+        hdDefined = false
+        val res = hd
+        hd = null.asInstanceOf[A]
+        res
+      }
+      else Iterator.empty.next()
   }
 
   def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
@@ -679,7 +689,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         if (status == 1) self.next()
         else {
           status = 1
-          fst
+          val res = fst
+          fst = null.asInstanceOf[A]
+          res
         }
       }
       else Iterator.empty.next()
@@ -725,7 +737,12 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       }
       def next() = {
         if (hasNext) {
-          if (status == 1) { status = 0; hd }
+          if (status == 1) {
+            status = 0
+            val res = hd
+            hd = null.asInstanceOf[A]
+            res
+          }
           else lookahead.dequeue()
         }
         else Iterator.empty.next()
@@ -734,7 +751,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       def finish(): Boolean = status match {
         case -2 => status = -1 ; true
         case -1 => false
-        case  1 => store(hd) ; status = 0 ; finish()
+        case  1 => store(hd) ; hd = null.asInstanceOf[A] ; status = 0 ; finish()
         case  0 =>
           status = -1
           while (self.hasNext) {
@@ -747,7 +764,12 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
           }
           false
       }
-      def trailer: A = hd
+      /** The first element of the trailing iterator; called once, when that iterator returns it. */
+      def trailer: A = {
+        val res = hd
+        hd = null.asInstanceOf[A]
+        res
+      }
     }
 
     val leading = new Leading

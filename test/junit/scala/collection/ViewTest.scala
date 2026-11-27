@@ -3,8 +3,10 @@ package scala.collection
 import org.junit.Assert._
 import org.junit.Test
 
+import java.lang.ref.SoftReference
+
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.tools.testkit.AssertUtil.assertSameElements
+import scala.tools.testkit.AssertUtil.{assertNotReachable, assertSameElements}
 
 class ViewTest {
 
@@ -129,5 +131,16 @@ class ViewTest {
     // https://github.com/scala/scala/pull/9388#discussion_r709481748
     val v3 = Nil.view.patch(0, List(1).iterator, 0)
     assert(v3.knownSize != 0)
+  }
+
+  @Test def `partitionMap view iterators do not hold returned elements`: Unit = {
+    def check(op: View[AnyRef] => View[AnyRef]): Unit = {
+      val thing = new Object
+      val ref = new SoftReference(thing)
+      val it = op(View.fromIteratorProvider(() => Iterator.continually(ref.get()))).iterator
+      assertNotReachable(thing, it)(assertSame(thing, it.next()))
+    }
+    check(_.partitionMap(x => Left(x))._1)
+    check(_.partitionMap(x => Right(x))._2)
   }
 }

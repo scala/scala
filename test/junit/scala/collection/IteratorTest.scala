@@ -184,6 +184,62 @@ class IteratorTest {
       assertNotReachable(thing, it)(it.next())
     }
   }
+  /** An iterator that looks ahead must not keep an element after `next()` has returned it, nor an element it
+   *  rejected when it reports that it is exhausted.
+   */
+  @Test def `look-ahead iterators do not hold returned or rejected elements`: Unit = {
+    def check(op: Iterator[AnyRef] => Iterator[AnyRef]): Unit = {
+      val thing = new Object
+      val ref = new SoftReference(thing)
+      val it = op(Iterator.continually(ref.get()))
+      assertNotReachable(thing, it)(assertSame(thing, it.next()))
+    }
+    check(_.filter(_ => true))
+    check(_.filterNot(_ => false))
+    check(_.withFilter(_ => true))
+    check(_.collect { case x => x })
+    check(_.takeWhile(_ => true))
+    check(_.dropWhile(_ => false))
+    check { it => var i = 0; it.distinctBy(_ => { i += 1; i }) }
+    check(_.buffered.tap(_.head))
+    check(_.span(_ => true)._1)
+
+    def checkExhausted(op: Iterator[AnyRef] => Iterator[AnyRef]): Unit = {
+      val thing = new Object
+      val ref = new SoftReference(thing)
+      val it = op(Iterator.continually(ref.get()).take(1))
+      assertNotReachable(thing, it)(assertFalse(it.hasNext))
+    }
+    checkExhausted(_.filter(_ => false))
+    checkExhausted(_.takeWhile(_ => false))
+
+    locally {
+      val thing = new Object
+      val ref = new SoftReference(thing)
+      val (leading, trailing) = Iterator.continually(ref.get()).span(_ => false)
+      assertFalse(leading.hasNext)
+      assertNotReachable(thing, leading, trailing)(assertSame(thing, trailing.next()))
+    }
+  }
+  @Test def `span does not hold an element moved to the lookahead queue`: Unit = {
+    val thing = new Object
+    val ref = new SoftReference(thing)
+    val (leading, trailing) = Iterator.continually(ref.get()).take(1).span(_ => true)
+    assertTrue(leading.hasNext)
+    // querying the trailing iterator moves the buffered element to the queue
+    assertFalse(trailing.hasNext)
+    assertNotReachable(thing, leading, trailing)(assertSame(thing, leading.next()))
+  }
+  @Test def `scanLeft does not hold its initial value`: Unit = {
+    val thing = new Object
+    val ref = new SoftReference(thing)
+    val it = Iterator(1, 2).scanLeft(ref.get(): Any)((_, x) => x)
+    assertEquals(3, it.knownSize)
+    assertSame(thing, it.next())
+    assertEquals(2, it.knownSize)
+    assertNotReachable(thing, it)(assertEquals(1, it.next()))
+    assertEquals(List(2), it.toList)
+  }
   @Test def `sliding must hold elements`: Unit = {
     val thing = new Object
     val ref = new SoftReference(thing)
