@@ -583,6 +583,45 @@ class SolvingTest {
     }.to(LogicLinkedHashSet))
   }
 
+  /**
+   * The incremental solver of the reachability analysis must decide each query `prefix /\ case_i`
+   * as converting the whole conjunction at once does, on random formulas and on prefixes with
+   * a `False` conjunct or a contradictory pair (which `simplify` reduces to `False`).
+   */
+  @Test
+  def testIncrementalSolverAgreesWithMonolithic(): Unit = {
+    val syms = "pqrstuvw".map(c => sym(c.toString)).toVector
+    val rnd = new scala.util.Random(20251029)
+    def formula(depth: Int): Prop =
+      if (depth == 0 || rnd.nextInt(4) == 0) rnd.nextInt(10) match {
+        case 0 => True
+        case 1 => False
+        case _ => syms(rnd.nextInt(syms.size))
+      } else rnd.nextInt(3) match {
+        case 0 => And(List.fill(1 + rnd.nextInt(3))(formula(depth - 1)): _*)
+        case 1 => Or(List.fill(1 + rnd.nextInt(3))(formula(depth - 1)): _*)
+        case _ => Not(formula(depth - 1))
+      }
+    var queries = 0
+    for (_ <- 1 to 300) {
+      val axioms = formula(3)
+      val cases = List.fill(2 + rnd.nextInt(4))(formula(2))
+      val casesFail = cases.map(Not(_))
+      val solver = incrementalSolver(axioms :: casesFail ::: cases)
+      solver.addToPrefix(axioms)
+      var prefix = List(axioms)
+      for ((c, i) <- cases.zipWithIndex.tail) {
+        val notPrev = casesFail(i - 1)
+        solver.addToPrefix(notPrev)
+        prefix ::= notPrev
+        val expected = hasModel(eqFreePropToSolvable(And((c :: prefix): _*)))
+        assertEquals(s"query $i of $cases under $axioms", expected, solver.hasModelWith(c))
+        queries += 1
+      }
+    }
+    assertTrue(queries > 500)
+  }
+
   @Test
   def testAtMostOne(): Unit = {
     val dummySym = sym("dummy")

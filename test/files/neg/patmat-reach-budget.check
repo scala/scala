@@ -1,0 +1,40 @@
+Test.scala:7: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+  def wildcardFirst(c: Color): Int = c match { case _ => 0; case Color.K5 => 1 }
+                                                    ^
+Test.scala:7: warning: unreachable code due to variable pattern on line 7
+  def wildcardFirst(c: Color): Int = c match { case _ => 0; case Color.K5 => 1 }
+                                                                             ^
+Test.scala:7: warning: unreachable code
+  def wildcardFirst(c: Color): Int = c match { case _ => 0; case Color.K5 => 1 }
+                                                                             ^
+Test.scala:8: warning: unreachable code
+  def duplicate(c: Color): Int = c match { case Color.K5 => 0; case Color.K5 => 1 }
+                                                                                ^
+Test.scala:8: warning: Cannot check match for exhaustivity.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 20 or -Ypatmat-exhaust-depth off.
+  def duplicate(c: Color): Int = c match { case Color.K5 => 0; case Color.K5 => 1 }
+                                 ^
+Test.scala:9: warning: Cannot check match for unreachability.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 20 or -Ypatmat-exhaust-depth off.
+  def guardFalse(c: Color): Int = c match { case Color.K5 if false => 0; case Color.K5 => 1; case Color.K6 => 2 }
+                                  ^
+Test.scala:9: warning: Cannot check match for exhaustivity.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 20 or -Ypatmat-exhaust-depth off.
+  def guardFalse(c: Color): Int = c match { case Color.K5 if false => 0; case Color.K5 => 1; case Color.K6 => 2 }
+                                  ^
+Test.scala:10: warning: Cannot check match for unreachability.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 20 or -Ypatmat-exhaust-depth off.
+  def distinct(c: Color): Int = c match { case Color.K5 => 0; case Color.K6 => 1 }
+                                ^
+Test.scala:10: warning: Cannot check match for exhaustivity.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 20 or -Ypatmat-exhaust-depth off.
+  def distinct(c: Color): Int = c match { case Color.K5 => 0; case Color.K6 => 1 }
+                                ^
+error: No warnings can be incurred under -Werror.
+9 warnings
+1 error
