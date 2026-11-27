@@ -289,6 +289,19 @@ class CallbackUnregisterTest {
       }
     }
 
+  // A removal while linking can miss its callback, which then stays on the root: it must not retain the result
+  @Test def firedFirstCompletedOfHandlerIsNotRetaining(): Unit = {
+    val f = Promise[AnyRef]()
+    val other = Promise[AnyRef]()
+    val first = Future.firstCompletedOf(List(f.future, other.future))
+    val handler = callbacks(f.future).head
+    val result = new AnyRef
+    assertNotReachable(result, handler) {
+      other.success(result)
+      assertSame(result, first.value.get.get)
+    }
+  }
+
   /* Races the removal of a callback of `inner` with the linking of `inner` to `root`. `inner` has many callbacks, which
    * makes the move to the root slow, so the removal often arrives in between the two steps of `linkRootOf`.
    */

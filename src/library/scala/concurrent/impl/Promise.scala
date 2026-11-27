@@ -339,8 +339,8 @@ private[concurrent] object Promise {
         val removed = removeCallback(state.asInstanceOf[ManyCallbacks[T]], t)
         if ((removed ne null) && !compareAndSet(state, removed)) unregisterCallback(t)
       } else if (state.isInstanceOf[Link[_]]) {
-        // Misses `t` if `linkRootOf` is concurrently moving it to the root. It then stays there until the root completes,
-        // which is rare and bounded: a promise is linked only once.
+        // Misses `t` if `linkRootOf` is concurrently moving it to the root. It then stays there until the root completes.
+        // This is rare, and the callers' callbacks retain nothing by then.
         state.asInstanceOf[Link[T]].promise(this).unregisterCallback(t)
       }
     }
