@@ -262,7 +262,7 @@ import scala.runtime.Statics
   *                        on the result (e.g. calling `head` or `tail`, or checking if it is empty).
   *  @define evaluatesAllElements This method evaluates all elements of the collection.
   */
-@SerialVersionUID(4L)
+@SerialVersionUID(5L)
 final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => LazyList[A] */)
   extends LazyListBase[A](if (lazyState eq LazyList.EmptyMarker) null else lazyState)
     with LinearSeq[A]
