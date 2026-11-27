@@ -162,10 +162,8 @@ case class StringContext(parts: String*) {
    *
    *  It inserts its arguments between corresponding parts of the string context.
    *  It also treats standard escape sequences as defined in the Scala specification.
-   *  Finally, if an interpolated expression is followed by a `parts` string
-   *  that starts with a formatting specifier, the expression is formatted according to that
-   *  specifier. All specifiers allowed in Java format strings are handled, and in the same
-   *  way they are treated in Java.
+   *  Each argument is formatted by the format specifier that directly follows it, or by `%s`
+   *  if there is none. All specifiers allowed in Java format strings are handled.
    *
    *  For example:
    *  {{{
@@ -174,6 +172,29 @@ case class StringContext(parts: String*) {
    *    println(f"\$name%s is \$height%2.2f meters tall")  // James is 1.90 meters tall
    *  }}}
    *
+   *  The result is that of `format` on a format string, see [[scala.collection.StringOps#format]]
+   *  for how it differs from `java.lang.String.format`. The example is equivalent to
+   *  {{{
+   *    "%s is %2.2f meters tall".format(name, height)
+   *  }}}
+   *  The format string is the concatenation of the `parts` strings, with two changes:
+   *
+   *   1. If a `parts` string other than the first does not start with a specifier for the argument
+   *      before it, `%s` is inserted. `%%`, `%n`, and a specifier that refers to an argument as in 2.
+   *      are not specifiers for the argument before them. If the argument's specifier has an index,
+   *      the index is dropped.
+   *
+   *   2. Any other `%` must start `%%` (a percent sign), `%n` (the platform's line separator), or a
+   *      specifier that refers to an argument: by its index, such as `%1\$s`, or to the argument of
+   *      the previous specifier, such as `%<s`.
+   *
+   *  The compiler checks the format string, and that the type of each argument fits the specifier
+   *  that directly follows it. If it does not, the argument is converted to a type that fits, if an
+   *  implicit conversion allows it, and the converted value is formatted, also by the specifiers that
+   *  refer to it. For example, `f"\${3}%f"` is `"%f".format(3.0)`, and for a `Char` `c`,
+   *  `f"\$c%d %<x"` is `"%d %<x".format(c.toInt)`. A specifier that refers to an argument is
+   *  checked against its type only as far as no value of the type could be formatted by it.
+   *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
@@ -181,17 +202,6 @@ case class StringContext(parts: String*) {
    *  @throws StringContext.InvalidEscapeException
    *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
-   *
-   *  Note: The `f` method works by assembling a format string from all the `parts` strings and using
-   *  `java.lang.String.format` to format all arguments with that format string. The format string is
-   *  obtained by concatenating all `parts` strings, and performing two transformations:
-   *
-   *   1. Let a _formatting position_ be a start of any `parts` string except the first one.
-   *      If a formatting position does not refer to a `%` character (which is assumed to
-   *      start a format specifier), then the string format specifier `%s` is inserted.
-   *
-   *   2. Any `%` characters not in formatting positions must begin one of the conversions
-   *      `%%` (the literal percent) or `%n` (the platform-specific line separator).
    */
   def f[A >: Any](args: A*): String = macro ??? // fasttracked to scala.tools.reflect.FormatInterpolator::interpolateF
 }
