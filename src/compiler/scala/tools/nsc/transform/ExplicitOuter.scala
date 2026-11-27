@@ -69,7 +69,10 @@ abstract class ExplicitOuter extends InfoTransform
   }
 
   private def outerField(clazz: Symbol): Symbol = {
-    val result = clazz.info.member(nme.OUTER_LOCAL)
+    // A class with an outer field of its own may also inherit one (a local subclass of an inner class);
+    // `member` would give both, overloaded.
+    val decl = clazz.info.decl(nme.OUTER_LOCAL)
+    val result = if (decl != NoSymbol) decl else clazz.info.member(nme.OUTER_LOCAL)
     assert(result != NoSymbol, "no outer field in "+clazz+" at "+phase)
 
     result

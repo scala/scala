@@ -68,8 +68,97 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     // we need to know which methods refer to the 'this' reference so that we can determine which lambdas need access to it
     // TODO: this looks expensive, so I made it a lazy val. Can we make it more pay-as-you-go / optimize for common shapes?
-    private[this] lazy val methodReferencesThis: collection.Set[Symbol] =
-      (new ThisReferringMethodsTraverser).methodReferencesThisIn(unit.body)
+    private[this] lazy val methodReferencesThis: collection.Set[Symbol] = {
+      def compute() = (new ThisReferringMethodsTraverser).methodReferencesThisIn(unit.body)
+      var result = compute()
+      // A constructor call that no longer needs its outer argument may leave the enclosing lifted method without a
+      // reference to `this`, which in turn lets the class of an enclosing lambda drop its outer field. Each round
+      // that finds such a class costs another traversal of the unit.
+      //
+      // The first round assumes that every class keeps its outer field, and later rounds only remove references to
+      // `this`. So this finds less than the greatest fixpoint would: a lambda that creates itself again through a
+      // local method, `def mk(n: Int): Sam = () => mk(n - 1).get()`, keeps its outer field, because its lifted body
+      // refers to `this` through the very constructor call that we would like to change.
+      while (elideUnusedOuterFields(result)) result = compute()
+      result
+    }
+
+    // The outer fields found to be unused by `elideUnusedOuterFields`
+    private[this] val elidedOuterFields = mutable.Set.empty[Symbol]
+
+    private def becomesStatic(method: Symbol, referencesThis: collection.Set[Symbol]) =
+      method.isLiftedMethod && !method.isDelambdafyTarget && (method.hasFlag(STATIC) || !referencesThis(method))
+
+    /** A lambda that LambdaMetaFactory cannot implement is expanded by uncurry to an anonymous class whose method
+     *  forwards to the lifted body in the enclosing class, `this.$outer.$anonfun$1(..)`. If the lifted method does
+     *  not refer to `this` we make it static below, and the backend drops the qualifier of the call. Constructors
+     *  has kept the outer field for that qualifier, as the lifted method was still an instance method then.
+     *
+     *  Find the classes of anonymous functions that use the outer field only as the qualifier of such calls. The
+     *  field is removed from them, and the outer argument of their constructor can be elided, so that the lambda
+     *  does not retain the enclosing instance or need it to be serializable.
+     *
+     *  This is the rule of Constructors for `OuterArgCanBeElided`, applied again now that those uses of the field
+     *  are known to go away: nothing else uses the field, and the constructor does not refer to the outer parameter
+     *  other than to initialize the field. The constructor does so if the SAM type is a class that needs an outer
+     *  instance derived from ours, for which it passes `$outer` or `$outer.prefix()` to the super constructor.
+     *
+     *  @return whether a class was found that was not known before
+     */
+    private def elideUnusedOuterFields(referencesThis: collection.Set[Symbol]): Boolean = {
+      var found = false
+      class OuterFieldUsages(outerField: Symbol) extends InternalTraverser {
+        var onlyElidable = true
+        override def traverse(tree: Tree): Unit = if (onlyElidable) tree match {
+          case Apply(Select(qual @ Select(This(_), _), _), args) if qual.symbol == outerField && becomesStatic(tree.symbol, referencesThis) =>
+            traverseTrees(args)
+          case OuterFieldInit(`outerField`) =>
+          case _: Select if tree.symbol == outerField => onlyElidable = false
+          case _ => tree.traverse(this)
+        }
+      }
+      def constructorRefersToOuterParam(body: List[Tree]) = body.exists {
+        case dd @ DefDef(_, _, _, _, _, Block(stats, _)) if dd.symbol.isPrimaryConstructor =>
+          stats.exists { case OuterFieldInit(_) => false case stat => global.constructors.refersToOuterParam(stat) }
+        case _ => false
+      }
+      def check(tree: Tree): Unit = tree match {
+        case PackageDef(_, stats) => stats.foreach(check)
+        case ClassDef(_, _, _, impl) if mayHaveUnusedOuterField(tree.symbol) =>
+          val outerField = tree.symbol.info.decl(nme.OUTER_LOCAL)
+          if (outerField.isOuterField && outerField.isPrivate && !elidedOuterFields(outerField) && !constructorRefersToOuterParam(impl.body)) {
+            val usages = new OuterFieldUsages(outerField)
+            usages.traverseTrees(impl.body)
+            if (usages.onlyElidable) {
+              elidedOuterFields += outerField
+              tree.symbol.primaryConstructor.updateAttachment(OuterArgCanBeElided)
+              found = true
+            }
+          }
+        case _ =>
+      }
+      check(unit.body)
+      found
+    }
+
+    // The statement of a constructor that initializes the outer field, see `Constructors.copyParam`
+    private object OuterFieldInit {
+      def unapply(tree: Tree): Option[Symbol] = tree match {
+        case Assign(lhs @ Select(This(_), _), Ident(_)) if lhs.symbol.isOuterField => Some(lhs.symbol)
+        case If(_, Throw(_), OuterFieldInit(outerField)) => Some(outerField)
+        case _ => None
+      }
+    }
+
+    // The analysis is only forced, which traverses the unit, if there is a class that it could apply to
+    private def mayHaveUnusedOuterField(clazz: Symbol) =
+      clazz.isAnonymousFunction && clazz.info.decl(nme.OUTER_LOCAL).exists
+
+    private def elideOuterArg(fun: Symbol, outerArg: Tree): Boolean = {
+      // force the analysis that marks the constructors
+      if (fun.isConstructor && mayHaveUnusedOuterField(fun.owner)) methodReferencesThis
+      shouldElideOuterArg(fun, outerArg)
+    }
 
     private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, samUserDefined: Symbol, userSamCls: Symbol, isSpecialized: Boolean): Tree = {
       /* user-defined SAM types should have gotten a class symbol made for them in `typer` */
@@ -271,6 +360,15 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case fun: Function =>
         super.transform(transformFunction(fun))
       case Template(_, _, _) =>
+        val clazz = currentOwner
+        // force the analysis that finds the unused outer fields
+        if (mayHaveUnusedOuterField(clazz)) methodReferencesThis
+        def dropElidedOuterField(body: List[Tree]) =
+          if (elidedOuterFields.isEmpty) body
+          else body.filter {
+            case vd: ValDef if elidedOuterFields(vd.symbol) => clazz.info.decls.unlink(vd.symbol); false
+            case _ => true
+          }
         def pretransform(tree: Tree): Tree = tree match {
           case dd: DefDef if dd.symbol.isDelambdafyTarget =>
             if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
@@ -279,11 +377,14 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
               dd.symbol.setFlag(STATIC)
               dd
             }
+          case dd @ DefDef(_, _, _, _, _, Block(stats, expr)) if dd.symbol.isPrimaryConstructor && elidedOuterFields.nonEmpty =>
+            val stats1 = stats.filter { case OuterFieldInit(outerField) => !elidedOuterFields(outerField) case _ => true }
+            if (stats1.lengthCompare(stats.length) == 0) dd else deriveDefDef(dd)(rhs => treeCopy.Block(rhs, stats1, expr))
           case t => t
         }
         try {
           // during this call boxingBridgeMethods will be populated from the Function case
-          val Template(parents, self, body) = super.transform(deriveTemplate(tree)(_.mapConserve(pretransform))): @unchecked
+          val Template(parents, self, body) = super.transform(deriveTemplate(tree)(dropElidedOuterField(_).mapConserve(pretransform))): @unchecked
           Template(parents, self, body ++ boxingBridgeMethods)
         } finally boxingBridgeMethods.clear()
       case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>
@@ -295,9 +396,13 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           dd.symbol.removeAttachment[mixer.NeedStaticImpl.type]
         }
         super.transform(tree)
-      case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
+      case Apply(fun, outer :: rest) if elideOuterArg(fun.symbol, outer) =>
         val nullOuter = gen.mkZero(outer.tpe)
         treeCopy.Apply(tree, transform(fun), nullOuter :: transformTrees(rest))
+      case Apply(fun @ Select(outer @ Select(This(_), _), _), args) if elidedOuterFields(outer.symbol) =>
+        // a call to a lifted method that is now static, see `elideUnusedOuterFields`
+        val nullOuter = gen.mkZero(outer.tpe)
+        treeCopy.Apply(tree, treeCopy.Select(fun, nullOuter, fun.name), transformTrees(args))
       case _ => super.transform(tree)
     }
   } // DelambdafyTransformer
