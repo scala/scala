@@ -34,11 +34,17 @@ trait TypeComparers {
   private[this] val _knownFalseSubTypes = new IdentityHashMap[Type, List[Type]]
   def knownFalseSubTypes = _knownFalseSubTypes
 
-  // Called on every top-level `isSubType` / `isSameType`, but the map is only populated for pathological recursive
-  // subtype checks. Guard the `clear()`, as `IdentityHashMap.clear` zeroes the entire table even when empty.
-  private def clearKnownFalseSubTypes(): Unit = {
+  /** Called when an outermost `isSubType`, `isSameType` or `isDifferentType` exits. */
+  private def exitOutermostCheck(): Unit = {
+    // The map is only populated for pathological recursive subtype checks. Guard the `clear()`,
+    // as `IdentityHashMap.clear` zeroes the entire table even when empty.
     val m = knownFalseSubTypes
     if (!m.isEmpty) m.clear()
+    // A successful check keeps the constraints it registered on type variables in the undo log.
+    // Runtime reflection never clears the log otherwise, so each check that solves an existential
+    // would leak its type variables for the life of the thread. Callers that roll back across
+    // several checks hold a mark (scala/bug#3281, scala/bug#3866).
+    undoLog.clearUnlessMarked()
   }
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
@@ -102,10 +108,7 @@ trait TypeComparers {
     }
   } finally {
     subsametypeRecursions -= 1
-    if (subsametypeRecursions == 0) {
-      clearKnownFalseSubTypes()
-      // undoLog.clear() // too eager, breaks #3281, #3866
-    }
+    if (subsametypeRecursions == 0) exitOutermostCheck()
   }
 
   def isDifferentTypeConstructor(tp1: Type, tp2: Type) = !isSameTypeConstructor(tp1, tp2)
@@ -140,10 +143,7 @@ trait TypeComparers {
   }
   finally {
     subsametypeRecursions -= 1
-    if (subsametypeRecursions == 0) {
-      clearKnownFalseSubTypes()
-      // undoLog.clear() // too eager, breaks #3281, #3866
-    }
+    if (subsametypeRecursions == 0) exitOutermostCheck()
   }
 
   // @pre: at least one argument has annotations
@@ -335,10 +335,7 @@ trait TypeComparers {
     result
   } finally {
     subsametypeRecursions -= 1
-    if (subsametypeRecursions == 0) {
-      clearKnownFalseSubTypes()
-      // undoLog.clear() // too eager, breaks #3281, #3866
-    }
+    if (subsametypeRecursions == 0) exitOutermostCheck()
   }
 
   /** Check whether the subtype or type equivalence relationship
